@@ -2,7 +2,7 @@
 ### code to produce model-based indices using VAST software implemented in R
 ### created March 2020
 ### 2020 settings: VAST v3.3.0, FishStatsUtils v2.5.0, cpp VAST_v8_2_0
-### 2021 settings: Rv4.0.2 VAST v3.6.1, FishStatsUtils v2.8.0, cpp VAST_v12_0_0, TMB 1.7.18
+### 2021 settings: Rv4.0.2 VAST v3.6.1, FishStatsUtils v2.8.0, cpp VAST_v12_0_0, TMB v1.7.18, Matrix v1.2.18
 
 #devtools::install_local("C:/Users/cecilia.oleary/Downloads/FishStatsUtils-2.5.0/FishStatsUtils-2.5.0") 
 #devtools::install_local("C:/Users/cecilia.oleary/Downloads/VAST-3.3.0/VAST-3.3.0") 
