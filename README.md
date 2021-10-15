@@ -1,4 +1,5 @@
-Mission: Provide VAST estimates of abundance and their standard error from GAP survey data for stock assessment authors in conjunction with traditional design-based estimators. TOR 2021.
+# Mission
+Provide VAST estimates of abundance and their standard error from GAP survey data for stock assessment authors in conjunction with traditional design-based estimators. TOR 2021.
 
 # VAST_GOA
 code used for model based index production in GOA
@@ -31,6 +32,6 @@ Link to notes document for 2020 here
 - Combine catches of dusky rockfish and  "dusky and dark rockfishes unid."
 
 ## Note: if a request to only include fish west of 140 degrees, just note that there are two components to this request:  (1) excluding data from east of 170 longitude and (2) specifying this as a "strata" boundary in the model settings in the VAST code
-
+###
 ### 2020 settings: VAST v3.3.0, FishStatsUtils v2.5.0, cpp VAST_v8_2_0
 ### 2021 settings: Rv4.0.2 VAST v3.6.1, FishStatsUtils v2.8.0, cpp VAST_v12_0_0, TMB v1.7.18, Matrix v1.2.18
