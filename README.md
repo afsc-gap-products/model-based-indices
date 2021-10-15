@@ -2,23 +2,15 @@
 code used for model based index production in GOA
 
 # Mission
-Provide VAST estimates of abundance and their standard error from GAP survey data for stock assessment authors in conjunction with traditional design-based estimators. TOR 2021.
-
-# Resources 
-Installation Guide for R 4.0.02 here
-VASTGAP/ModSquad folder here
-VAST GOA template code here
-VAST example from Jason here
-VAST example from Cecilia here
-VAST common troubleshooting here
-Link to notes document for 2020 here
+Provide VAST estimates of abundance and their standard error from GAP survey data for stock assessment authors in conjunction with traditional design-based estimators.
+[TOR 2021.](https://docs.google.com/document/d/19gFkuNcJ_ezXzKqqOS1k5YnXyj3Tm_LyTMWGWyhy8ec/edit?usp=sharing)
 
 # Work Plan 
 - Run VAST with previous year survey data included ( March - April, code frozen by May )
-- Create species folder in the appropriate region results folder here & upload all VAST output files for hindcast. Per Jason’s request, please also upload your VAST R code and     data as an .Rdat that you used to produce the indices.
+- Upload all VAST output files for hindcast,R code and data as an .Rdat that you used to produce the indices
 - Notify the assessment lead & Cecilia that you’ve completed hindcasts ( March - April )
 - Fill in the details of the settings on the project issue and provide any notes ( April )
-- Re-run test runs on hindcasts up to 2019 data as requested by SA author & upload to same google drive (April 2021)
+- Re-run test runs on hindcasts up to previous year's data as requested by SA author & upload to same google drive (April )
 - Freeze code & versions after agreement reached ( May 01 )
 - Run hindcasts again after survey with updated data (August - Sept., completed by 30 September) and upload results to the appropriate region production folder on google drive, including data and code used
 - Plan Team Presentations by SA authors ( September )
@@ -32,7 +24,17 @@ Link to notes document for 2020 here
 - Combine catches of dusky rockfish and  "dusky and dark rockfishes unid."
 
 ### **Note**: if a request to only include fish west of 140 degrees, just note that there are two components to this request:  (1) excluding data from east of 170 longitude and (2) specifying this as a "strata" boundary in the model settings in the VAST code
-###
+
+# Resources 
+Installation Guide for R 4.0.02 [here](https://docs.google.com/document/d/1tjAjvVsYbRBYLWwVdQ-Bs7GYALiUn2xFcUgcP8mQCHw/edit?usp=sharing)
+VASTGAP/ModSquad folder [here](https://drive.google.com/drive/folders/1yxn02yF0V1PNVw0_HpqeSK_XxgOy_LAT)
+VAST GOA template code [here](https://drive.google.com/drive/folders/1eV5CfsVH7b2UzVEuTavHfRQGJnHcqgNy)
+VAST example from Jason [here](https://drive.google.com/file/d/1GupAajXozp6afnlO3a_8I6sHC0Ev0R-b/view)
+VAST example from Cecilia [here](https://drive.google.com/file/d/1eNUXhVuezqWYQx0GHoKcKuHyqTssY_BC/view)
+VAST common troubleshooting [here](https://docs.google.com/document/d/1j3Li2aacvy7d4FJxLlGDctHlDJWQgZzI5HzyMujwf8Y/edit?usp=sharing)
+Link to notes document for 2021 [here](https://docs.google.com/document/d/1fWEA8jftM7IRRwnCMtSjKqGRhM2Vzq7DgCCebPDc3ic/edit?usp=sharing)
+Link to notes document for 2020 [here](https://docs.google.com/document/d/1M6SnI6bN16kZCuFu0Crl2BqpGB8D_CZshlqvW9TFCGY/edit?usp=sharing)
+
 # Software versions
 #### 2020 settings: VAST v3.3.0, FishStatsUtils v2.5.0, cpp VAST_v8_2_0
 #### 2021 settings: Rv4.0.2 VAST v3.6.1, FishStatsUtils v2.8.0, cpp VAST_v12_0_0, TMB v1.7.18, Matrix v1.2.18
