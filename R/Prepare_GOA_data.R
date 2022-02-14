@@ -15,13 +15,15 @@ for (p in PKG) {
     require(p,character.only = TRUE)}
 }
 
-channel<-odbcConnect(dsn = "AFSC",
-                     uid = " ", # change
-                     pwd = " ", #change
-                     believeNRows = FALSE)
+# channel<-odbcConnect(dsn = "AFSC",
+#                      uid = " ", # change
+#                      pwd = " ", #change
+#                      believeNRows = FALSE)
 
-odbcGetInfo(channel)
+# odbcGetInfo(channel)
+source("R/get_connected.R")
 
+##need to connect to VPN for this to work
 cruise <- RODBC::sqlQuery(channel, "SELECT * FROM RACEBASE.CRUISE")
 cruise$YEAR = as.numeric(substring(cruise$START_DATE, 8,9))
 cruise$YEAR <- ifelse(cruise$YEAR < 21, cruise$YEAR + 2000, cruise$YEAR + 1900)
@@ -74,11 +76,15 @@ if(species_code == 10130){
   species_name <- "Hippoglossoides_elassodon" #flathead sole
 }
 if(species_code == 10260){
-  species_name <- "Lepidopsetta sp." #rock sole unid.
+  species_name <- "Lepidopsetta_sp." #rock sole unid.
 }
 
 # Set up folder to store species specific results
-folder <- paste0(getwd(),"/",species_name)
+folder <- paste0(getwd(),"/species_specific_code/GOA/",species_name)
+dir.create(folder)
+folder <- paste0(getwd(),"/species_specific_code/GOA/",species_name,"/data")
+dir.create(folder)
+folder <- paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results")
 dir.create(folder)
 
 ##for rock sole unidentified (fill in zeros only for years that there is positive catch for this specific species)
@@ -174,4 +180,4 @@ Data_Geostat <-  transmute(GOA_DF,
 
 Data_Geostat$Catch_KG[which(is.na(Data_Geostat$Catch_KG))] <- 0
 
-saveRDS(Data_Geostat,paste0(getwd(),"/",species_name,"/Data_Geostat_",species_name,".rds"))
+saveRDS(Data_Geostat,paste0(getwd(),"/species_specific_code/GOA/",species_name,"/data/Data_Geostat_",species_name,".rds"))

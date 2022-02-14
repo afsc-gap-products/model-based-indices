@@ -16,22 +16,16 @@ packageVersion('FishStatsUtils')
 sessionInfo()
 
 ## Set species 
-Species <- c("Gadus_macrocephalus","Sebastes_variabilis","Sebastes_polyspinis", "Sebastes alutus","Gadus chalcogrammus",
-             "Lepidopsetta polyxystra","Lepidopsetta bilineata","Hippoglossoides elassodon","Atheresthes stomias")[1] ##change number 1 to select a difference species from the vector
+species_name <- c("Gadus_macrocephalus","Sebastes_variabilis","Sebastes_polyspinis", "Sebastes_alutus","Gadus_chalcogrammus",
+             "Lepidopsetta_polyxystra","Lepidopsetta_bilineata","Hippoglossoides_elassodon","Atheresthes_stomias")[4] ##change number 1 to select a difference species from the vector
 ## c(P. cod, dusky rockfish, northern rockfish, POP, pollock, 
 ## northern rock sole, southern rock sole, flathead sole, arrowtooth)
 
 
 # Load the data for VAST
-Data_Geostat <- readRDS(file = paste0(getwd(),"/",Species,"/Data_Geostat_",Species,".rds"))
+Data_Geostat <- readRDS(file = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/data/Data_Geostat_",species_name,".rds"))
 Data_Geostat$Catch_KG[which(is.na(Data_Geostat$Catch_KG))] <- 0
 #Data_Geostat <- Data_Geostat[which(Data_Geostat$Year >= 1990),]
-
-# CPUE <- read.csv("C:/Users/cecilia.oleary/Desktop/GOA-AI_BT_files/Gulf_of_Alaska_processed_data/CPUE.csv")
-# species <- c(21720,30152)[2] #c(P.cod, dusky rockfish)
-# species2 <- 30150 #dusky and dark rockfishes unid.
-# CPUE_DATA <- CPUE %>%
-#   dplyr::filter(SPECIES_CODE %in% c(species, species2))
 
 # Define strata
 strata.limits <- data.frame(STRATA = as.factor('All_areas'))
@@ -54,9 +48,11 @@ settings = make_settings( Version = "VAST_v12_0_0",
 )
 
 # Import extrapolation grid, these will be available on Jason's Google drive: VASTGAP\Extrapolation Grids
-GOAgrid <- read.csv(file= paste0(getwd(),"/GOA_extrapolation_grids/GOAThorsonGrid_Less700m.csv"))
+GOAgrid <- read.csv(file= paste0(getwd(),"/extrapolation_grids/GOAThorsonGrid_Less700m.csv"))
 
-input_grid=cbind(Lat=GOAgrid$Lat,Lon=GOAgrid$Lon,Area_km2=GOAgrid$Shape_Area/1000000)  # Extrapolation grid area is in m^2 and is converted to km^2
+input_grid <- cbind(Lat=GOAgrid$Lat,
+                    Lon=GOAgrid$Lon,
+                    Area_km2=GOAgrid$Shape_Area/1000000)  # Extrapolation grid area is in m^2 and is converted to km^2
 gc()
 
 # Run model
@@ -69,18 +65,18 @@ fit = fit_model( "settings"=settings,
                  "v_i"=Data_Geostat[,'Vessel'], #### ##was ok to leave in because it's all "missing" or zero, so no vessel effects
                  "input_grid"=input_grid, 
                  optimize_args=list("lower"=-Inf,"upper"=Inf),
-                 "working_dir" = paste0(getwd(),"/",Species,"/"))
+                 "working_dir" = paste0(paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results")) )
 
 # Plot results
 plot( fit )
 
 # save the VAST model
-saveRDS(fit,file = paste0(getwd(),"/",Species,"VASTfit.RDS"))
+saveRDS(fit,file = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/",species_name,"VASTfit.RDS"))
 
 
 ## Save COG (center of gravity) for ESP request
 results = plot( fit, n_cells=200^2 )
-write.csv( results$Range$COG_Table, file="COG.csv", row.names=FALSE )
+write.csv( results$Range$COG_Table, file=paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/",species_name,"COG.csv"), row.names=FALSE )
 
 ##save effective area occupied for ESP request
 report = TMB::summary.sdreport(fit$parameter_estimates$SD)
@@ -88,5 +84,4 @@ ln_km2 = report[which(rownames(report)=="log_effective_area_ctl"),c('Estimate','
 Year <- sort(unique(fit$year_labels))
 ln_km2 <- as.data.frame(cbind(ln_km2, Year))
 ln_km2 <- ln_km2[which(ln_km2$Year %in% unique(fit$data_frame$t_i)),]
-write.csv( ln_km2, file="ln_effective_area.csv", row.names=FALSE )
-
+write.csv( ln_km2, file=paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/",species_name,"ln_effective_area.csv"), row.names=FALSE )

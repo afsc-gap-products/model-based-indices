@@ -12,72 +12,31 @@
 ##                needs (data west of 140W, area occupied and COG with NE 
 ##                rotation, 1984-2019), originally created Oct 2020
 ##
-## Pkgs Versions: 
-                  rm(list = ls())
-                  r_version <- "R version 4.0.2 (2020-06-22)"
-                  vast_version <- "3.6.1"
-                  fishstatsutils_version <- "2.8.0"
-                  vast_cpp_version <- "VAST_v12_0_0"
+
 ###############################################################################
 ###############################################################################
-
-
-##################################################
-####  Set directories
-##################################################
-wd <- "G:/Oyafuso/ModSquad_2021_Oyafuso/"
-
-##################################################
-####  Load VAST package
-##################################################
 library(VAST)
 
-##################################################
-####  Make sure versions are correct
-##################################################
-ifelse(test = sessionInfo()$R.version$version.string == r_version &
-         packageVersion("VAST") == vast_version &
-         packageVersion("FishStatsUtils") == fishstatsutils_version &
-         FishStatsUtils::get_latest_version() == vast_cpp_version,
-       yes = "versions are good to go", 
-       no = "check your versions")
+vast_cpp_version <- "VAST_v12_0_0"
 
-##################################################
-####  Load the data for VAST
-##################################################
-data_geostat <- read.csv(file = paste0(wd, 
-                                       "data/AK_BTS_GOA_PCod_pollock_140.csv"))
-spp_names <- read.csv(file = paste0(wd, 
-                                    "data/species.csv") )
+## Set species 
+species_name <- c("Gadus_macrocephalus","Gadus_chalcogrammus")[1] ##change number 1 to select a difference species from the vector
+## c(P. cod, pollock)
 
-##################################################
-####  Filter data to species of interest
-##################################################
-which_spp <- c("Pacific cod", "walleye pollock")[1]
-spp_code <- spp_names$SPECIES_CODE[spp_names$COMMON_NAME == which_spp]
-data_geostat <- subset(x = data_geostat, 
-                       subset = SPECIES_CODE == spp_code)
-
-##################################################
-####  Save data_geostat
-##################################################
-saveRDS(object = data_geostat,
-        file = paste0(wd, 
-                      "data/data_geostat_W140_", 
-                      gsub(x = which_spp,
-                           pattern = " ", 
-                           replacement = "_"), 
-                      ".RDS"))
+# Load the data for VAST
+Data_Geostat <- readRDS(file = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/data/Data_Geostat_",species_name,".rds"))
+Data_Geostat$Catch_KG[which(is.na(Data_Geostat$Catch_KG))] <- 0
 
 ##################################################
 #### Load extrapolation grid and create extrapolation grid in the VAST format
 #### Extrapolation grid area is in m^2 and is converted to km^2
 #### Subset input grid to those west of 140 longitude
 ##################################################
-goa_grid <- read.csv(paste0(wd, "data/GOAThorsonGrid_Less700m.csv") )
-input_grid <- cbind(Lat = goa_grid$Lat,
-                    Lon = goa_grid$Lon,
-                    Area_km2 = goa_grid$Shape_Area / 1000000)  
+# Import extrapolation grid, these will be available on Jason's Google drive: VASTGAP\Extrapolation Grids
+GOAgrid <- read.csv(file= paste0(getwd(),"/extrapolation_grids/GOAThorsonGrid_Less700m.csv"))
+input_grid <- cbind(Lat=GOAgrid$Lat,
+                    Lon=GOAgrid$Lon,
+                    Area_km2=GOAgrid$Shape_Area/1000000)  # Extrapolation grid area is in m^2 and is converted to km^2
 input_grid <- input_grid[input_grid[, "Lon"] <= -140, ]
 
 ##################################################
@@ -95,22 +54,23 @@ settings <- FishStatsUtils::make_settings(Version = vast_cpp_version,
                                           Region = "User", 
                                           purpose = "index2", 
                                           ObsModel = c(2, 1), 
-                                          strata.limits = strata_limits)
+                                          strata.limits = strata_limits,
+                                          knot_method = "grid")
 
 ##################################################
 #### Build object but don't run
 ##################################################
-fit <- fit_model(settings = settings, 
-                 working_dir = paste0(wd, "output/", which_spp, "/"),
-                 Lat_i = data_geostat[, "LATITUDE"], 
-                 Lon_i = data_geostat[, "LONGITUDE"], 
-                 t_i = data_geostat[, "YEAR"], 
-                 b_i = data_geostat[, "BIOMASS"], 
-                 a_i = data_geostat[, "EFFORT"], 
-                 input_grid = input_grid, 
-                 knot_method = "grid",
-                 optimize_args = list("lower" = -Inf, "upper" = Inf),
-                 run_model = FALSE)
+fit <- fit_model( "settings"=settings, 
+                 "Lat_i"=Data_Geostat[,'Lat'], 
+                 "Lon_i"=Data_Geostat[,'Lon'], 
+                 "t_i"=Data_Geostat[,'Year'], 
+                 "b_i"=Data_Geostat[,'Catch_KG'], 
+                 "a_i"=Data_Geostat[,'AreaSwept_km2'], 
+                 "v_i"=Data_Geostat[,'Vessel'], #### ##was ok to leave in because it's all "missing" or zero, so no vessel effects
+                 "input_grid"=input_grid, 
+                 optimize_args=list("lower"=-Inf,"upper"=Inf),
+                 "working_dir" = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results"),
+                 run_model = FALSE )
 
 ##################################################
 ####  Rotation is counter-clockwise from east, where you specify the amount 
@@ -147,27 +107,27 @@ plot(x = Zprime_gm[, 3],
 ##################################################
 ####  Re-build and run
 ##################################################
-fit = fit_model( settings = settings, 
-                 working_dir = paste0(wd, "output/", which_spp, "/"),
-                 Lat_i = data_geostat[, "LATITUDE"], 
-                 Lon_i = data_geostat[, "LONGITUDE"], 
-                 t_i = data_geostat[, "YEAR"], 
-                 b_i = data_geostat[, "BIOMASS"], 
-                 a_i = data_geostat[, "EFFORT"], 
-                 input_grid = input_grid, 
-                 knot_method = "grid", 
+fit = fit_model( "settings"=settings, 
+                 "Lat_i"=Data_Geostat[,'Lat'], 
+                 "Lon_i"=Data_Geostat[,'Lon'], 
+                 "t_i"=Data_Geostat[,'Year'], 
+                 "b_i"=Data_Geostat[,'Catch_KG'], 
+                 "a_i"=Data_Geostat[,'AreaSwept_km2'], 
+                 "v_i"=Data_Geostat[,'Vessel'], #### ##was ok to leave in because it's all "missing" or zero, so no vessel effects
+                 "input_grid"=input_grid, 
                  optimize_args = list("lower" = -Inf, "upper" = Inf),
+                 "working_dir" = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results"),
                  Z_gm = Zprime_gm )
 
 ##################################################
 ####  Save and plot Center Of Gravity 
 ##################################################
 results <- plot( fit, 
-                 working_dir = paste0(wd, "output/", which_spp, "/"),
+                 working_dir = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results"),
                  check_residuals = FALSE)
 
 write.csv( results$Range$COG_Table, 
-           file = paste0(wd, "output/", which_spp, "/COG.csv"), 
+           file = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/COG.csv"), 
            row.names = FALSE )
 
 par(mfrow = c(2, 1), mar = c(3, 3, 1, 1))
@@ -194,10 +154,10 @@ ln_km2 <- as.data.frame(cbind(ln_km2, year))
 ln_km2 <- ln_km2[which(ln_km2$year %in% unique(fit$data_frame$t_i)), ]
 
 write.csv(x = ln_km2, 
-          file = paste0(wd, "output/", which_spp, "/ln_effective_area.csv"), 
+          file =paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/ln_effective_area.csv"), 
           row.names = FALSE )
 
 ##################################################
 #### Save the VAST model fit object 
 ##################################################
-save(fit, file = paste0(wd, "output/", which_spp, "/VASTfit.RData"))
+saveRDS(fit,file =paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/",species_name,"VASTfit.RDS"))
