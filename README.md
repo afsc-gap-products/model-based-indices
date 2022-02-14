@@ -11,7 +11,7 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 - [Annual stock assessment, ESP, and ESR request form](https://docs.google.com/spreadsheets/d/18gr3owj5iAq1iCDX4wpQPUC9ldLz-YTsCBIfnkHqibo/edit?usp=sharing)
 - [ESP submission tool](https://apex.psmfc.org/akfin/f?p=140:LOGIN_DESKTOP:4779711459935:::::)
 
-# Work Plan 
+# GAP Work Plan 
 - Species requests & alternate model-based runs/settings in from SSMA, ESP, ESR by 01 March
 - Run VAST with previous year survey data included as requested by SA author( March - April, code frozen by May )
 - Merge new frozen code (index & data retrival code) in git repo
@@ -19,6 +19,18 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 - Notify the assessment lead & Cecilia (GOA) /Jason (Bering) that you’ve completed hindcasts ( March - April )
 - Run hindcasts again after survey with updated data (August - Sept., completed by 30 September) and upload results to the appropriate region production folder [on google drive](https://drive.google.com/drive/folders/1yxn02yF0V1PNVw0_HpqeSK_XxgOy_LAT), including data used
 - merge final index code & data pull code onto repo
+
+# Product Timeline 
+March - April is the time window for any model exploration/iteration, as requested
+  - February 23 - Planning meeting with program leads
+  - March 1 - Deadline for requesters to submit product requests
+  - March 15 - TOR memo finalized and posted on the web
+  - April 1 - Crab hindcasts completed
+  - May 1 - Groundfish hindcasts completed
+  - August 25 - Model-based estimates for EBS crabs completed
+September 25 - Model-based estimates for NBS crabs completed
+September 30 - Model-based estimates for groundfishes completed (for EBS-only requests)
+October 15 - Model-based estimates for groundfishes completed (for combined EBS-NBS requests) 
 
 # Data Reminders
 - fill in zeros for tows where none of that species was observed
