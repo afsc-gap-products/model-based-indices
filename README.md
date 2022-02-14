@@ -46,7 +46,7 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 | :---         | :--- |
 | purpose = "index2” in make_settings()  | NA  |
 | knots = 750 in make_settings()  | knots = 500, 1000  |
-| Poisson-link delta-gamma observation model[^1].: <br/> ObsModel = c(2,1) in make_settings()  | option 2: Tweedie ObsModel = c(10,2)[^2]. <br/> option 3: delta-lognormal ObsModel = c(1,1)  |
+| Poisson-link delta-gamma observation model[^1]: <br/> ObsModel = c(2,1) in make_settings()  | option 2: Tweedie ObsModel = c(10,2)[^2] <br/> option 3: delta-lognormal ObsModel = c(1,1)  |
 | knot_method = ‘grid’ in fit_model()  | knot_method = ‘samples’ if necessary to aid convergence or for comparison to a previous model fit  |
 | fine_scale = TRUE in make_settings()  | NA  |
 | bias.correct = TRUE in make_settings()  | NA  |
