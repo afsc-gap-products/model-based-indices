@@ -28,9 +28,9 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
   - April 1 - Crab hindcasts completed
   - May 1 - Groundfish hindcasts completed
   - August 25 - Model-based estimates for EBS crabs completed
-September 25 - Model-based estimates for NBS crabs completed
-September 30 - Model-based estimates for groundfishes completed (for EBS-only requests)
-October 15 - Model-based estimates for groundfishes completed (for combined EBS-NBS requests) 
+  - September 25 - Model-based estimates for NBS crabs completed
+  - September 30 - Model-based estimates for groundfishes completed (for EBS-only requests)
+  - October 15 - Model-based estimates for groundfishes completed (for combined EBS-NBS requests) 
 
 # Data Reminders
 - fill in zeros for tows where none of that species was observed
