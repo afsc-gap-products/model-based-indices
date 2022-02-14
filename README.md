@@ -1,8 +1,9 @@
 # model-based-indices
 code used for annual model based index production by GAP in GOA and the Bering Sea
+using the spatiotemporal delta-glmm developed implemented in [VAST](https://github.com/James-Thorson-NOAA/VAST) by [Jim Thorson](https://github.com/James-Thorson-NOAA)
 
 ## Authors
-Primary contact: @coleary-noaa
+Primary contact: [@coleary-noaa](https://github.com/coleary-noaa)
 
 # Mission
 Provide VAST estimates of abundance and their standard error from GAP survey data for stock assessment authors in conjunction with traditional design-based estimators.
