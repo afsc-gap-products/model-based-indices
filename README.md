@@ -46,7 +46,7 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 | :---         | :--- |
 | purpose = "index2” in make_settings()  | NA  |
 | knots = 750 in make_settings()  | knots = 500, 1000  |
-| Poisson-link delta-gamma observation model[^1]: <br/> ObsModel = c(2,1) in make_settings()  | option 2: Tweedie ObsModel = c(10,2)[^2] <br/> option 3: delta-lognormal ObsModel = c(1,1)  |
+| Poisson-link delta-gamma observation model[^1].: <br/> ObsModel = c(2,1) in make_settings()  | option 2: Tweedie ObsModel = c(10,2)[^2]. <br/> option 3: delta-lognormal ObsModel = c(1,1)  |
 | knot_method = ‘grid’ in fit_model()  | knot_method = ‘samples’ if necessary to aid convergence or for comparison to a previous model fit  |
 | fine_scale = TRUE in make_settings()  | NA  |
 | bias.correct = TRUE in make_settings()  | NA  |
@@ -54,8 +54,8 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 | spatiotemporal fields: “IID” default settings for FieldConfig in make_settings()  | model spatiotemporal components (epsilon) as a first-order autoregressive process “AR1” (required for extremely unbalanced data) or “0” (if necessary to aid convergence)  |
 | anisotropy is on (use_anisotropy = TRUE) in make_settings()  | anisotropy off (use_anisotropy = FALSE) if necessary to aid convergence  |
 | no vessel effects, catchability or density covariates in fit_model()  | may include covariates in cases where their incorporation has been previously demonstrated to improve model fit (e.g., a spatially varying response to cold-pool extent when generating abundance indices combining the EBS and NBS); in these cases, covariates will be centered and scaled prior to fitting  |
-[^1] Noting that for species with 100% encounters in any year we will use c(2,4) instead of c(2,1), or the equivalent setting for the lognormal <br/>
-[^2] Tweedie also involves additional changes to RhoConfig and FieldConfig to ensure that there is only a single linear predictor being estimated, as documented elsewhere
+[^1]: Noting that for species with 100% encounters in any year we will use c(2,4) instead of c(2,1), or the equivalent setting for the lognormal <br/>
+[^2]: Tweedie also involves additional changes to RhoConfig and FieldConfig to ensure that there is only a single linear predictor being estimated, as documented elsewhere
 
 # Previous TORs
 - [TOR 2021](https://docs.google.com/document/d/19gFkuNcJ_ezXzKqqOS1k5YnXyj3Tm_LyTMWGWyhy8ec/edit?usp=sharing)
