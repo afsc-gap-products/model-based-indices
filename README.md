@@ -40,6 +40,7 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 - Slack VAST support group (ask me for an invite)
 
 # Software versions
+- **2022**: Rv4.0.2 or later VAST v3.8.2, FishStatsUtils v2.10.0, cpp VAST_v13_1_0, TMB v1.7.22, Matrix v1.4-0, DHARMa 0.4.5
 - **2021**: Rv4.0.2 VAST v3.6.1, FishStatsUtils v2.8.0, cpp VAST_v12_0_0, TMB v1.7.18, Matrix v1.2.18
 - **2020**: VAST v3.3.0, FishStatsUtils v2.5.0, cpp VAST_v8_2_0
 
