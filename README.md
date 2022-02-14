@@ -21,7 +21,7 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 - merge final index code & data pull code onto repo
 
 # Product Timeline 
-March - April is the time window for any model exploration/iteration, as requested
+**March - April is the time window for any model exploration/iteration, as requested**
   - February 23 - Planning meeting with program leads
   - March 1 - Deadline for requesters to submit product requests
   - March 15 - TOR memo finalized and posted on the web
