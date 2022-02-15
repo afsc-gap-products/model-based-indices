@@ -17,7 +17,7 @@
 ###############################################################################
 library(VAST)
 
-vast_cpp_version <- "VAST_v12_0_0"
+vast_cpp_version <- "VAST_v13_1_0"
 
 ## Set species 
 species_name <- c("Gadus_macrocephalus","Gadus_chalcogrammus")[1] ##change number 1 to select a difference species from the vector
@@ -54,8 +54,11 @@ settings <- FishStatsUtils::make_settings(Version = vast_cpp_version,
                                           Region = "User", 
                                           purpose = "index2", 
                                           ObsModel = c(2, 1), 
+                                          fine_scale = TRUE, 
                                           strata.limits = strata_limits,
-                                          knot_method = "grid")
+                                          bias.correct = TRUE,
+                                          use_anisotropy = TRUE,
+                                          knot_method = "grid" )
 
 ##################################################
 #### Build object but don't run
@@ -68,6 +71,7 @@ fit <- fit_model( "settings"=settings,
                  "a_i"=Data_Geostat[,'AreaSwept_km2'], 
                  "v_i"=Data_Geostat[,'Vessel'], #### ##was ok to leave in because it's all "missing" or zero, so no vessel effects
                  "input_grid"=input_grid, 
+                 "refine" = TRUE,
                  optimize_args=list("lower"=-Inf,"upper"=Inf),
                  "working_dir" = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results"),
                  run_model = FALSE )
@@ -115,6 +119,7 @@ fit = fit_model( "settings"=settings,
                  "a_i"=Data_Geostat[,'AreaSwept_km2'], 
                  "v_i"=Data_Geostat[,'Vessel'], #### ##was ok to leave in because it's all "missing" or zero, so no vessel effects
                  "input_grid"=input_grid, 
+                 "refine" = TRUE,
                  optimize_args = list("lower" = -Inf, "upper" = Inf),
                  "working_dir" = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results"),
                  Z_gm = Zprime_gm )

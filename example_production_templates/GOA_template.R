@@ -3,6 +3,7 @@
 ### created March 2020
 ### 2020 settings: VAST v3.3.0, FishStatsUtils v2.5.0, cpp VAST_v8_2_0
 ### 2021 settings: Rv4.0.2 VAST v3.6.1, FishStatsUtils v2.8.0, cpp VAST_v12_0_0, TMB v1.7.18, Matrix v1.2.18
+### 2022 settings: Rv4.0.2 or later VAST v3.8.2, FishStatsUtils v2.10.0, cpp VAST_v13_1_0, TMB v1.7.22, Matrix v1.4-0, DHARMa 0.4.5
 
 #devtools::install_local("C:/Users/cecilia.oleary/Downloads/FishStatsUtils-2.5.0/FishStatsUtils-2.5.0") 
 #devtools::install_local("C:/Users/cecilia.oleary/Downloads/VAST-3.3.0/VAST-3.3.0") 
@@ -35,7 +36,7 @@ FieldConfig = matrix( c("IID","IID","IID","IID","IID","IID"), ncol=2, nrow=3, di
 RhoConfig  = c("Beta1" = 0, "Beta2" = 0, "Epsilon1" = 0, "Epsilon2" = 0)
 
 # Make settings 
-settings = make_settings( Version = "VAST_v12_0_0",
+settings = make_settings( Version = "VAST_v13_1_0",
                           n_x = 750,#1000, 
                           Region = "User", #"gulf_of_alaska",
                           purpose = "index2", 
@@ -64,6 +65,7 @@ fit = fit_model( "settings"=settings,
                  "a_i"=Data_Geostat[,'AreaSwept_km2'], 
                  "v_i"=Data_Geostat[,'Vessel'], #### ##was ok to leave in because it's all "missing" or zero, so no vessel effects
                  "input_grid"=input_grid, 
+                 "refine" = TRUE,
                  optimize_args=list("lower"=-Inf,"upper"=Inf),
                  "working_dir" = paste0(paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results")) )
 
