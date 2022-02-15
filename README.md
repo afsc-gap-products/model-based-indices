@@ -1,6 +1,6 @@
 # model-based-indices
-code used for annual model based index production by GAP in GOA and the Bering Sea
-using the spatiotemporal delta-glmm developed implemented in [VAST](https://github.com/James-Thorson-NOAA/VAST) by [Jim Thorson](https://github.com/James-Thorson-NOAA)
+code used for annual model based index production by GAP in GOA and the Bering Sea. Model-based-indices are produced
+using the spatiotemporal delta-glmm implemented in [VAST](https://github.com/James-Thorson-NOAA/VAST), software developed by [Jim Thorson](https://github.com/James-Thorson-NOAA)
 
 ## Authors
 Primary contact: [@coleary-noaa](https://github.com/coleary-noaa)
