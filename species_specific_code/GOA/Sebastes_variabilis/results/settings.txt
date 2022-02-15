@@ -8,8 +8,8 @@ $Region
 [1] "User"
 
 $strata.limits
-        STRATA west_border east_border
-1 west_of_140W        -Inf        -140
+     STRATA
+1 All_areas
 
 $zone
 [1] NA
