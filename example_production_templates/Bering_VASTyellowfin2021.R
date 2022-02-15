@@ -15,7 +15,7 @@ species <- 10210
 speciesName <- "YellowfinSole_EBS_NBS_index_weight_gamma"
 species_name <- "yellowfin_sole"
 
-workDir <- here::here("results",speciesName)
+#workDir <- here::here("results",speciesName)
 #dir.create(workDir)
 #setwd(workDir)
 # Set up folder to store species specific results
@@ -105,9 +105,7 @@ fit <- fit_model( "settings"=settings,
                   "Npool" = Npool,
                   "test_fit" = TRUE,
                   #"working_dir" = workDir
-                  "working_dir" = paste0(getwd(),"/species_specific_code/Bering/",species_name,"/results"),
-                  
-                  
+                  "working_dir" = paste0(getwd(),"/species_specific_code/Bering/",species_name,"/results")
                   
 )
 
