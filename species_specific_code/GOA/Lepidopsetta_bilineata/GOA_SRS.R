@@ -64,7 +64,7 @@ fit = fit_model( "settings"=settings,
                  "refine" = TRUE,
                  "input_grid"=input_grid, 
                  optimize_args=list("lower"=-Inf,"upper"=Inf),
-                 "working_dir" = paste0(paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results"))
+                 "working_dir" = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results"))
 
 # Plot results
 plot( fit )
