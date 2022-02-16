@@ -4,7 +4,7 @@ library('VAST')
 library('FishData')
 library(dplyr)
 
-#species_code <- c(21720,30152,30150)[1]#[2:3] #c(P.cod, dusky rockfish, dusky and dark rockfishes unid.)
+species_code <- c(21720,30152,30150)[1]#[2:3] #c(P.cod, dusky rockfish, dusky and dark rockfishes unid.)
 species_code <- c(30420,30060,21740,10110,10261,10262,10130)[2] #c(northern rockfish, POP, pollock, arrowtooth, northern rock sole, southern rock sole, flathead sole)
 
 #species_code <- 10260 ## rock sole unidentified.
@@ -141,7 +141,7 @@ if(species_code == 30152 | species_code == 30150){  #this bit deals with duskies
                                   CATCHJOIN = catch_by_species2$CATCHJOIN,
                                   SUBSAMPLE_CODE = catch_by_species2$SUBSAMPLE_CODE,
                                   VOUCHER = catch_by_species2$VOUCHER)
-  # ##USING FishStatsUtils
+  # ##merge dark and dusky data
   data_sub1 <- merge(haul[which(haul$YEAR %in% c(1990, 1996:2019)),], catch_by_species1, by="HAULJOIN", all.x=TRUE)
   data_sub1$SPECIES_CODE[which(is.na(data_sub1$SPECIES_CODE))] <- 30152
   data_sub1$WEIGHT[which(is.na(data_sub1$WEIGHT))] <- 0
@@ -154,12 +154,13 @@ if(species_code == 30152 | species_code == 30150){  #this bit deals with duskies
 }
 
 ################################################################################################################
-# ##USING FishStatsUtils
+# ##fill in NA's with zeros
 data_sub$WEIGHT[which(is.na(data_sub$WEIGHT))] <- 0
 data_sub$NUMBER_FISH[which(is.na(data_sub$NUMBER_FISH))] <- 0
 nrow(data_sub[which(data_sub$WEIGHT == 0),])
 nrow(data_sub[which(data_sub$NUMBER_FISH == 0),])
 
+# ##calculate effort and CPUE
 data_sub2 <- data_sub %>% 
 dplyr::mutate(EFFORT = DISTANCE_FISHED * (NET_WIDTH * 0.001) * 100) %>% 
 dplyr::mutate(wCPUE = WEIGHT/EFFORT,
