@@ -62,7 +62,7 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 | knot_method = ‘grid’ in fit_model()  | knot_method = ‘samples’ if necessary to aid convergence or for comparison to a previous model fit  |
 | fine_scale = TRUE in make_settings()  | NA  |
 | bias.correct = TRUE in make_settings()  | NA  |
-| refine = TRUE in fit_model  | refine = FALSE  |
+| refine = TRUE in fit_model()  | refine = FALSE  |
 | spatiotemporal fields: “IID” default settings for FieldConfig in make_settings()  | model spatiotemporal components (epsilon) as a first-order autoregressive process “AR1” (required for extremely unbalanced data) or “0” (if necessary to aid convergence)  |
 | anisotropy is on (use_anisotropy = TRUE) in make_settings()  | anisotropy off (use_anisotropy = FALSE) if necessary to aid convergence  |
 | no vessel effects, catchability or density covariates in fit_model()  | may include covariates in cases where their incorporation has been previously demonstrated to improve model fit (e.g., a spatially varying response to cold-pool extent when generating abundance indices combining the EBS and NBS); in these cases, covariates will be centered and scaled prior to fitting  |
