@@ -1,30 +1,36 @@
-###############################################################################
-## Project:       Hindcast Index Calculation, EBS-NBS YFS
-## Authors:       Zack Oyafuso (zack.oyafuso@noaa.gov)
-##                Emily Markowitz (emily.markowitz@noaa.gov)
-##                Jason Conner (jason.conner@noaa.gov)
-## Output POC:    Ingrid Spies (ingrid.spies@noaa.gov)
-## Description:   2022 hindcast index standardization for yellowfin sole
-##                     (Limanda aspera) in the Eastern and Northern Bering Sea
-###############################################################################
+#' ---
+#' Project:       Hindcast Index Calculation, EBS-NBS YFS
+#' Authors:       Zack Oyafuso (zack.oyafuso AT noaa.gov)
+#'                Emily Markowitz (emily.markowitz AT noaa.gov)
+#'                Jason Conner (jason.conner AT noaa.gov)
+#' Output POC:    Ingrid Spies (ingrid.spies AT noaa.gov)
+#' Description:   2022 hindcast index standardization for yellowfin sole
+#'                     (Limanda aspera) in the Eastern and Northern Bering Sea
+#' NOTES: 
+#'                Make sure R and package versions are consistent with those versions
+#'                speficied in the 2022 Terms of Reference (TOR)
+#'                https://docs.google.com/document/d/1t-pIruLZ-F_iNzCysWLH8cdsM0gZpuUb/edit
+#' ---
+ 
 rm(list = ls())
+finalanalysis <- FALSE # this will make the model work faster while troubleshooting
+  
+# Import packages ---------------------------------------------------------
 
-##################################################
-####   Import packages
-##################################################  
 library(googledrive)
 library(tidyverse)
-library(VAST)
+library(VAST) # VAST 3.6.1, # devtools::install_github('james-thorson/VAST@3.6.1', INSTALL_opts='--no-staged-install')
 library(sf)
 library(scales)
 library(DHARMa)
 library(Matrix)
+# source("http://www.math.ntnu.no/inla/givemeINLA.R")  
+# install_github("nwfsc-assess/geostatistical_delta-GLMM", ref="3.3.0") 
+# remotes::install_github("kaskr/adcomp/TMB@v1.7.18") # TMB 1.7.19, devtools::install_version("TMB", version = "1.7.19", repos = "http://cran.us.r-project.org")
+# library(TMB)
 
-##################################################
-####   Make sure R and package versions are consistent with those versions
-####   speficied in the 2022 Terms of Reference (TOR)
-####   https://docs.google.com/document/d/1t-pIruLZ-F_iNzCysWLH8cdsM0gZpuUb/edit
-##################################################  
+# System preferences ---------------------------------------------------------
+
 R_version <- "R version 4.0.2 (2020-06-22)"
 VAST_cpp_version <- "VAST_v13_1_0"
 pck_version <- c("VAST" = "3.8.2", "FishStatsUtils" = "2.10.2", 
@@ -57,48 +63,42 @@ pck_version <- c("VAST" = "3.8.2", "FishStatsUtils" = "2.10.2",
   rm(pck, temp_version)
 }
 
-##################################################
-####   Authorize googledrive to view and manage your Drive files. 
-##################################################  
+# Authorize googledrive to view and manage your Drive files. ------------------
+
 googledrive::drive_deauth()
 googledrive::drive_auth() 
 1
 
 google_drive_dir <- "1JCUP8VL-22BVXT8owDqWcG6WH9Qn5CZm"
 
-##################################################
-####   Set species
-##################################################
+# Set species ------------------------------------------------------------------
+
 species <- 10210
 species_name <- "yellowfin_sole"
 
-##################################################
-####   Set up folder to store species specific results
-##################################################    
+# Set up folder to store species specific results ----------------------------
+
 folder <- paste0("species_specific_code/BS/", species_name, "/hindcast/")
 if(!dir.exists(folder)) dir.create(folder)
 folder <- paste0("species_specific_code/BS/", species_name,"/hindcast/results/")
 if(!dir.exists(folder)) dir.create(folder)
 rm(folder)
 
-##################################################
-####   Load the data for VAST
-##################################################  
+# Load the data for VAST -------------------------------------------------------
+
 Data_Geostat <- readRDS(file = paste0("species_specific_code/BS/", 
                                       species_name, 
                                       "/hindcast/data/Data_Geostat.rds"))
 Data_Geostat$Catch_KG[which(is.na(Data_Geostat$Catch_KG))] <- 0
 
-##################################################
-####   Load Cold Pool Covariate Data
-##################################################  
+# Load Cold Pool Covariate Data ------------------------------------------------
+
 covariate_data <- readRDS(file = paste0("species_specific_code/BS/",
                                         species_name, 
                                         "/hindcast/data/Data_ColdPool.rds"))
 
-##################################################
-####   Set VAST settings
-##################################################  
+# Set VAST settings ------------------------------------------------------------
+
 settings <- FishStatsUtils::make_settings( 
   n_x = 100,
   Region = c("Eastern_Bering_Sea", "Northern_Bering_Sea"),
@@ -120,9 +120,8 @@ settings <- FishStatsUtils::make_settings(
   bias.correct = TRUE
 )
 
-##################################################
-####   Run VAST model
-##################################################  
+# Run VAST model ---------------------------------------------------------------
+
 fit <- fit_model( "settings" = settings, 
                   "Lat_i" = Data_Geostat[,'Lat'], 
                   "Lon_i" = Data_Geostat[,'Lon'], 
@@ -142,17 +141,21 @@ fit <- fit_model( "settings" = settings,
                   "Npool" = 100,
                   "test_fit" = TRUE,
                   "working_dir" = paste0(getwd(),"/species_specific_code/BS/",
-                                         species_name, "/hindcast/results/")  
+                                         species_name, "/hindcast/results/"), 
+                  getsd = ifelse(finalanalysis, TRUE, FALSE), # default
+                  newtonsteps = ifelse(finalanalysis, 1, 0)#,  # default
+                  # build_model = ifelse(finalanalysis, TRUE, FALSE) # default
 )
 
-##################################################
-####   Save results locally: 
-####      VAST fit: fit --> VASTfit.RDS
-####      session info: sessionInfo() --> session_info.txt
-####      diagnostic plots: written to diagnostics_plots/
-####      center of gravity: results$Range$COG_Table --> COG.csv
-####      effective area ln_km2 --> occupied: ln_effective_area.csv
-##################################################  
+
+# Save results locally: --------------------------------------------------------
+
+# VAST fit: fit --> VASTfit.RDS
+# session info: sessionInfo() --> session_info.txt
+# diagnostic plots: written to diagnostics_plots/
+# center of gravity: results$Range$COG_Table --> COG.csv
+# effective area ln_km2 --> occupied: ln_effective_area.csv
+
 ## Save VAST fit object
 saveRDS(object = fit, 
         file = paste0("species_specific_code/BS/",
@@ -199,9 +202,8 @@ write.csv(x = ln_km2,
                       "/hindcast/results/output_plots/ln_effective_area.csv"),
           row.names=FALSE )
 
-##################################################
-####   Save local results to google drive
-##################################################  
+# Save local results to google drive -------------------------------------------
+
 for (ifile in dir(paste0("species_specific_code/BS/", species_name, 
                          "/hindcast/results/"), 
                   full.names = T, 
