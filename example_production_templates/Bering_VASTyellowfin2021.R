@@ -49,7 +49,7 @@ BiasCorr <- TRUE
 getJointPrecision <- TRUE
 getReportCovariance <- TRUE
 fine_scale <- TRUE
-max_cells <- 4000
+max_cells <- 2000
 strata.limits <- data.frame(STRATA = as.factor('All_areas'))
 
 
