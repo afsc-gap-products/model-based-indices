@@ -115,7 +115,7 @@ settings <- FishStatsUtils::make_settings(
               "treat_nonencounter_as_zero" = FALSE ),
   use_anisotropy = TRUE,
   Version = VAST_cpp_version,
-  max_cells = 4000,
+  max_cells = 2000,
   knot_method = "grid",
   bias.correct = TRUE
 )
