@@ -8,14 +8,19 @@ library(tidyverse)
 library(VAST) 
 library(sf)
 library(scales)
+library(RcppEigen)
+library(TMB)
+
 
 # Set species -------------------------------------------------------------
 
 species <- 21720
-speciesName <- "PacificCod_EBS_NBS_index_numbers_gamma"
+speciesName <- "PacificCod_EBS_NBS_index_numbers_MRAN_VASTmain"
 workDir <- here::here("results",speciesName)
-dir.create(workDir)
+dir.create(workDir, recursive = T)
 setwd(workDir)
+TMBdir <- file.path(workDir,"TMBcompile")
+dir.create(TMBdir)
 
 
 # Get data from Google drive ----------------------------------------------------------------
@@ -60,7 +65,7 @@ googledrive::drive_download(file=as_id("1wqdoTKjVSziRdQnUQa7COuYU_2H_TyAt"),
                             overwrite = TRUE)
 
 # VAST Settings -----------------------------------------------------------
-Version <- "VAST_v12_0_0"
+Version <- get_latest_version()
 Region <- c("Eastern_Bering_Sea","Northern_Bering_Sea")
 strata_names = c("Both","EBS","NBS")
 Method <- "Mesh"
@@ -166,7 +171,8 @@ fit <- fit_model( "settings"=settings,
                   "covariate_data"=covariate_data,
                   "Npool" = Npool,
                   "test_fit" = TRUE,
-                  "working_dir" = workDir
+                  "working_dir" = workDir,
+                  "CompileDir" = TMBdir
                   
                   
 )
