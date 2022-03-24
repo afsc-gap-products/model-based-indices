@@ -13,28 +13,35 @@
 #' ---
  
 rm(list = ls())
-finalanalysis <- FALSE # this will make the model work faster while troubleshooting
+finalanalysis <- TRUE # this will make the model work faster while troubleshooting
   
 # Import packages ---------------------------------------------------------
 
 library(googledrive)
 library(tidyverse)
-library(VAST) # VAST 3.6.1, # devtools::install_github('james-thorson/VAST@3.6.1', INSTALL_opts='--no-staged-install')
+library(VAST) # VAST 3.6.1, # devtools::install_github('james-thorson/VAST@3.8.2', INSTALL_opts='--no-staged-install')
 library(sf)
 library(scales)
 library(DHARMa)
 library(Matrix)
 # source("http://www.math.ntnu.no/inla/givemeINLA.R")  
-# install_github("nwfsc-assess/geostatistical_delta-GLMM", ref="3.3.0") 
-# remotes::install_github("kaskr/adcomp/TMB@v1.7.18") # TMB 1.7.19, devtools::install_version("TMB", version = "1.7.19", repos = "http://cran.us.r-project.org")
-# library(TMB)
+# remotes::install_github("James-Thorson-NOAA/VAST", ref="3.8.2") 
+# remotes::install_github("nwfsc-assess/geostatistical_delta-GLMM", ref="3.3.0") 
+# remotes::install_github("James-Thorson-NOAA/FishStatsUtils@2.10.2")
+
+# install.packages(pkgs = "https://cran.r-project.org/bin/windows/contrib/4.2/Matrix_1.4-0.zip", repos = NULL)
+# install.packages(pkgs = "https://cran.r-project.org/src/contrib/Archive/TMB/TMB_1.7.22.tar.gz", repos = NULL)
+
 
 # System preferences ---------------------------------------------------------
 
 R_version <- "R version 4.0.2 (2020-06-22)"
 VAST_cpp_version <- "VAST_v13_1_0"
-pck_version <- c("VAST" = "3.8.2", "FishStatsUtils" = "2.10.2", 
-                 "Matrix" = "1.4-0", "TMB" = "1.7.22", "DHARMa" = "0.4.5")
+pck_version <- c("VAST" = "3.8.2", 
+                 "FishStatsUtils" = "2.10.2", 
+                 "Matrix" = "1.4-0", 
+                 "TMB" = "1.7.22", 
+                 "DHARMa" = "0.4.5")
 
 {
   if(sessionInfo()$R.version$version.string == R_version) 
@@ -100,7 +107,7 @@ covariate_data <- readRDS(file = paste0("species_specific_code/BS/",
 # Set VAST settings ------------------------------------------------------------
 
 settings <- FishStatsUtils::make_settings( 
-  n_x = 100,
+  n_x = 750,
   Region = c("Eastern_Bering_Sea", "Northern_Bering_Sea"),
   purpose = "index2",
   fine_scale = TRUE,
