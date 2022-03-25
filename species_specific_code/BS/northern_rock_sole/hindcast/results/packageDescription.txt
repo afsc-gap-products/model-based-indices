@@ -1,0 +1,71 @@
+Package: VAST
+Type: Package
+Title: Vector-Autoregressive Spatio-Temporal (VAST) Model
+Version: 3.9.0
+Date: 2022-03-17
+Authors@R: c(person(given = "James", family = "Thorson", role = c("aut", "cre"), email = "James.Thorson@noaa.gov", comment = c(ORCID =
+               "0000-0001-7415-1010")), person(given="Cole", family="Monnahan", role="ctb", email="Cole.Monnahan@noaa.gov") )
+Description: VAST is an R package for conducting spatio-temporal analysis of data from multiple categories (species, sizes, etc.), and
+               includes both spatial and spatio-temporal variation in density for each category, with either factor-analysis or
+               autoregressive correlations among categories, with derived calculation of abundance indices, center-of-gravity, and
+               area-occupied.
+Imports: deldir, stats, devtools, abind, MatrixModels, ThorsonUtilities, effects, INLA, SpatialDeltaGLMM
+Depends: TMB, R (>= 3.5.0),
+Suggests: testthat, knitr, rmarkdown, FishStatsUtils, pscl, tweedie, mgcv, lme4
+Remotes: james-thorson-NOAA/FishStatsUtils, james-thorson/utilities, nwfsc-assess/geostatistical_delta-GLMM
+License: file LICENSE
+LazyData: true
+Encoding: UTF-8
+RoxygenNote: 7.1.1
+ByteCompile: true
+URL: http://github.com/James-Thorson-NOAA/VAST
+BugReports: http://github.com/James-Thorson-NOAA/VAST/issues
+VignetteBuilder: knitr
+RemoteType: local
+RemoteUrl: C:\Users\zack.oyafuso\Downloads\VAST-3.9.0
+NeedsCompilation: no
+Packaged: 2022-03-17 21:33:26 UTC; zack.oyafuso
+Author: James Thorson [aut, cre] (<https://orcid.org/0000-0001-7415-1010>), Cole Monnahan [ctb]
+Maintainer: James Thorson <James.Thorson@noaa.gov>
+Built: R 4.0.2; ; 2022-03-17 21:33:29 UTC; windows
+
+-- File: C:/Users/zack.oyafuso/Work/R/win-library/4.0/VAST/Meta/package.rds 
+Package: FishStatsUtils
+Type: Package
+Title: Utilities (shared code and data) for FishStats spatio-temporal modeling toolbox
+Version: 2.11.0
+Date: 2022-03-17
+Authors@R: c(person(given = "James", family = "Thorson", role = c("aut", "cre"), email = "James.Thorson@noaa.gov", comment = c(ORCID =
+               "0000-0001-7415-1010")) )
+Description: FishStatsUtils contains utilities (shared code and data) used by multiple packages (VAST, SpatialDeltaGLMM, MIST,
+               Spatial_FA, SpatialDFA, surplus_production, EOFR) that are designed for spatio-temporal analysis of ecological data.
+Imports: graphics, utils, mapproj, maptools, deldir, RANN, stats, colorspace, RandomFields, RandomFieldsUtils, shape, devtools,
+               mixtools, sp, sf, raster, plotrix, TMB, MatrixModels, rgdal, ThorsonUtilities, TMBhelper, abind, corpcor, pander,
+               rnaturalearth, rnaturalearthdata, formatR, splancs, DHARMa, viridisLite
+Depends: R (>= 3.5.0), units
+Suggests: testthat
+Remotes: james-thorson/utilities, kaskr/TMB_contrib_R/TMBhelper
+License: GPL-3
+LazyData: yes
+BuildVignettes: yes
+Encoding: UTF-8
+RoxygenNote: 7.1.2
+URL: http://github.com/james-thorson-NOAA/FishStatsUtils
+BugReports: http://github.com/james-thorson-NOAA/FishStatsUtils/issues
+RemoteType: github
+RemoteHost: api.github.com
+RemoteRepo: FishStatsUtils
+RemoteUsername: james-thorson
+RemoteRef: 2.11.0
+RemoteSha: 51c7713682ecc8a30ddb3d1f949b7c241451e75b
+GithubRepo: FishStatsUtils
+GithubUsername: james-thorson
+GithubRef: 2.11.0
+GithubSHA1: 51c7713682ecc8a30ddb3d1f949b7c241451e75b
+NeedsCompilation: no
+Packaged: 2022-03-17 21:59:32 UTC; zack.oyafuso
+Author: James Thorson [aut, cre] (<https://orcid.org/0000-0001-7415-1010>)
+Maintainer: James Thorson <James.Thorson@noaa.gov>
+Built: R 4.0.2; ; 2022-03-17 21:59:51 UTC; windows
+
+-- File: C:/Users/zack.oyafuso/Work/R/win-library/4.0/FishStatsUtils/Meta/package.rds 
