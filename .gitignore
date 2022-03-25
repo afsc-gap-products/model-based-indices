@@ -5,8 +5,3 @@
 .RDS
 .Rdat
 /data/
-/results/**/*.RDS
-/results/**/*.RData
-/results/**/*.dll
-/results/**/*.cpp
-/results/**/*.o
