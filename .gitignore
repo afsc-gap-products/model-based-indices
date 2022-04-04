@@ -5,5 +5,5 @@
 .RDS
 .Rdat
 .txt
-/data/**
-/results/**
+data/
+results/

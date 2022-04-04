@@ -17,6 +17,7 @@ finalanalysis <- TRUE # this will make the model work faster while troubleshooti
   
 # Import packages ---------------------------------------------------------
 
+library(coldpool) # remotes::install_github("afsc-gap-products/coldpool")
 library(googledrive)
 library(tidyverse)
 library(VAST) # VAST 3.6.1, # devtools::install_github('james-thorson/VAST@3.8.2', INSTALL_opts='--no-staged-install')
@@ -25,9 +26,9 @@ library(scales)
 library(DHARMa)
 library(Matrix)
 # source("http://www.math.ntnu.no/inla/givemeINLA.R")  
-# remotes::install_github("James-Thorson-NOAA/VAST", ref="3.8.2") 
+# remotes::install_github("James-Thorson-NOAA/VAST", ref="3.9.0") 
 # remotes::install_github("nwfsc-assess/geostatistical_delta-GLMM", ref="3.3.0") 
-# remotes::install_github("James-Thorson-NOAA/FishStatsUtils@2.10.2")
+# remotes::install_github("James-Thorson-NOAA/FishStatsUtils@2.11.0")
 
 # install.packages(pkgs = "https://cran.r-project.org/bin/windows/contrib/4.2/Matrix_1.4-0.zip", repos = NULL)
 # install.packages(pkgs = "https://cran.r-project.org/src/contrib/Archive/TMB/TMB_1.7.22.tar.gz", repos = NULL)
