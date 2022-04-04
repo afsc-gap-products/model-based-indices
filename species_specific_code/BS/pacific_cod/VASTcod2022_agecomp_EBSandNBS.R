@@ -244,6 +244,7 @@ setwd(RunDir)
                            strata_names = strata_names, 
                            check_residuals = FALSE )
   saveRDS(results, file = "VASTresults.RDS")
+  write.csv(results$Proportions$Neff_tl, "Neff.csv")
   
   
   # If residual plots don't... uh... plot...
