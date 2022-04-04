@@ -4,5 +4,6 @@
 .Ruserdata
 .RDS
 .Rdat
+.txt
 /data/**
 /results/**
