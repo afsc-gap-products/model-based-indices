@@ -15,7 +15,7 @@ library(TMB)
 # Set species -------------------------------------------------------------
 
 species <- 21720
-speciesName <- "PacificCod_EBS_NBS_index_numbers_refine=true"
+speciesName <- "PacificCod_EBS_NBS_index_numbers_VAST390"
 workDir <- here::here("results",speciesName)
 dir.create(workDir, recursive = T)
 setwd(workDir)
@@ -76,7 +76,7 @@ FieldConfig <- c("Omega1"="IID", "Epsilon1"="IID", "Omega2"="IID", "Epsilon2"="I
 RhoConfig <- c("Beta1"=0, "Beta2"=0, "Epsilon1"=4, "Epsilon2"=4)
 OverdispersionConfig <- c("Eta1"=0, "Eta2"=0)
 ObsModel <- c(2,4)
-Options <-  c("Calculate_Range"=TRUE, "Calculate_effective_area"=TRUE, "treat_nonencounter_as_zero"=FALSE )
+Options <-  c("Calculate_Range"=TRUE, "Calculate_effective_area"=TRUE, "treat_nonencounter_as_zero"=TRUE )
 Aniso <- TRUE
 Npool <- 100
 BiasCorr <- TRUE

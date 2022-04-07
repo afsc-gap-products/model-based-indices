@@ -4,6 +4,10 @@
 .Ruserdata
 .RDS
 .Rdat
-.txt
-/data/**
-/results/**
+/data/
+/results/**/*.RDS
+/results/**/*.RData
+/results/**/*.dll
+/results/**/*.cpp
+/results/**/*.o
+/dev/
