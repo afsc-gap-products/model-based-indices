@@ -20,7 +20,7 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 - Run hindcasts again after survey with updated data (August - Sept., completed by 30 September) and upload results to the appropriate region production folder [on google drive](https://drive.google.com/drive/folders/1yxn02yF0V1PNVw0_HpqeSK_XxgOy_LAT), including data used
 - merge final index code & data pull code onto repo
 
-# Product Timeline 
+# General Production Timeline Estimate
 **March - April is the time window for any model exploration/iteration, as requested**
   - February 23 - Planning meeting with program leads
   - March 1 - Deadline for requesters to submit product requests
