@@ -4,6 +4,16 @@
 .Ruserdata
 .RDS
 .Rdat
+<<<<<<< HEAD
 .txt
 data/
 results/
+=======
+/data/
+/results/**/*.RDS
+/results/**/*.RData
+/results/**/*.dll
+/results/**/*.cpp
+/results/**/*.o
+/dev/
+>>>>>>> 150f89dc4398222d5e6e38d388b226760ada9b9f

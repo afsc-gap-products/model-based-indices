@@ -8,19 +8,14 @@ library(tidyverse)
 library(VAST) 
 library(sf)
 library(scales)
-library(RcppEigen)
-library(TMB)
-
 
 # Set species -------------------------------------------------------------
 
 species <- 21720
-speciesName <- "PacificCod_EBS_NBS_index_numbers_VAST390"
+speciesName <- "PacificCod_EBS_NBS_index_numbers_gamma"
 workDir <- here::here("results",speciesName)
-dir.create(workDir, recursive = T)
+dir.create(workDir)
 setwd(workDir)
-TMBdir <- file.path(workDir,"TMBcompile")
-dir.create(TMBdir)
 
 
 # Get data from Google drive ----------------------------------------------------------------
@@ -65,7 +60,7 @@ googledrive::drive_download(file=as_id("1wqdoTKjVSziRdQnUQa7COuYU_2H_TyAt"),
                             overwrite = TRUE)
 
 # VAST Settings -----------------------------------------------------------
-Version <- get_latest_version()
+Version <- "VAST_v12_0_0"
 Region <- c("Eastern_Bering_Sea","Northern_Bering_Sea")
 strata_names = c("Both","EBS","NBS")
 Method <- "Mesh"
@@ -76,16 +71,15 @@ FieldConfig <- c("Omega1"="IID", "Epsilon1"="IID", "Omega2"="IID", "Epsilon2"="I
 RhoConfig <- c("Beta1"=0, "Beta2"=0, "Epsilon1"=4, "Epsilon2"=4)
 OverdispersionConfig <- c("Eta1"=0, "Eta2"=0)
 ObsModel <- c(2,4)
-Options <-  c("Calculate_Range"=TRUE, "Calculate_effective_area"=TRUE, "treat_nonencounter_as_zero"=TRUE )
+Options <-  c("Calculate_Range"=TRUE, "Calculate_effective_area"=TRUE, "treat_nonencounter_as_zero"=FALSE )
 Aniso <- TRUE
 Npool <- 100
 BiasCorr <- TRUE
 getJointPrecision <- TRUE
 getReportCovariance <- TRUE
 fine_scale <- TRUE
-max_cells <- 2000
+max_cells <- 4000
 strata.limits <- data.frame(STRATA = as.factor('All_areas'))
-refine <- TRUE
 
 
 settings <- make_settings( 
@@ -172,9 +166,7 @@ fit <- fit_model( "settings"=settings,
                   "covariate_data"=covariate_data,
                   "Npool" = Npool,
                   "test_fit" = TRUE,
-                  "working_dir" = workDir,
-                  "CompileDir" = TMBdir,
-                  "refine" = refine
+                  "working_dir" = workDir
                   
                   
 )
@@ -187,7 +179,7 @@ saveRDS(fit, file = "VASTfit.RDS")
 
 # Plots -------------------------------------------------------------------
     # If you need to load a fit in a new session:
-    # dyn.load(dynlib(get_latest_version()))
+    dyn.load(dynlib("VAST_v12_0_0"))
 
     # Record package versions
     sink("session_info.txt", type = "output")
@@ -196,7 +188,6 @@ saveRDS(fit, file = "VASTfit.RDS")
     
     # Plot results
     results <- plot_results( fit, 
-                             plot_set = c(3, 6, 7, 16, 17, 18, 19),
                              zrange = c(-3,3), 
                              n_cells = 600, 
                              strata_names = strata_names, 
@@ -204,6 +195,13 @@ saveRDS(fit, file = "VASTfit.RDS")
                              n_samples=0 )
     
     saveRDS(results, file = "VASTresults.RDS")
+    
+    
+    # If residual plots don't... uh... plot...
+    plot_quantile_residuals( fit=fit ) 
+    
+    map_list = make_map_info( "Region"=settings$Region, "spatial_list"=fit$spatial_list, "Extrapolation_List"=fit$extrapolation_list )
+    plot_maps( Obj=fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
     
     
     # ESP products
@@ -256,15 +254,13 @@ saveRDS(fit, file = "VASTfit.RDS")
         mutate(Estimator = "Design-based") %>%
         ungroup()
     
-    VASTindex <- read_csv( paste0(workDir,"/Index.csv") ) %>%
-        mutate(Estimator = "VAST",
-               Estimate_metric_tons = Estimate/1000,
-               SD_mt = `Std. Error for Estimate`/1000) %>%
-        filter(Stratum == "Both")
+    VASTindex <- read_csv( paste0(workDir,"/Table_for_SS3.csv") ) %>%
+        mutate(Estimator = "VAST") %>%
+        filter(Fleet == "Both")
     
     index_compare <- bind_rows(
         select(DB_Geostat, Year, total_biomass_mt, total_biomass_mt_se,Estimator),
-        select(VASTindex, Year=Time, total_biomass_mt = Estimate_metric_tons, total_biomass_mt_se = SD_mt,Estimator)
+        select(VASTindex, Year, total_biomass_mt = Estimate_metric_tons, total_biomass_mt_se = SD_mt,Estimator)
     )
     
     

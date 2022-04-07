@@ -8,64 +8,30 @@ library(tidyverse)
 library(VAST) 
 library(sf)
 library(scales)
-library(RcppEigen)
-library(TMB)
-
 
 # Set species -------------------------------------------------------------
 
-species <- 21720
-speciesName <- "PacificCod_EBS_NBS_index_numbers_VAST390"
-workDir <- here::here("results",speciesName)
-dir.create(workDir, recursive = T)
-setwd(workDir)
-TMBdir <- file.path(workDir,"TMBcompile")
-dir.create(TMBdir)
+species <- 10210
+speciesName <- "YellowfinSole_EBS_NBS_index_weight_gamma"
+species_name <- "yellowfin_sole"
 
+#workDir <- here::here("results",speciesName)
+#dir.create(workDir)
+#setwd(workDir)
+# Set up folder to store species specific results
+folder <- paste0(getwd(),"/species_specific_code/BS/",species_name)
+dir.create(folder)
+folder <- paste0(getwd(),"/species_specific_code/BS/",species_name,"/data")
+dir.create(folder)
+folder <- paste0(getwd(),"/species_specific_code/BS/",species_name,"/results")
+dir.create(folder)
 
-# Get data from Google drive ----------------------------------------------------------------
-
-drive_auth()
-1
-
-# Summary catch data for EBS and NBS with NBS 2018 included
-googledrive::drive_download(file=as_id("1TctmzLjuFUopvdD9jqBnhNxw1NuAi87c"), 
-                            path=here::here("data","EBS_NBS_Index.RDS"), 
-                            overwrite = TRUE)
-
-# Cold Pool Area covariate
-googledrive::drive_download(file=as_id("119pehim03WxFjGH9tzjUF7gZDcHJeUe8"), 
-                            path=here::here("data","cpa_areas2019.csv"), 
-                            overwrite = TRUE)
-
-# EBS Strata
-googledrive::drive_download(file=as_id("1UZ4OBGuwqSpPhTD3idDUNqO57Fm1GYnL"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.cpg"), 
-                            overwrite = TRUE)
-googledrive::drive_download(file=as_id("1GhH47aoQ42kx3TYqMo_w0zTV4UeXYWsN"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.dbf"), 
-                            overwrite = TRUE)
-googledrive::drive_download(file=as_id("1SLOH6Ggp8PufL0XZPXLa8ZzPrwIgz68S"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.sbn"), 
-                            overwrite = TRUE)
-googledrive::drive_download(file=as_id("1Hk_t3RvwqwHp6ypL4yfUsACXfxq9IynZ"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.prj"), 
-                            overwrite = TRUE)
-googledrive::drive_download(file=as_id("16GPjJfiWL5ZNCHdimKvoQVp63PGvrVmn"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.sbx"), 
-                            overwrite = TRUE)
-googledrive::drive_download(file=as_id("1Pfg-HxarbSU2M0u-HzSHAIj7E8v-MeO4"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.shp"), 
-                            overwrite = TRUE)
-googledrive::drive_download(file=as_id("1Ke_9cy5wwXolzx34TBM1gbRPGVaS2g7b"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.shp.xml"), 
-                            overwrite = TRUE)
-googledrive::drive_download(file=as_id("1wqdoTKjVSziRdQnUQa7COuYU_2H_TyAt"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.shx"), 
-                            overwrite = TRUE)
+# Load the data for VAST
+Data_Geostat <- readRDS(file = paste0(getwd(),"/species_specific_code/BS/",species_name,"/data/Data_Geostat.rds"))
+Data_Geostat$Catch_KG[which(is.na(Data_Geostat$Catch_KG))] <- 0
 
 # VAST Settings -----------------------------------------------------------
-Version <- get_latest_version()
+Version <- "VAST_v13_1_0"
 Region <- c("Eastern_Bering_Sea","Northern_Bering_Sea")
 strata_names = c("Both","EBS","NBS")
 Method <- "Mesh"
@@ -75,17 +41,16 @@ n_x <- 750   # Specify number of stations (a.k.a. "knots")
 FieldConfig <- c("Omega1"="IID", "Epsilon1"="IID", "Omega2"="IID", "Epsilon2"="IID")
 RhoConfig <- c("Beta1"=0, "Beta2"=0, "Epsilon1"=4, "Epsilon2"=4)
 OverdispersionConfig <- c("Eta1"=0, "Eta2"=0)
-ObsModel <- c(2,4)
-Options <-  c("Calculate_Range"=TRUE, "Calculate_effective_area"=TRUE, "treat_nonencounter_as_zero"=TRUE )
+ObsModel <- c(2,1)
+Options <-  c("Calculate_Range"=TRUE, "Calculate_effective_area"=TRUE, "treat_nonencounter_as_zero"=FALSE )
 Aniso <- TRUE
 Npool <- 100
 BiasCorr <- TRUE
 getJointPrecision <- TRUE
 getReportCovariance <- TRUE
 fine_scale <- TRUE
-max_cells <- 2000
+max_cells <- 4000
 strata.limits <- data.frame(STRATA = as.factor('All_areas'))
-refine <- TRUE
 
 
 settings <- make_settings( 
@@ -106,46 +71,13 @@ settings <- make_settings(
     bias.correct = BiasCorr
     )
 
-# Format catch data -------------------------------------------------------
-
-sumAll <- read_rds(here::here("data","EBS_NBS_Index.RDS"))
-
-
-Data <- sumAll %>%
-   dplyr::filter(SPECIES_CODE==species)
-
-# Format the data for VAST
-Data_Geostat <-  dplyr::transmute(Data,
-                               Catch_KG = nCPUE*100, # sumfish calculates CPUE in kg/ha this converts it to kg/km^2
-                               Year = YEAR,
-                               Vessel = "missing",
-                               AreaSwept_km2 = 1, # area swept is 1 when using CPUE instead of observed weight
-                               Lat = START_LATITUDE,
-                               Lon = START_LONGITUDE,
-                               Pass = 0
-) %>%
-    data.frame()
-
-saveRDS(Data_Geostat, file = "Data_Geostat.RDS")
 
 
 # Cold Pool covariate -----------------------------------------------------
-CP <- read.csv(here::here("data","cpa_out_ste_simplified.csv"))
-covariate_data <- CP[ which(as.integer(CP[,'YEAR']) %in% unique(Data_Geostat[,'Year'])), ]
-covariate_data <- data.frame( "Year"=covariate_data[,"YEAR"],
-                              "Lat"=mean(Data_Geostat[,'Lat']),
-                              "Lon"=mean(Data_Geostat[,'Lon']),
-                              apply(covariate_data[c(-1,-3)],
-                                    MARGIN=2,
-                                    FUN=function(vec){(vec-mean(vec))/sd(vec)}) ) %>%
-    bind_rows(c(Year=2020L,
-                "Lat"=mean(Data_Geostat[,'Lat']),
-                "Lon"=mean(Data_Geostat[,'Lon']),
-                AREA_LTE2_KM2=0)) %>%
-    data.frame()
 
-saveRDS(covariate_data, file = "Data_ColdPool.RDS")  
+covariate_data <- readRDS(file = paste0(getwd(),"/species_specific_code/BS/",species_name,"/data/Data_ColdPool.rds"))
 
+    
     # Load covariates
     formula <- ~ AREA_LTE2_KM2
     Xconfig_zcp <- array(2, dim=c(2,1,1) )
@@ -172,22 +104,20 @@ fit <- fit_model( "settings"=settings,
                   "covariate_data"=covariate_data,
                   "Npool" = Npool,
                   "test_fit" = TRUE,
-                  "working_dir" = workDir,
-                  "CompileDir" = TMBdir,
-                  "refine" = refine
-                  
+                  #"working_dir" = workDir
+                  "working_dir" = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results")
                   
 )
 
 
 # Save results
 
-saveRDS(fit, file = "VASTfit.RDS")
+saveRDS(fit, file = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results/VASTfit.RDS"))
 
 
 # Plots -------------------------------------------------------------------
     # If you need to load a fit in a new session:
-    # dyn.load(dynlib(get_latest_version()))
+    dyn.load(dynlib("VAST_v12_0_0"))
 
     # Record package versions
     sink("session_info.txt", type = "output")
@@ -196,7 +126,6 @@ saveRDS(fit, file = "VASTfit.RDS")
     
     # Plot results
     results <- plot_results( fit, 
-                             plot_set = c(3, 6, 7, 16, 17, 18, 19),
                              zrange = c(-3,3), 
                              n_cells = 600, 
                              strata_names = strata_names, 
@@ -204,6 +133,13 @@ saveRDS(fit, file = "VASTfit.RDS")
                              n_samples=0 )
     
     saveRDS(results, file = "VASTresults.RDS")
+    
+    
+    # If residual plots don't... uh... plot...
+    plot_quantile_residuals( fit=fit ) 
+    
+    map_list = make_map_info( "Region"=settings$Region, "spatial_list"=fit$spatial_list, "Extrapolation_List"=fit$extrapolation_list )
+    plot_maps( Obj=fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
     
     
     # ESP products
@@ -256,15 +192,13 @@ saveRDS(fit, file = "VASTfit.RDS")
         mutate(Estimator = "Design-based") %>%
         ungroup()
     
-    VASTindex <- read_csv( paste0(workDir,"/Index.csv") ) %>%
-        mutate(Estimator = "VAST",
-               Estimate_metric_tons = Estimate/1000,
-               SD_mt = `Std. Error for Estimate`/1000) %>%
-        filter(Stratum == "Both")
+    VASTindex <- read_csv( paste0(workDir,"/Table_for_SS3.csv") ) %>%
+        mutate(Estimator = "VAST") %>%
+        filter(Fleet == "Both")
     
     index_compare <- bind_rows(
         select(DB_Geostat, Year, total_biomass_mt, total_biomass_mt_se,Estimator),
-        select(VASTindex, Year=Time, total_biomass_mt = Estimate_metric_tons, total_biomass_mt_se = SD_mt,Estimator)
+        select(VASTindex, Year, total_biomass_mt = Estimate_metric_tons, total_biomass_mt_se = SD_mt,Estimator)
     )
     
     

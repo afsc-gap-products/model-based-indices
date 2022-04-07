@@ -22,10 +22,9 @@ sumfish::getSQL()
 ##
 ##   For some species, we want to use all the years from 
 ##   start_year:current_year when calculating the ALKs but only use 
-##   data from after a particular year when fitting VAST (e.g., PCod). 
-##
-##   We declare another variable called min_year to filter years at and after 
-##   min_year for that purpose. By default, we set start_year --> min_year.
+##   data from after a particular year when fitting VAST (e.g., PCod). Thus, 
+##   we declare another variable called min_year to filter years at and after 
+##   min_year for that purpose. By default, we set min_year <- start_year.
 ##
 ##   plus_group is used for the age composition calculations, where ages at or
 ##   older than the plus group are grouped as one group. 
@@ -36,13 +35,20 @@ start_year <- 1982
 current_year <- 2021
 plus_group <- 20
 min_year <- start_year
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Create directory to store data products
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 res_dir <- paste0("species_specific_code/BS/", species_name, "/hindcast/data/")
+if(!dir.exists(res_dir)) dir.create(res_dir)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Pull EBS database ----
 ##   Query database for the standard EBS survey haul and catch data.
 ##   Append nonstandard well-performing EBS hauls that occurred in 1994, 2001, 
-##   2005, and 2006 (what are these non-standard hauls?).
+##   2005, and 2006. These tows are not used in the design-based estimates but
+##   becasue they follow standard procedures, can be included in a model-
+##   based estiamte.
 ##
 ##   Notes: haul_type == 3 = standard bottom sample (preprogrammed station)
 ##          PERFORMANCE 0 is a good performance code, > 0 are satisfactory and
@@ -173,9 +179,8 @@ alk_ebs$REGION <- "EBS"
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 ##   NBS ALK ----
-##   These notes are for PCod and hopefully they apply to other species   
-##   Because the NBS is more spotty, we first specify a "prime NBS ALK"
-##      (alk_nbs_prime) where global_fill == FALSE, meaning 
+##   Because the NBS data is more spotty than the EBS, we first specify a 
+##      "prime NBS ALK" (alk_nbs_prime) where global_fill == FALSE, meaning 
 ##      the year-pooling does not occur for missing combos of sex/length ALKs.
 ##
 ##   Missing ALKs are first queried from alk_nbs_prime, then are filled in
@@ -189,11 +194,12 @@ alk_nbs_prime <- sumfish::sumALK(NBS, global_fill = FALSE)
 ## Find missing observations of age-at-length for the NBS
 missing_test <- alk_nbs_prime %>%
   ## For each combination of sex, year, and length bin, append a 
-  ## column called total_ratio that sums the propabilities (should either be
+  ## column called total_ratio that sums probabilities (should either be
   ##  zero for missing or one for existing)
   dplyr::group_by(SEX, YEAR, LENGTH) %>%
   dplyr::summarize(total_ratio = sum(probability) ) %>%
-  ## then filter the dataframe to only those records where total_ratio == 0
+  ## then filter the dataframe to only those records where total_ratio == 0. 
+  ## These are the ALKs that we need to fill in 
   dplyr::filter(total_ratio == 0)
 
 ## Filter ALK to only lengths that have some probability for age by using the
@@ -203,8 +209,8 @@ alk_nbs_prime2 <- dplyr::anti_join(x = alk_nbs_prime,
                                    y = missing_test,
                                    by = c("YEAR", "SEX", "LENGTH"))
 
-## For those missing NBS ALKs, use the alks from the EBS, then append to the 
-## non-missing NBS ALKs
+## For those missing NBS ALKs, use the ALKs from the EBS, then append to the 
+## available NBS ALKs
 alk_nbs_yearFill <- alk_ebs %>%
   dplyr::inner_join(missing_test,
                     by = c("YEAR", "SEX", "LENGTH")) %>%
@@ -212,7 +218,7 @@ alk_nbs_yearFill <- alk_ebs %>%
   dplyr::bind_rows(alk_nbs_prime2)
 
 ## For the remaining missing ALKs, we apply the NBS ALK with global_fill == T
-## Find missing observations of age-at-length for the filled NBS key   
+## But first, find missing observations of age-at-length for the filled NBS key   
 missing_test2 <- alk_nbs_yearFill %>%
   group_by(YEAR, SEX, LENGTH) %>%
   summarize(total_ratio = sum(probability) ) %>%
@@ -224,23 +230,27 @@ alk_nbs_yearFill2 <- anti_join(x = alk_nbs_yearFill,
                                by = c("SEX", "LENGTH"))
 
 ## Append NBS global (pooled years) age-at-length for missing values
-### NOTE: we should look at filling EBS ALK with age-at-length from NBS where missing
 alk_nbs_fill <- sumfish::sumALK(NBS, global_fill = TRUE)
 alk_nbs_globalFill <- alk_nbs_fill %>%
   inner_join(missing_test2,
              by = c("YEAR", "SEX", "LENGTH")) %>%
   select(-total_ratio) %>%
   bind_rows(alk_nbs_yearFill) %>%
+  ## We use EBS ALK for 2018 because the 2018 NBS specimen data are not filtered 
+  ## out of the ALK generation for the EBS.
   bind_rows(filter(alk_ebs, YEAR == 2018)) %>% 
   mutate(REGION = "NBS")
-  # Use EBS ALK for 2018
-  
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Test that all probabilities add to 1
 ##   There are still some sex/length combos that were not observed in either the 
 ##   EBS or NBS, these are usually the first and/or last length bins. and a lot
 ##   of the unsexed/length combos
+##
+##   NOTE from Jason: This is likely an artifact that has been present 
+##   throughout the time series, and it will be addressed when we research and
+##   adopt a more robust methodology.
+##
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 probabilities_test <- alk_nbs_globalFill %>%
   group_by(SEX, YEAR, LENGTH) %>%
@@ -254,7 +264,7 @@ unique(probabilities_test$total_ratio)
 alk <- rbind(alk_ebs, alk_nbs_globalFill)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Calculate Age Comp ----
+##   Calculate Age Comps ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## Create a template of hauls and ages to make sure down the line, each 
@@ -285,11 +295,7 @@ Data <- sizeComp %>%
   dplyr::right_join(allCats, by= c("HAULJOIN", "AGE")) %>%
   dplyr::mutate(ageCPUE = ifelse(test = is.na(ageCPUE), 
                                  yes = noAge, 
-                                 no = ageCPUE)) %>%
-  ## when post-survey production script is run, the ageing for the survey is not
-  ## completed yet, so only filter those years prior to the survey year?
-  ## Maybe we don't need this last manipulation?
-  dplyr::filter(YEAR <= current_year)
+                                 no = ageCPUE)) 
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Format VAST Data ----
