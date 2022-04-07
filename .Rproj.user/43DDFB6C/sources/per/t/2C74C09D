@@ -1,0 +1,26 @@
+{
+    "id": "2C74C09D",
+    "path": "C:/Users/cecilia.oleary/Desktop/Rprojects/model-based-indices/species_specific_code/BS/pacific_cod/EBSandNBS_cod_agecomp.R",
+    "project_path": "species_specific_code/BS/pacific_cod/EBSandNBS_cod_agecomp.R",
+    "type": "r_source",
+    "hash": "2806063004",
+    "contents": "",
+    "dirty": false,
+    "created": 1645036870505.0,
+    "source_on_save": false,
+    "relative_order": 4,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "231,119",
+        "scrollLine": "195"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1645117744,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1645117744744,
+    "read_only": false,
+    "read_only_alternatives": []
+}
