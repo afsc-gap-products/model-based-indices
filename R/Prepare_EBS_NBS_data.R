@@ -1,16 +1,21 @@
+#devtools::install_github("https://github.com/afsc-gap-products/ALKr", dependencies=T, force = TRUE)
+#download sumfish from https://github.com/afsc-gap-products/sumfish
+#devtools::install_local("C:/Users/your_user_name/Downloads/sumfish-main/sumfish-main") 
 library(sumfish)
-# library(here)
-# library(FishData)
+library(tictoc)
 
 speciesList <- c(21740, 21720, 10210)
 
 # Get data from RACEBASE
 
+##connect to VPN
 # If using sumfish, set user name and password for Oracle
 getSQL()
 
 # Query database for survey data, alternatively, use getSQL() to directly query RACEBASE
+tic("getting EBS data")
 EBS <- sumfish::getRacebase(1982:2021, 'EBS_SHELF') 
+save <- toc()
 EBS_nonstandard_hauls <- EBS$haul_other %>%
     filter(CRUISE %in% c(200101, 199401, 200501, 200601) 
            & PERFORMANCE >= 0
@@ -149,10 +154,20 @@ sizeAll <- sizeComp <- bind_rows(sizeEBS, sizeNBS,size18) %>%
     alk <- list(EBS=alk_ebs, NBS=alk_nbs_globalFill)
 
 
+# Set up folder to store raw data
+folder <- paste0(getwd(),"/species_specific_code/BS/raw_data")
+dir.create(folder)
 
-write_rds(weightAll, "F:/R/VAST2021/data/EBS_NBS_Index.RDS")
-write_rds(sizeAll, "F:/R/VAST2021/data/EBS_NBS_SizeComp.RDS")
-write_rds(alk, "F:/R/VAST2021/data/unstratified_alk_2021.RDS")
-write_rds(strata, "F:/R/VAST2021/data/EBS_NBS_strata.RDS")
-write_rds(list(EBS=EBS,NBS=NBS,NBS18=NBS18), "F:/R/VAST2021/data/raw_data.RDS")
+saveRDS(weightAll,paste0(getwd(),"/species_specific_code/BS/raw_data/weightAll.rds"))
+saveRDS(sizeAll,paste0(getwd(),"/species_specific_code/BS/raw_data/sizeAll.rds"))
+saveRDS(alk,paste0(getwd(),"/species_specific_code/BS/raw_data/alk.rds"))
+saveRDS(strata,paste0(getwd(),"/species_specific_code/BS/raw_data/strata.rds"))
+saveRDS(list(EBS=EBS,NBS=NBS,NBS18=NBS18),paste0(getwd(),"/species_specific_code/BS/raw_data/raw_data.rds"))
+
+
+# write_rds(weightAll, "F:/R/VAST2021/data/EBS_NBS_Index.RDS")
+# write_rds(sizeAll, "F:/R/VAST2021/data/EBS_NBS_SizeComp.RDS")
+# write_rds(alk, "F:/R/VAST2021/data/unstratified_alk_2021.RDS")
+# write_rds(strata, "F:/R/VAST2021/data/EBS_NBS_strata.RDS")
+# write_rds(list(EBS=EBS,NBS=NBS,NBS18=NBS18), "F:/R/VAST2021/data/raw_data.RDS")
 
