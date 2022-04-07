@@ -1,7 +1,0 @@
-{
-    "installOptions": {
-        "installFromRepository": true,
-        "libraryPath": "C:/Users/cecilia.oleary/Work/R/R-4.1.2/library",
-        "installDependencies": true
-    }
-}
