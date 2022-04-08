@@ -7,6 +7,7 @@
 .txt
 data/
 results/
+results_age/
 /data/
 /results/**/*.RDS
 /results/**/*.RData
