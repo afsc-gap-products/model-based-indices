@@ -90,24 +90,11 @@ Data_Geostat <- readRDS(paste0(workDir,
                                "hindcast/data/data_geostat_agecomps.RDS"))
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Covariate data ----
-##   Cold pool index from coldpool package
-##   Area (square km) <= 2 degrees Celcius, scaled
-##   Clunky addition: 2020 covariate data needs to be specified even though
-##   no data were collected that year. 
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-cpi <- scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)
-covariate_data <- data.frame(Year = c(coldpool:::cold_pool_index$YEAR, 2020),
-                             Lat = mean(Data_Geostat$Lat),
-                             Lon = mean(Data_Geostat$Lon), 
-                             AREA_LTE2_KM2 = c(cpi, 0))
-
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Set VAST settings ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 settings <- FishStatsUtils::make_settings( 
   n_x = 50,
-  Region = c("Eastern_Bering_Sea", "Northern_Bering_Sea")[],
+  Region = c("northern_bering_sea", "eastern_bering_sea"),
   purpose = "index2",
   fine_scale = ifelse(test = finalanalysis, yes = TRUE, no = FALSE),
   strata.limits = data.frame(STRATA = as.factor('All_areas')),
@@ -116,23 +103,18 @@ settings <- FishStatsUtils::make_settings(
                   "Omega2" = "IID", "Epsilon2" = "IID"),
   RhoConfig = c("Beta1" = 0, "Beta2" = 0, "Epsilon1" = 4, "Epsilon2" = 4),
   OverdispersionConfig = c("Eta1" = 0, "Eta2" = 0),
-  Options = c("Calculate_Range" = TRUE, 
-              "Calculate_effective_area" = TRUE, 
-              "treat_nonencounter_as_zero" = FALSE ),
-  use_anisotropy = FALSE,
+  use_anisotropy = TRUE,
   Version = VAST_cpp_version,
   max_cells = 2000,
   knot_method = "grid",
-  bias.correct = TRUE)
+  bias.correct = ifelse(test = finalanalysis, yes = TRUE, no = FALSE))
 
 strata_names <- c("Both", "EBS", "NBS")
-# strata_names <- "EBS"
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Turn off those year-age categories that have 0% encounters
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 Data_Geostat$Age <- Data_Geostat$Age - 1
-Data_Geostat <- subset(Data_Geostat, subset = Year %in% 2011:2021)
 mean_cpue <- aggregate(formula = Catch_KG ~ Age + Year, 
                        data = Data_Geostat, 
                        FUN = mean)
@@ -163,12 +145,7 @@ fit <- FishStatsUtils::fit_model(
   "b_i" = Data_Geostat[, "Catch_KG"], 
   "a_i" = Data_Geostat[, "AreaSwept_km2"], 
   "v_i" = Data_Geostat[, "Vessel"],
-  # "Npool" = 100, 
-  "X1_formula"= ~ AREA_LTE2_KM2,
-  "X2_formula"= ~ AREA_LTE2_KM2,
-  # "X1config_cp" <- as.matrix(2),
-  # "X2config_cp" <- as.matrix(2) ,
-  "covariate_data" = covariate_data,
+  "Npool" = 100,
   "refine" = T,
   "test_fit" = F, 
   "working_dir" = paste0(getwd(), "/", workDir, "/hindcast/results_age/"),
@@ -209,8 +186,8 @@ if(!dir.exists(paste0(workDir, "/hindcast/results_age/predicted_density/"))){
 FishStatsUtils::plot_maps( 
   fit = fit, 
   plot_set = 3,
-  category_names = c(paste0("Age ", 0:(n_ages-2)), 
-                     paste0("Age ", n_ages-1, "+")),
+  category_names = c(paste0("Age ", 1:(n_ages-1)), 
+                     paste0("Age ", n_ages, "+")),
   Obj = fit$tmb_list$Obj, 
   PlotDF = map_list[["PlotDF"]],
   working_dir = paste0(workDir, "/hindcast/results_age/predicted_density/")) 
@@ -222,13 +199,13 @@ if(!dir.exists(paste0(workDir, "/hindcast/results_age/spatial_effects/"))){
 FishStatsUtils::plot_maps( 
   fit = fit, 
   plot_set = 16:17,
-  category_names = c(paste0("Age ", 0:(n_ages-2)), 
-                     paste0("Age ", n_ages-1, "+")),
+  category_names = c(paste0("Age ", 1:(n_ages-1)), 
+                     paste0("Age ", n_ages, "+")),
   Obj = fit$tmb_list$Obj, 
   PlotDF = map_list[["PlotDF"]],
   working_dir = paste0(workDir, "/hindcast/results_age/spatial_effects/")) 
 
-## Predicted Spatiotemporal
+## Predicted Spatiotemporal Fields
 if(!dir.exists(paste0(workDir, 
                       "/hindcast/results_age/spatiotemporal_effects/"))){
   dir.create(paste0(workDir, "/hindcast/results_age/spatiotemporal_effects/"))
@@ -236,8 +213,8 @@ if(!dir.exists(paste0(workDir,
 FishStatsUtils::plot_maps( 
   fit = fit, 
   plot_set = 6:7,
-  category_names = c(paste0("Age ", 0:(n_ages-2)), 
-                     paste0("Age ", n_ages-1, "+")),
+  category_names = c(paste0("Age ", 1:(n_ages-1)), 
+                     paste0("Age ", n_ages, "+")),
   Obj = fit$tmb_list$Obj, 
   PlotDF = map_list[["PlotDF"]],
   working_dir = paste0(workDir, "/hindcast/results_age/",
@@ -254,8 +231,8 @@ proportions <-
                                         strata_names = strata_names)
 
 prop <- t(data.frame(proportions$Prop_ctl))
-colnames(prop) <- c(paste0("age_", seq(from = 0, length = ncol(prop) - 1)),
-                    paste0("age_", ncol(prop) - 1, "+"))
+colnames(prop) <- c(paste0("age_", seq(from = 1, length = ncol(prop) - 1 )),
+                    paste0("age_", ncol(prop), "+"))
 rownames(prop) <- as.vector(sapply(X = strata_names, 
                                    FUN = function(x) paste0(x, "_", Year_Set)))
 
