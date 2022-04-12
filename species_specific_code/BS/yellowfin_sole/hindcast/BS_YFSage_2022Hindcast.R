@@ -223,12 +223,14 @@ FishStatsUtils::plot_maps(
 ## Proportions
 Year_Set <- fit$year_labels
 Years2Include <- which(fit$year_labels != 2020)
-proportions <- 
-  FishStatsUtils::calculate_proportion( TmbData = fit$data_list, 
-                                        Index = results$Index, 
-                                        year_labels = Year_Set, 
-                                        years_to_plot = Years2Include,
-                                        strata_names = strata_names)
+proportions <- FishStatsUtils::calculate_proportion( 
+  TmbData = fit$data_list, 
+  Index = results$Index, 
+  year_labels = Year_Set, 
+  years_to_plot = Years2Include,
+  strata_names = strata_names, 
+  DirName = paste0(getwd(),  "/species_specific_code/BS/",
+                   speciesName, "/hindcast/results_age/output_plots/"))
 
 prop <- t(data.frame(proportions$Prop_ctl))
 colnames(prop) <- c(paste0("age_", seq(from = 1, length = ncol(prop) - 1 )),
