@@ -13,15 +13,7 @@ finalanalysis <- F # this will make the model work faster while troubleshooting
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Import packages ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-library(coldpool)
-library(googledrive)
-library(tidyverse)
-library(tibble)
 library(VAST) # VAST 3.6.1, # devtools::install_github('james-thorson/VAST@3.8.2', INSTALL_opts='--no-staged-install')
-library(sf)
-library(scales)
-library(DHARMa)
-library(Matrix)
 # source("http://www.math.ntnu.no/inla/givemeINLA.R")  
 # remotes::install_github("James-Thorson-NOAA/VAST", ref="3.8.2") 
 # remotes::install_github("nwfsc-assess/geostatistical_delta-GLMM", ref="3.3.0") 
@@ -77,6 +69,9 @@ species <- 10210
 speciesName <- "yellowfin_sole"
 workDir <- paste0("species_specific_code/BS/", speciesName, "/")
 
+if(!dir.exists(paste0(workDir, "/hindcast/results_age/"))) 
+  dir.create(paste0(workDir, "/hindcast/results_age/"))
+
 ## Record package versions
 sink(paste0(workDir, "/hindcast/results_age/session_info.txt"), 
      type = "output")
@@ -130,7 +125,7 @@ if (nrow(zero_enc) > 0) {
   Data_Geostat <- Data_Geostat[-remove_idx, ]
 }
 
-rm(mean_cpue, zero_enc, irow, remove_idx)
+rm(mean_cpue, irow, remove_idx)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Run VAST model ----
@@ -189,6 +184,7 @@ FishStatsUtils::plot_maps(
   category_names = c(paste0("Age ", 1:(n_ages-1)), 
                      paste0("Age ", n_ages, "+")),
   Obj = fit$tmb_list$Obj, 
+  year_labels = Year_Set,
   PlotDF = map_list[["PlotDF"]],
   working_dir = paste0(workDir, "/hindcast/results_age/predicted_density/")) 
 
@@ -201,6 +197,7 @@ FishStatsUtils::plot_maps(
   plot_set = 16:17,
   category_names = c(paste0("Age ", 1:(n_ages-1)), 
                      paste0("Age ", n_ages, "+")),
+  year_labels = Year_Set,
   Obj = fit$tmb_list$Obj, 
   PlotDF = map_list[["PlotDF"]],
   working_dir = paste0(workDir, "/hindcast/results_age/spatial_effects/")) 
@@ -215,6 +212,7 @@ FishStatsUtils::plot_maps(
   plot_set = 6:7,
   category_names = c(paste0("Age ", 1:(n_ages-1)), 
                      paste0("Age ", n_ages, "+")),
+  year_labels = Year_Set,
   Obj = fit$tmb_list$Obj, 
   PlotDF = map_list[["PlotDF"]],
   working_dir = paste0(workDir, "/hindcast/results_age/",
