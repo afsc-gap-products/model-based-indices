@@ -79,10 +79,29 @@ sessionInfo()
 sink()
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Import data
+##   Import data ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 Data_Geostat <- readRDS(paste0(workDir, 
                                "hindcast/data/data_geostat_agecomps.RDS"))
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Import init pars ----
+##   Have not tested this section yet
+##   see ?VAST::make_model for more info on the `Parameter` argument
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+init_pars <- c(FALSE, TRUE)[2]
+if (init_pars) {
+  par_file <- paste0(workDir, 
+                     "hindcast/results_age/starting_parameters.RDS")
+  
+  if (file.exists(par_file)){
+    init_pars <- readRDS(par_file)
+  } else( {
+    print("starting_parameters.RDS does not exist")
+    init_pars <- "generate"
+  } )
+  
+} else (init_pars <- "generate")
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Set VAST settings ----
@@ -126,6 +145,8 @@ fit <- FishStatsUtils::fit_model(
   "a_i" = Data_Geostat[, "AreaSwept_km2"], 
   "v_i" = Data_Geostat[, "Vessel"],
   
+  "Parameters" = init_pars,
+  
   ## Model tuning
   "newtonsteps" = ifelse(finalanalysis, 1, 0),
   "Npool" = 100,
@@ -139,6 +160,10 @@ fit <- FishStatsUtils::fit_model(
 ## Save VAST fit object
 saveRDS(object = fit, 
         file = paste0(workDir, "/hindcast/results_age/VASTfit.RDS"))
+
+## Save parameter estimates
+saveRDS(object = fit$ParHat, 
+        file = paste0(workDir, "hindcast/results_age/starting_parameters.RDS"))
 
 ## General output plots, DHARMa residuals
 results <- FishStatsUtils::plot_results( 
