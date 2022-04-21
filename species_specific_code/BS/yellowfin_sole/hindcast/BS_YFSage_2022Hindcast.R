@@ -98,7 +98,7 @@ settings <- FishStatsUtils::make_settings(
                   "Omega2" = "IID", "Epsilon2" = "IID"),
   RhoConfig = c("Beta1" = 0, "Beta2" = 0, "Epsilon1" = 4, "Epsilon2" = 4),
   OverdispersionConfig = c("Eta1" = 0, "Eta2" = 0),
-  use_anisotropy = TRUE,
+  use_anisotropy = FALSE,
   Version = VAST_cpp_version,
   max_cells = 2000,
   knot_method = "grid",
@@ -107,54 +107,39 @@ settings <- FishStatsUtils::make_settings(
 strata_names <- c("Both", "EBS", "NBS")
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Turn off those year-age categories that have 0% encounters
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-Data_Geostat$Age <- Data_Geostat$Age - 1
-mean_cpue <- aggregate(formula = Catch_KG ~ Age + Year, 
-                       data = Data_Geostat, 
-                       FUN = mean)
-zero_enc <- subset(x = mean_cpue, subset = Catch_KG == 0)
-if (nrow(zero_enc) > 0) {
-  remove_idx <- c()
-  for (irow in 1:nrow(zero_enc)) {
-    remove_idx <- c(remove_idx, with(Data_Geostat, 
-                                     which(Year == zero_enc$Year[irow] &
-                                             Age == zero_enc$Age[irow])))
-  }
-  # Data_Geostat[remove_idx, c("Catch_KG")] <- NA
-  Data_Geostat <- Data_Geostat[-remove_idx, ]
-}
-
-rm(mean_cpue, irow, remove_idx)
-
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Run VAST model ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 # Data_Geostat <- subset(x = Data_Geostat)
 fit <- FishStatsUtils::fit_model(
+  
+  ## Input settings
+  "working_dir" = paste0(getwd(), "/", workDir, "/hindcast/results_age/"),
   "settings" = settings, 
+  "create_strata_per_region" = TRUE,
+  
+  ## Input data
   "Lat_i" = Data_Geostat[, "Lat"], 
   "Lon_i" = Data_Geostat[, "Lon"], 
   "t_i" = Data_Geostat[, "Year"],  
-  "c_iz" = Data_Geostat[, "Age"], 
+  "c_iz" = Data_Geostat[, "Age"] - 1, 
   "b_i" = Data_Geostat[, "Catch_KG"], 
   "a_i" = Data_Geostat[, "AreaSwept_km2"], 
   "v_i" = Data_Geostat[, "Vessel"],
+  
+  ## Model tuning
+  "newtonsteps" = ifelse(finalanalysis, 1, 0),
   "Npool" = 100,
   "refine" = T,
-  "test_fit" = F, 
-  "working_dir" = paste0(getwd(), "/", workDir, "/hindcast/results_age/"),
-  create_strata_per_region = TRUE)
+  "newtonsteps" = ifelse(finalanalysis, 1, 0))
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Save fit ----
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+##   Save results locally ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+## Save VAST fit object
 saveRDS(object = fit, 
         file = paste0(workDir, "/hindcast/results_age/VASTfit.RDS"))
 
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Output plots ----
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 ## General output plots, DHARMa residuals
 results <- FishStatsUtils::plot_results( 
   fit = fit, 
@@ -175,6 +160,8 @@ map_list = FishStatsUtils::make_map_info(
 
 ##   Predicted density maps for each age group across years
 n_ages <- length(unique(Data_Geostat$Age)) 
+Year_set <- sort(unique((Data_Geostat$Year)))
+
 if(!dir.exists(paste0(workDir, "/hindcast/results_age/predicted_density/"))){
   dir.create(paste0(workDir, "/hindcast/results_age/predicted_density/"))
 }
