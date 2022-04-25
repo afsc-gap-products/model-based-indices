@@ -8,7 +8,8 @@
 ## Description:   VAST estimates of age composition for EBS+NBS yellowfin sole
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 rm(list = ls())
-finalanalysis <- F # this will make the model work faster while troubleshooting
+finalanalysis <- TRUE # this will make the model work faster while troubleshooting
+init_pars <- c(FALSE, TRUE)[1]
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Import packages ----
@@ -89,7 +90,6 @@ Data_Geostat <- readRDS(paste0(workDir,
 ##   Have not tested this section yet
 ##   see ?VAST::make_model for more info on the `Parameter` argument
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-init_pars <- c(FALSE, TRUE)[2]
 if (init_pars) {
   par_file <- paste0(workDir, 
                      "hindcast/results_age/starting_parameters.RDS")
@@ -148,10 +148,10 @@ fit <- FishStatsUtils::fit_model(
   "Parameters" = init_pars,
   
   ## Model tuning
-  "newtonsteps" = ifelse(finalanalysis, 1, 0),
   "Npool" = 100,
-  "refine" = T,
-  "newtonsteps" = ifelse(finalanalysis, 1, 0))
+  "refine" = TRUE,
+  "newtonsteps" = ifelse(finalanalysis, 1, 0), 
+  "test_fit" = FALSE)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Save results locally ----
