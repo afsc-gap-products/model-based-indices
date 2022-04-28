@@ -39,8 +39,10 @@ ifelse(test = sessionInfo()$R.version$version.string == r_version &
 ##################################################
 ####  Load the data for VAST
 ##################################################
-data_geostat <- read.csv(file = "processed_data/AK_BTS_GOA_PCod_pollock_140.csv")
-spp_names <- read.csv(file = "processed_data/species.csv")
+# data_geostat <- read.csv(file = "processed_data/AK_BTS_GOA_PCod_pollock_140.csv")
+# spp_names <- read.csv(file = "processed_data/species.csv")
+data_geostat <- read.csv(file = paste0(getwd(),"/data/AK_BTS_GOA_PCod_pollock_140.csv"))
+spp_names <- read.csv(file = paste0(getwd(),"/data/species.csv"))
 
 ##################################################
 ####  Filter data to species of interest

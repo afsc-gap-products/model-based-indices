@@ -63,10 +63,18 @@ data <- data %>% filter(LONGITUDE <= boundary)
 ##################################################
 #### Write output
 ##################################################
+# write.csv(x = data, 
+#           file = "processed_data/AK_BTS_GOA_PCod_pollock_140.csv",
+#           row.names = F)
 write.csv(x = data, 
-          file = "processed_data/AK_BTS_GOA_PCod_pollock_140.csv",
+          file = paste0(getwd(),"/data/AK_BTS_GOA_PCod_pollock_140.csv"),
           row.names = F)
 
+# write.csv(x = species,
+#           file = "processed_data/species.csv",
+#           row.names = F)
+
 write.csv(x = species,
-          file = "processed_data/species.csv",
+          file = paste0(getwd(),"/data/species.csv"),
           row.names = F)
+

@@ -10,7 +10,7 @@
 ## Notes:           ESP contact: Kalei Shotwell (kalei.shotwell@noaa.gov)
 ###############################################################################
 
-rm(list = ls())
+#rm(list = ls())
 
 ## Constants
 species <- c("Pacific cod", "walleye pollock")
