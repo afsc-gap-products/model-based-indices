@@ -3,6 +3,7 @@
 ## Author:        Jason Conner (jason.conner@noaa.gov)
 ## Description:   Template for preparing haul-level CPUE and age composition 
 ##                CPUE for the species of interest
+## Usage:         Establish credentials, species of interest, then run rest
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 rm(list = ls())
 
@@ -27,16 +28,25 @@ sumfish::getSQL()
 ##   plus_group is used for the age composition calculations, where ages at or
 ##   older than the plus group are grouped as one group. 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-species_name <- "yellowfin_sole"
-species_code <- 10210
+# species_name <- "yellowfin_sole"
+# species_code <- 10210
+# start_year <- 1982
+# current_year <- 2021
+# plus_group <- 20
+# min_year <- start_year
+
+species_name <- "pacific_cod"
+species_code <- 21720
 start_year <- 1982
 current_year <- 2021
-plus_group <- 20
+plus_group <- 12
 min_year <- start_year
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Create directory to store data products
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+res_dir <- paste0("species_specific_code/BS/", species_name, "/hindcast/")
+if(!dir.exists(res_dir)) dir.create(res_dir)
 res_dir <- paste0("species_specific_code/BS/", species_name, "/hindcast/data/")
 if(!dir.exists(res_dir)) dir.create(res_dir)
 
@@ -170,9 +180,16 @@ ifelse(
 ##   EBS ALK ----
 ##   In the EBS, global_fill == TRUE is the default argument used. This 
 ##        fills a missing year/sex/length ALK by pooling the data for 
-##        that sex/length combination across years and then filling in the ALK. 
+##        that sex/length combination across years and then filling in the ALK.
+##
+##   For the EBS Pcod ALK, we will first filter out hauls prior to 1994 due to 
+##      lack of reliable age estimates during these early years
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-alk_ebs <- sumfish::sumALK(EBS)
+EBS_4alk <- EBS
+EBS_4alk$specimen <- EBS_4alk$specimen %>% 
+  filter(!(SPECIES_CODE == 21720 & CRUISE < 199400))
+    
+alk_ebs <- sumfish::sumALK(EBS_4alk)
 alk_ebs$REGION <- "EBS"
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
@@ -344,7 +361,7 @@ write_rds(x = strata,
 
 ## ALK
 write_rds(x = alk, 
-          file = paste0(res_dir, "unstratified_alk_2021.RDS"))
+          file = paste0(res_dir, "unstratified_alk_2022.RDS"))
 
 ## Raw data
 write_rds(x = list(EBS = EBS, NBS = NBS, NBS18 = NBS18), 
