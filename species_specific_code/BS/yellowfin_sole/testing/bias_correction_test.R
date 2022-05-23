@@ -63,7 +63,7 @@ workDir <- paste0("species_specific_code/BS/", speciesName, "/")
 Data_Geostat <- readRDS(paste0(workDir, 
                                "hindcast/data/data_geostat_agecomps.RDS"))
 Data_Geostat <- subset(x = Data_Geostat, 
-                       subset = Year %in% 2006:2009 & Age %in% 1:4)
+                       subset = Year %in% 2006:2009)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Set Initial VAST settings ----
@@ -168,7 +168,6 @@ for (ibias in c(T, F)) {
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Compare comps ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-
 prop_bias_F <- read.csv(paste0(workDir, "hindcast/", 
                                "test_agecomp_bias_correct_FALSE/",
                                "proportions/clean_proportions.csv"))
@@ -177,5 +176,5 @@ prop_bias_T <- read.csv(paste0(workDir, "hindcast/",
                                "test_agecomp_bias_correct_TRUE/",
                                "proportions/clean_proportions.csv"))
 
-prop_bias_F
-prop_bias_T
+round(prop_bias_F[, -1], 3)
+round(prop_bias_T[, -1], 3)
