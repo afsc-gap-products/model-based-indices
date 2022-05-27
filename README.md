@@ -8,7 +8,8 @@ Primary contact: [@coleary-noaa](https://github.com/coleary-noaa)
 # Mission
 Provide VAST estimates of abundance and their standard error from GAP survey data for stock assessment authors in conjunction with traditional design-based estimators.
 - [TOR 2022](https://drive.google.com/file/d/1t13fVai8HOo3xtwxn_vazo9NDT8MrVar/view?usp=sharing)
-- [Annual stock assessment, ESP, and ESR request form](https://docs.google.com/spreadsheets/d/18gr3owj5iAq1iCDX4wpQPUC9ldLz-YTsCBIfnkHqibo/edit?usp=sharing)
+- [Annual stock assessment and ESP request form](https://docs.google.com/spreadsheets/d/18gr3owj5iAq1iCDX4wpQPUC9ldLz-YTsCBIfnkHqibo/edit?usp=sharing)
+- [Annual ESR request form](https://docs.google.com/spreadsheets/d/1SC-KzRmng0c2e1GpvqYQz4Ijr0_hlbGZbWiislXGGcw/edit?usp=sharing)
 - [ESP submission tool](https://apex.psmfc.org/akfin/f?p=140:LOGIN_DESKTOP:4779711459935:::::)
 
 # GAP Work Plan 
