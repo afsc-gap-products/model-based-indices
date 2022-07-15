@@ -28,19 +28,22 @@ sumfish::getSQL()
 ##   plus_group is used for the age composition calculations, where ages at or
 ##   older than the plus group are grouped as one group. 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+start_year <- 1982
+current_year <- 2021
+min_year <- start_year
+
 # species_name <- "yellowfin_sole"
 # species_code <- 10210
-# start_year <- 1982
-# current_year <- 2021
 # plus_group <- 20
-# min_year <- start_year
 
 species_name <- "pacific_cod"
 species_code <- 21720
-start_year <- 1982
-current_year <- 2021
 plus_group <- 12
-min_year <- start_year
+
+# just to get standard raw data for pollock, actual assessment data may differ
+# species_name <- "pollock"
+# species_code <- 21740
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Create directory to store data products
@@ -363,6 +366,9 @@ write_rds(x = strata,
 write_rds(x = alk, 
           file = paste0(res_dir, "unstratified_alk_2022.RDS"))
 
-## Raw data
+## Raw data for all regions
 write_rds(x = list(EBS = EBS, NBS = NBS, NBS18 = NBS18), 
           file = paste0(res_dir, "raw_data.RDS"))
+
+## Raw data for EBS only
+write_rds(x = EBS, file = paste0(res_dir, "raw_data_EBS.RDS"))
