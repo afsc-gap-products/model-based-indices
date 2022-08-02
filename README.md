@@ -7,8 +7,9 @@ Primary contact: [@coleary-noaa](https://github.com/coleary-noaa)
 
 # Mission
 Provide VAST estimates of abundance and their standard error from GAP survey data for stock assessment authors in conjunction with traditional design-based estimators.
-- [TOR 2022](https://docs.google.com/document/d/1t-pIruLZ-F_iNzCysWLH8cdsM0gZpuUb/edit?usp=sharing&ouid=102897708184166605880&rtpof=true&sd=true)
-- [Annual stock assessment, ESP, and ESR request form](https://docs.google.com/spreadsheets/d/18gr3owj5iAq1iCDX4wpQPUC9ldLz-YTsCBIfnkHqibo/edit?usp=sharing)
+- [TOR 2022](https://drive.google.com/file/d/1t13fVai8HOo3xtwxn_vazo9NDT8MrVar/view?usp=sharing)
+- [Annual stock assessment and ESP request form](https://docs.google.com/spreadsheets/d/18gr3owj5iAq1iCDX4wpQPUC9ldLz-YTsCBIfnkHqibo/edit?usp=sharing)
+- [Annual ESR request form](https://docs.google.com/spreadsheets/d/1SC-KzRmng0c2e1GpvqYQz4Ijr0_hlbGZbWiislXGGcw/edit?usp=sharing)
 - [ESP submission tool](https://apex.psmfc.org/akfin/f?p=140:LOGIN_DESKTOP:4779711459935:::::)
 
 # GAP Work Plan 
@@ -20,7 +21,7 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 - Run hindcasts again after survey with updated data (August - Sept., completed by 30 September) and upload results to the appropriate region production folder [on google drive](https://drive.google.com/drive/folders/1yxn02yF0V1PNVw0_HpqeSK_XxgOy_LAT), including data used
 - merge final index code & data pull code onto repo
 
-# Product Timeline 
+# General Production Timeline Estimate
 **March - April is the time window for any model exploration/iteration, as requested**
   - February 23 - Planning meeting with program leads
   - March 1 - Deadline for requesters to submit product requests
@@ -46,6 +47,7 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 - VAST example from Jason [here](https://drive.google.com/file/d/1GupAajXozp6afnlO3a_8I6sHC0Ev0R-b/view)
 - VAST example from Cecilia [here](https://drive.google.com/file/d/1eNUXhVuezqWYQx0GHoKcKuHyqTssY_BC/view)
 - VAST common troubleshooting [here](https://docs.google.com/document/d/1j3Li2aacvy7d4FJxLlGDctHlDJWQgZzI5HzyMujwf8Y/edit?usp=sharing)
+- Identification of valid hauls for Bering Sea VAST indices, from Jason [here](https://docs.google.com/spreadsheets/d/1-z7AFYoTM0-RApsW9APfXX4CoA5mbk6k/edit#gid=1419989689)
 - Slack VAST support group (ask Cecilia for an invite)
 
 # Software versions used for model-based index production
