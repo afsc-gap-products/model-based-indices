@@ -4,6 +4,12 @@
 .Ruserdata
 .RDS
 .Rdat
+.txt
+data/
+results/
+results_age/
+testing/
+presentation/
 /data/
 /results/**/*.RDS
 /results/**/*.RData

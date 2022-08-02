@@ -257,6 +257,7 @@ setwd(RunDir)
 
 # Expand to proportional population numbers -------------------------------
   VASTfit <- fit
+  results <- readRDS("F:/R/model-based-indices/results/Pacific_Cod_Age/Comps_2022-03-07_Pacific Cod Agecomp_npool=100_BiasCorr=TRUE/VASTresults.RDS")
   # results = plot_results( settings=settings, fit=VASTfit, check_residuals=FALSE )
 
   
