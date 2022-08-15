@@ -15,6 +15,9 @@ rm(list = ls())
 library(sumfish)
 sumfish::getSQL()
 
+## If necessary, update the SAFE lookup tables with current year's surveys
+sumfish::updateSurvey()
+
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Select species and years ----
 ##   start_yer and current_year are used when querying RACEBASE via sumfish
@@ -30,8 +33,9 @@ sumfish::getSQL()
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 start_year <- 1982
-current_year <- 2021
+current_year <- 2022
 min_year <- start_year
+max_cruise <- (current_year * 100) + 99
 
 # species_name <- "yellowfin_sole"
 # species_code <- 10210
@@ -65,6 +69,7 @@ if(!dir.exists(res_dir)) dir.create(res_dir)
 ##          PERFORMANCE 0 is a good performance code, > 0 are satisfactory and
 ##          < 0 are bad performance codes for a particular haul.
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+# valid_EBS_hauljoin <- getSQL("select hauljoin from safe.ebs_vast_hauls")
 EBS <- sumfish::getRacebase(year = c(start_year, current_year), 
                             survey = 'EBS_SHELF', 
                             speciesCode = species_code) 
@@ -91,9 +96,14 @@ EBS$haul <- bind_rows(EBS$haul, EBS_nonstandard_hauls)
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 
 ## Standard NBS Hauls
+# valid_NBS_hauljoin <- getSQL("select hauljoin from safe.nbs_vast_hauls")
 NBS <- sumfish::getRacebase(year = c(start_year, current_year), 
                             survey = 'NBS_SHELF', 
                             speciesCode = species_code) 
+
+## Add NBS strata to EBS strata (and vice versa) for the nonstandard hauls above
+EBS$stratum <- bind_rows(EBS$stratum, NBS$stratum)
+NBS$stratum <- EBS$stratum
 
 ## 2018 NBS cruise
 NBS18.cruise <- dplyr::filter(EBS$cruise, CRUISE == 201801)
@@ -188,11 +198,13 @@ ifelse(
 ##   For the EBS Pcod ALK, we will first filter out hauls prior to 1994 due to 
 ##      lack of reliable age estimates during these early years
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-EBS_4alk <- EBS
-EBS_4alk$specimen <- EBS_4alk$specimen %>% 
-  filter(!(SPECIES_CODE == 21720 & CRUISE < 199400))
+if (EBS$species$SPECIES_CODE == 21720) {
+  EBS_4alk <- subsetRacebase(EBS, cruise = 199400:max_cruise)
+} else {
+  EBS_4alk <- EBS
+}
     
-alk_ebs <- sumfish::sumALK(EBS_4alk)
+alk_ebs <- sumfish::sumALK(EBS_4alk, global_fill=TRUE, all_performance=FALSE)
 alk_ebs$REGION <- "EBS"
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
@@ -207,7 +219,12 @@ alk_ebs$REGION <- "EBS"
 ##   We then specify an NBS ALK where global_fill == TRUE (alk_nbs_fill), 
 ##   and we use this ALK to fill in any remaining missing NBS ALKs 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-alk_nbs_prime <- sumfish::sumALK(NBS, global_fill = FALSE)    
+if (NBS$species$SPECIES_CODE == 21720) {
+  NBS_4alk <- subsetRacebase(NBS, cruise = 199400:max_cruise)
+} else {
+  NBS_4alk <- NBS
+}
+alk_nbs_prime <- sumfish::sumALK(NBS_4alk, global_fill = FALSE, all_performance=FALSE)    
 
 ## Find missing observations of age-at-length for the NBS
 missing_test <- alk_nbs_prime %>%
@@ -248,7 +265,7 @@ alk_nbs_yearFill2 <- anti_join(x = alk_nbs_yearFill,
                                by = c("SEX", "LENGTH"))
 
 ## Append NBS global (pooled years) age-at-length for missing values
-alk_nbs_fill <- sumfish::sumALK(NBS, global_fill = TRUE)
+alk_nbs_fill <- sumfish::sumALK(NBS_4alk, global_fill = TRUE, all_performance=FALSE)
 alk_nbs_globalFill <- alk_nbs_fill %>%
     inner_join(missing_test2,
                by = c("YEAR", "SEX", "LENGTH")) %>%

@@ -12,14 +12,14 @@ library(tictoc)
 # Set species -------------------------------------------------------------
 
 species_code <- 21720
-species_name <- "Pacific_Cod_Age"
+species_name <- "Pacific_Cod_Age_hindcast2"
 
 # Set up folder to store species specific results
 folder <- paste0(getwd(),"/species_specific_code/BS/",species_name)
 dir.create(folder)
-folder <- paste0(getwd(),"/species_specific_code/BS/",species_name,"/data")
+folder <- paste0(getwd(),"/species_specific_code/BS/",species_name,"/data/")
 dir.create(folder)
-folder <- paste0(getwd(),"/species_specific_code/BS/",species_name,"/results")
+folder <- paste0(getwd(),"/species_specific_code/BS/",species_name,"/results/")
 dir.create(folder)
 
 # Get data from Google drive ----------------------------------------------------------------
@@ -75,8 +75,8 @@ dir.create(folder)
 
 # Load the data for VAST
 #Data_Geostat <- readRDS(file = paste0(getwd(),"/species_specific_code/BS/",species_name,"/data/Data_Geostat.rds"))
-Data_Geostat <- read.csv(file = paste0(getwd(),"/species_specific_code/BS/",species_name,"/data/Data_Geostat_",species_code,".csv"))
-Data_Geostat$Catch_KG[which(is.na(Data_Geostat$Catch_KG))] <- 0
+# Data_Geostat <- read_rds(file = here::here("data","data_geostat_index.RDS"))
+# Data_Geostat$Catch_KG[which(is.na(Data_Geostat$Catch_KG))] <- 0
 
 
 # Settings ----------------------------------------------------------------
@@ -86,17 +86,17 @@ Region <- c("Eastern_Bering_Sea","Northern_Bering_Sea")
 Method <- "Mesh"
 knot_method <- "grid"
 grid_size_km <- 25
-n_x <- 250 #n_x <- 50   # Specify number of stations (a.k.a. "knots")
+n_x <- 50 #n_x <- 50   # Specify number of stations (a.k.a. "knots")
 FieldConfig <- c("Omega1"="IID", "Epsilon1"="IID", "Omega2"="IID", "Epsilon2"="IID")
 RhoConfig <- c("Beta1"=0, "Beta2"=0, "Epsilon1"=4, "Epsilon2"=4)
 OverdispersionConfig <- c("Eta1"=0, "Eta2"=0)
-ObsModel <- c(2,0)
+ObsModel <- c(2,4)
 Options <- c("Calculate_Range" = FALSE, "Calculate_effective_area" = FALSE, "treat_nonencounter_as_zero" = TRUE )
 Aniso <- FALSE
 Npool <- 100 #20
 fine_scale <- TRUE
 BiasCorr <- TRUE
-max_cells <- 3000
+max_cells <- 2000
 
 strata.limits <- data.frame('STRATA'="All_areas")
 
@@ -129,24 +129,24 @@ strata_names = c("Both","EBS","NBS")
     
     # Load age-length keys produced by sumfish
     #alk_all <- readRDS(here::here("data","unstratified_alk_2021.RDS") )
-    alk_all <- readRDS(paste0(getwd(),"/species_specific_code/BS/raw_data/unstratified_alk_2021.RDS") )
-    alk_ebs <- alk_all$EBS %>%
-        filter(SPECIES_CODE == species_code) %>%
-        mutate(REGION = "EBS")
-    alk_nbs <- alk_all$NBS %>%
-        bind_rows( filter(alk_ebs, YEAR == 2018) ) %>%   # Use EBS ALK for 2018 ad hoc sampling in NBS
-        filter(SPECIES_CODE == species_code) %>%
-        mutate(REGION = "NBS")
-  
-    alk <- bind_rows(alk_ebs, alk_nbs)
+    alk <- readRDS(here::here("data","unstratified_alk_2022.RDS") )
+    # alk_ebs <- alk_all$EBS %>%
+    #     filter(SPECIES_CODE == species_code) %>%
+    #     mutate(REGION = "EBS")
+    # alk_nbs <- alk_all$NBS %>%
+    #     bind_rows( filter(alk_ebs, YEAR == 2018) ) %>%   # Use EBS ALK for 2018 ad hoc sampling in NBS
+    #     filter(SPECIES_CODE == species_code) %>%
+    #     mutate(REGION = "NBS")
+    # 
+    # alk <- bind_rows(alk_ebs, alk_nbs)
     
-    sizeComp <- readRDS(paste0(getwd(),"/species_specific_code/BS/raw_data/EBS_NBS_SizeComp.RDS") ) %>% #readRDS(here::here("data","EBS_NBS_SizeComp.RDS") )
+    sizeComp <- readRDS(here::here("data","EBS_NBS_SizeComp.RDS") ) %>% #readRDS(here::here("data","EBS_NBS_SizeComp.RDS") )
         dplyr::filter(YEAR >= min_year,
                       SPECIES_CODE == species_code,
                       !is.na(EFFORT)
         )
-    
-    haulData <- readRDS(paste0(getwd(),"/species_specific_code/BS/raw_data/EBS_NBS_Index.RDS") ) %>% #readRDS(here::here("data","EBS_NBS_Index.RDS") )
+
+    haulData <- readRDS(here::here("data","EBS_NBS_Index.RDS") ) %>% 
         dplyr::filter(YEAR >= min_year,
                       SPECIES_CODE == species_code,
                       !is.na(EFFORT)
@@ -170,7 +170,7 @@ strata_names = c("Both","EBS","NBS")
     right_join(allCats, by= c("HAULJOIN","AGE")) %>%
     mutate(ageCPUE = ifelse(is.na(ageCPUE), noAge, ageCPUE)
            ) %>%
-      filter(YEAR < 2020)
+      filter(YEAR < 2021)
     
     # Test CPUE
     # checkData <- Data %>%
@@ -203,11 +203,13 @@ strata_names = c("Both","EBS","NBS")
     data.frame()
     
     #write.csv(Data_Geostat, "Data_Geostat.csv")
-    saveRDS(Data_Geostat, file = paste0(getwd(),"/species_specific_code/BS/",species_name,"/data/Data_Geostat_",species_code,".RDS"))
+    saveRDS(Data_Geostat, file = here::here("species_specific_code","BS",species_name,"data",
+                                            paste0("Data_Geostat_",species_code,".RDS")))
     
 
 # Run Analysis ------------------------------------------------------------
-    Data_Geostat <- readRDS(file = paste0(getwd(),"/species_specific_code/BS/",species_name,"/data/Data_Geostat_",species_code,".RDS"))
+    # Data_Geostat <- readRDS(file = here::here("species_specific_code","BS",species_name,"data",
+    #                                           paste0("Data_Geostat_",species_code,".RDS")))
     Data_Geostat$Catch_KG[which(is.na(Data_Geostat$Catch_KG))] <- 0
     
   # Run model
@@ -221,15 +223,16 @@ strata_names = c("Both","EBS","NBS")
                    "a_i"=Data_Geostat[,'AreaSwept_km2'], 
                    "v_i"=Data_Geostat[,'Vessel'],
                    Npool = Npool, 
-                   test_fit=T, 
+                   test_fit=TRUE, 
                    create_strata_per_region=TRUE,
-                   "working_dir" = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results"),
-                   "CompileDir" = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results") )
+                   "working_dir" = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results/"),
+                   "CompileDir" = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results/") )
 
   toc()  
   # Save results
   #saveRDS(fit, file = "VASTfit.RDS")
-  saveRDS(fit,file = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results/",species_name,"_VASTfit.RDS"))
+  saveRDS(fit, file = here::here("species_specific_code","BS",species_name,"results",
+                                paste0(species_name,"_VASTfit.RDS")))
   
   
   # Plots -------------------------------------------------------------------

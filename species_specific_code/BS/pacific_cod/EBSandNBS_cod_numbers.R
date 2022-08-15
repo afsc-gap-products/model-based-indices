@@ -12,7 +12,7 @@ library(scales)
 # Set species -------------------------------------------------------------
 
 species <- 21720
-speciesName <- "PacificCod_EBS_NBS_index_numbers_gamma"
+speciesName <- "PacificCod_EBS_NBS_index_numbers_VAST390"
 workDir <- here::here("results",speciesName)
 dir.create(workDir)
 setwd(workDir)
@@ -60,7 +60,7 @@ googledrive::drive_download(file=as_id("1wqdoTKjVSziRdQnUQa7COuYU_2H_TyAt"),
                             overwrite = TRUE)
 
 # VAST Settings -----------------------------------------------------------
-Version <- "VAST_v12_0_0"
+Version <- "VAST_v13_1_0"
 Region <- c("Eastern_Bering_Sea","Northern_Bering_Sea")
 strata_names = c("Both","EBS","NBS")
 Method <- "Mesh"
@@ -102,7 +102,7 @@ settings <- make_settings(
 
 # Format catch data -------------------------------------------------------
 
-sumAll <- read_rds(here::here("data","EBS_NBS_Index.RDS"))
+sumAll <- read_rds(here::here("data","hindcast2","EBS_NBS_Index.RDS"))
 
 
 Data <- sumAll %>%
@@ -124,7 +124,7 @@ saveRDS(Data_Geostat, file = "Data_Geostat.RDS")
 
 
 # Cold Pool covariate -----------------------------------------------------
-CP <- read.csv(here::here("data","cpa_out_ste_simplified.csv"))
+CP <- read.csv(here::here("data","hindcast2","cpa_out_ste_simplified.csv"))
 covariate_data <- CP[ which(as.integer(CP[,'YEAR']) %in% unique(Data_Geostat[,'Year'])), ]
 covariate_data <- data.frame( "Year"=covariate_data[,"YEAR"],
                               "Lat"=mean(Data_Geostat[,'Lat']),
@@ -179,7 +179,7 @@ saveRDS(fit, file = "VASTfit.RDS")
 
 # Plots -------------------------------------------------------------------
     # If you need to load a fit in a new session:
-    dyn.load(dynlib("VAST_v12_0_0"))
+    dyn.load(dynlib("VAST_v13_1_0"))
 
     # Record package versions
     sink("session_info.txt", type = "output")
