@@ -129,7 +129,7 @@ strata_names = c("Both","EBS","NBS")
     
     # Load age-length keys produced by sumfish
     #alk_all <- readRDS(here::here("data","unstratified_alk_2021.RDS") )
-    alk <- readRDS(here::here("data","unstratified_alk_2022.RDS") )
+    alk_new <- readRDS(here::here("data","unstratified_alk_2022.RDS") )
     # alk_ebs <- alk_all$EBS %>%
     #     filter(SPECIES_CODE == species_code) %>%
     #     mutate(REGION = "EBS")
