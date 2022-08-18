@@ -41,7 +41,7 @@ max_cruise <- (current_year * 100) + 99
 # species_code <- 10210
 # plus_group <- 20
 
-species_name <- "pacific_cod"
+species_name <- "BS_Pacific_Cod"
 species_code <- 21720
 plus_group <- 12
 
@@ -52,10 +52,8 @@ plus_group <- 12
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Create directory to store data products
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-res_dir <- paste0("species_specific_code/BS/", species_name, "/hindcast/")
-if(!dir.exists(res_dir)) dir.create(res_dir)
-res_dir <- paste0("species_specific_code/BS/", species_name, "/hindcast/data/")
-if(!dir.exists(res_dir)) dir.create(res_dir)
+res_dir <- here::here("data", species_name)
+if(!dir.exists(res_dir)) dir.create(res_dir, recursive = TRUE)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Pull EBS database ----
@@ -348,7 +346,7 @@ data_geostat_index <-
 
 data_geostat_agecomps <-  dplyr::transmute(
     Data,
-    Catch_KG = ageCPUE,
+    Catch_KG = ifelse(is.na(ageCPUE),0,ageCPUE),
     Year = YEAR,
     Vessel = "missing",
     Age = AGE,
@@ -364,28 +362,28 @@ data_geostat_agecomps <-  dplyr::transmute(
 
 ## Index data
 write_rds(x = weightAll, 
-          file = paste0(res_dir, "EBS_NBS_Index.RDS"))
+          file = here::here(res_dir, "EBS_NBS_Index.RDS"))
 write_rds(x = data_geostat_index, 
-          file = paste0(res_dir, "data_geostat_index.RDS"))
+          file = here::here(res_dir, "data_geostat_index.RDS"))
 
 ## Age comp data
 write_rds(x = sizeAll, 
-          file = paste0(res_dir, "EBS_NBS_SizeComp.RDS"))
+          file = here::here(res_dir, "EBS_NBS_SizeComp.RDS"))
 write_rds(x = data_geostat_agecomps, 
-          file = paste0(res_dir, "data_geostat_agecomps.RDS"))
+          file = here::here(res_dir, "data_geostat_agecomps.RDS"))
 
 ## Strata data
 strata <- dplyr::bind_rows(EBS$stratum, NBS$stratum, NBS18$stratum) 
 write_rds(x = strata, 
-          file = paste0(res_dir, "EBS_NBS_strata.RDS"))
+          file = here::here(res_dir, "EBS_NBS_strata.RDS"))
 
 ## ALK
 write_rds(x = alk, 
-          file = paste0(res_dir, "unstratified_alk_2022.RDS"))
+          file = here::here(res_dir, "unstratified_alk.RDS"))
 
 ## Raw data for all regions
 write_rds(x = list(EBS = EBS, NBS = NBS, NBS18 = NBS18), 
-          file = paste0(res_dir, "raw_data.RDS"))
+          file = here::here(res_dir, "raw_data.RDS"))
 
 ## Raw data for EBS only
-write_rds(x = EBS, file = paste0(res_dir, "raw_data_EBS.RDS"))
+write_rds(x = EBS, file = here::here(res_dir, "raw_data_EBS.RDS"))

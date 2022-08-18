@@ -12,52 +12,13 @@ library(scales)
 # Set species -------------------------------------------------------------
 
 species <- 21720
-speciesName <- "PacificCod_EBS_NBS_index_numbers_VAST390"
-workDir <- here::here("results",speciesName)
-dir.create(workDir)
+species_name <- "PacificCod_EBS_NBS_index_numbers_check"
+species_data <- "BS_Pacific_Cod"
+workDir <- here::here("results",species_name)
+dir.create(workDir, recursive = TRUE)
 setwd(workDir)
 
 
-# Get data from Google drive ----------------------------------------------------------------
-
-drive_auth()
-1
-
-# Summary catch data for EBS and NBS with NBS 2018 included
-googledrive::drive_download(file=as_id("1TctmzLjuFUopvdD9jqBnhNxw1NuAi87c"), 
-                            path=here::here("data","EBS_NBS_Index.RDS"), 
-                            overwrite = TRUE)
-
-# Cold Pool Area covariate
-googledrive::drive_download(file=as_id("119pehim03WxFjGH9tzjUF7gZDcHJeUe8"), 
-                            path=here::here("data","cpa_areas2019.csv"), 
-                            overwrite = TRUE)
-
-# EBS Strata
-googledrive::drive_download(file=as_id("1UZ4OBGuwqSpPhTD3idDUNqO57Fm1GYnL"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.cpg"), 
-                            overwrite = TRUE)
-googledrive::drive_download(file=as_id("1GhH47aoQ42kx3TYqMo_w0zTV4UeXYWsN"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.dbf"), 
-                            overwrite = TRUE)
-googledrive::drive_download(file=as_id("1SLOH6Ggp8PufL0XZPXLa8ZzPrwIgz68S"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.sbn"), 
-                            overwrite = TRUE)
-googledrive::drive_download(file=as_id("1Hk_t3RvwqwHp6ypL4yfUsACXfxq9IynZ"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.prj"), 
-                            overwrite = TRUE)
-googledrive::drive_download(file=as_id("16GPjJfiWL5ZNCHdimKvoQVp63PGvrVmn"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.sbx"), 
-                            overwrite = TRUE)
-googledrive::drive_download(file=as_id("1Pfg-HxarbSU2M0u-HzSHAIj7E8v-MeO4"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.shp"), 
-                            overwrite = TRUE)
-googledrive::drive_download(file=as_id("1Ke_9cy5wwXolzx34TBM1gbRPGVaS2g7b"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.shp.xml"), 
-                            overwrite = TRUE)
-googledrive::drive_download(file=as_id("1wqdoTKjVSziRdQnUQa7COuYU_2H_TyAt"), 
-                            path=here::here("data", "shapefiles","EBS_NBS_2019_1983.shx"), 
-                            overwrite = TRUE)
 
 # VAST Settings -----------------------------------------------------------
 Version <- "VAST_v13_1_0"
@@ -78,7 +39,7 @@ BiasCorr <- TRUE
 getJointPrecision <- TRUE
 getReportCovariance <- TRUE
 fine_scale <- TRUE
-max_cells <- 4000
+max_cells <- 2000
 strata.limits <- data.frame(STRATA = as.factor('All_areas'))
 
 
@@ -102,7 +63,7 @@ settings <- make_settings(
 
 # Format catch data -------------------------------------------------------
 
-sumAll <- read_rds(here::here("data","hindcast2","EBS_NBS_Index.RDS"))
+sumAll <- read_rds(here::here("data",species_data,"EBS_NBS_Index.RDS"))
 
 
 Data <- sumAll %>%
@@ -120,11 +81,12 @@ Data_Geostat <-  dplyr::transmute(Data,
 ) %>%
     data.frame()
 
-saveRDS(Data_Geostat, file = "Data_Geostat.RDS")
+saveRDS(Data_Geostat, file = here::here("data",species_data,
+                                        paste0("Data_Geostat_",species_name,".RDS")))
 
 
 # Cold Pool covariate -----------------------------------------------------
-CP <- read.csv(here::here("data","hindcast2","cpa_out_ste_simplified.csv"))
+CP <- read.csv(here::here("data","cpa_out_ste_simplified.csv"))
 covariate_data <- CP[ which(as.integer(CP[,'YEAR']) %in% unique(Data_Geostat[,'Year'])), ]
 covariate_data <- data.frame( "Year"=covariate_data[,"YEAR"],
                               "Lat"=mean(Data_Geostat[,'Lat']),
@@ -274,7 +236,7 @@ saveRDS(fit, file = "VASTfit.RDS")
                       position=pd) +
         geom_point(aes(shape=Estimator), size=1.6, position=pd) +
         theme_bw() +
-        ggtitle(paste0("Comparison of design-based and VAST estimators for ",speciesName)) +
+        ggtitle(paste0("Comparison of design-based and VAST estimators for ",species_name)) +
         ylab("Index (1,000 fish) with 2 Standard Errors") +
         scale_y_continuous(expand = c(0, 0), 
                            breaks=pretty_breaks(n=5), 
@@ -287,6 +249,6 @@ saveRDS(fit, file = "VASTfit.RDS")
         theme(axis.text.x=element_text(angle=90,vjust=.5))
     print(spPlot)
 
-    ggsave(paste0(speciesName,"_Index_compare.png"), width=8, height=6, units="in")
+    ggsave(paste0(species_name,"_Index_compare.png"), width=8, height=6, units="in")
    
 
