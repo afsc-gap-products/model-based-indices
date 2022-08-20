@@ -208,8 +208,8 @@ strata_names = c("Both","EBS","NBS")
   Years2Include <- which(VASTfit$year_labels != 2020)
   proportions <- calculate_proportion( TmbData=VASTfit$data_list, 
                                       Index=results$Index, 
-                                      Year_Set= Year_Set, 
-                                      Years2Include = Years2Include,
+                                      year_labels = Year_Set, 
+                                      years_to_plot = Years2Include,
                                       strata_names=strata_names)
   
   prop <- data.frame(t(data.frame(proportions$Prop_ctl))) %>%
