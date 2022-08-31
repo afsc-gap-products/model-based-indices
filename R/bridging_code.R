@@ -39,7 +39,7 @@ n_alk <- new_alk %>%
   as_tibble() %>% 
   clean_names() %>% 
   rename(probability_new = probability)
-  # mutate(source = 'new_alk')
+# mutate(source = 'new_alk')
 
 o_alk_ebs <- old_alk$EBS %>% 
   as_tibble() %>% 
@@ -54,7 +54,7 @@ o_alk_nbs <- old_alk$NBS %>%
 o_alk <- bind_rows(o_alk_ebs, o_alk_nbs) %>% 
   arrange(length, age, sex, year) %>% 
   rename(probability_old = probability) 
-  # mutate(source = "old_alk")
+# mutate(source = "old_alk")
 
 n_agecomps <- new_agecomps %>% 
   as_tibble() %>% 
@@ -126,7 +126,7 @@ table(dupes)
 bind_cols(check_alk, dupes = dupes) %>% 
   dplyr::filter(dupes == TRUE) %>% 
   arrange(year, region, sex, length, age) #%>% View()
-  
+
 alk_check_table <- check_alk %>% 
   rename(prob_new = probability_new, prob_old = probability_old) %>% 
   dplyr::select(year, length, age, sex, region, prob_old, prob_new) %>% 
@@ -134,7 +134,7 @@ alk_check_table <- check_alk %>%
   summarise(mean_prob_new = mean(prob_new, na.rm = T),
             mean_prob_old = mean(prob_old, na.rm = T)) %>% 
   # dplyr::filter(!is.na(mean_prob_new), !is.na(mean_prob_old),
-                # mean_prob_new > 0, mean_prob_old >0) %>% 
+  # mean_prob_new > 0, mean_prob_old >0) %>% 
   mutate(diff_age = abs(mean_prob_new - mean_prob_old),
          diff_age = if_else(is.na(mean_prob_new), mean_prob_old, diff_age),
          diff_age = if_else(is.na(mean_prob_old), mean_prob_new, diff_age)) %>% 
@@ -142,7 +142,7 @@ alk_check_table <- check_alk %>%
          old_mean_prob_age = mean_prob_old) %>% 
   pivot_wider(names_from = age, values_from = c(new_mean_prob_age, old_mean_prob_age, diff_age), 
               names_sort = TRUE, names_vary = "slowest") #%>% 
-  # gt()
+# gt()
 write_csv(alk_check_table, file = here("output", "bridging", "alk_comparison_table.csv"))
 
 alk_check_table_yrs <- check_alk %>% 
@@ -154,7 +154,7 @@ alk_check_table_yrs <- check_alk %>%
   pivot_wider(names_from = age, values_from = c(new_prob_age, old_prob_age, abs_diff_age), 
               names_sort = TRUE, names_vary = "slowest") %>%
   arrange(year, region, sex, length)
-  # unlist()
+# unlist()
 # gt()
 write_csv(alk_check_table_yrs, file = here("output", "bridging", "alk_comparison_table_yrs.csv"))
 
@@ -224,7 +224,7 @@ for(i in unique(check_alk$sex))
 # UPDATE: tile plot of prob of age at length
 # # 1) prob age at length new
 # # 2) prob age at length old
-check_alk %>% 
+plot_alk<-check_alk %>% 
   # dplyr::filter(sex == 2) %>% # I forget which sex is female?
   group_by(length, age) %>% 
   summarize(mean_prob_new = mean(probability_new, na.rm = TRUE),
@@ -232,6 +232,43 @@ check_alk %>%
             mean_prob_diff = abs(mean_prob_new - mean_prob_old)) %>% 
   mutate(mean_prob_diff = if_else(is.na(mean_prob_new), mean_prob_old, mean_prob_diff),
          mean_prob_diff = if_else(is.na(mean_prob_old), mean_prob_new, mean_prob_diff))  
+
+
+#mean probability by age/length new alk
+ggplot(plot_alk, aes(x = age, y = length, fill = mean_prob_new))+
+  geom_tile()+
+  scale_fill_gradient(low = "white", high = "blue")+
+  guides(fill = guide_colourbar(title = ""))+
+  ggtitle("Probability of Age at Length - New ALK")
+ggsave(filename = "mean_prob_new_alk.png",
+       path = here::here("output", "bridging"),
+       height = 7,
+       width = 10)
+
+#mean probability by age/length old alk
+ggplot(plot_alk, aes(x = age, y = length, fill = mean_prob_old))+
+  geom_tile()+
+  scale_fill_gradient(low = "white", high = "blue")+
+  guides(fill = guide_colourbar(title = ""))+
+  ggtitle("Probability of Age at Length - Old ALK")
+ggsave(filename = "mean_prob_old_alk.png",
+       path = here::here("output", "bridging"),
+       height = 7,
+       width = 10)
+
+#mean difference in probability between new and old alk
+ggplot(plot_alk, aes(x = age, y = length, fill = mean_prob_diff))+
+  geom_tile()+
+  scale_fill_gradient(low = "white", high = "blue")+
+  guides(fill = guide_colourbar(title = ""))+
+  ggtitle("Absolute Difference in Probability - New vs Old ALK")
+ggsave(filename = "diff_in_mean_prob.png",
+       path = here::here("output", "bridging"),
+       height = 7,
+       width = 10)
+
+
+
 
 
 # plot_alk <- bind_rows(n_alk, o_alk)
@@ -284,7 +321,7 @@ o_agec <- o_agecomps %>%
   summarize(catch_tot = sum(catch_kg, na.rm = T),
             catch_mean = mean(catch_kg, na.rm = T)) %>% 
   mutate(comp_source = "alk_2021")
-  
+
 
 age_comp_set <- bind_rows(n_agec, o_agec)
 
@@ -301,7 +338,7 @@ write_csv(agecomp_tab, file = here("bridging", "full_diff_agecomps.csv"))
 agecomp_tab_age <- agecomp_tab %>% 
   group_by(age) %>% 
   summarise(#mean_of_abs_diffs = mean(abs_diff_catch),
-            diff_mean_catch_at_age = round(abs(mean(catch_kg_new) - mean(catch_kg_old)), 4))
+    diff_mean_catch_at_age = round(abs(mean(catch_kg_new) - mean(catch_kg_old)), 4))
 write_csv(agecomp_tab, file = here("bridging", "diff_btw_mean_catch_at_age.csv"))
 
 # * figures ---------------------------------------------------------------
@@ -351,7 +388,7 @@ for(i in 0:max_age)
     ylab("mean catch")
   ggsave(p2, filename = paste0("mean_catch_age_", i, ".png"), 
          path = here("bridging"), height = 10, width = 13)
-
+  
 }
 
 # sample size
