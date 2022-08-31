@@ -14,10 +14,11 @@ library(tictoc)
 species_code <- 21720
 species_name <- "Pacific_Cod_Age_hindcast_check"
 species_data <- "BS_Pacific_Cod"
+compare <- FALSE # If compare = TRUE, useing 2021 alk
 
 # Set up folder to store species specific results
 folder <- here::here("results",species_name)
-dir.create(folder, recursive = TRUE)
+dir.create(folder, recursive = TRUE, showWarnings = F)
 
 
 # Settings ----------------------------------------------------------------
@@ -71,15 +72,19 @@ strata_names = c("Both","EBS","NBS")
     # Load age-length keys produced by sumfish
     #alk_all <- readRDS(here::here("data","unstratified_alk_2021.RDS") )
     alk <- readRDS(here::here("data",species_data,"unstratified_alk.RDS") )
-    # alk_ebs <- alk_all$EBS %>%
-    #     filter(SPECIES_CODE == species_code) %>%
-    #     mutate(REGION = "EBS")
-    # alk_nbs <- alk_all$NBS %>%
-    #     bind_rows( filter(alk_ebs, YEAR == 2018) ) %>%   # Use EBS ALK for 2018 ad hoc sampling in NBS
-    #     filter(SPECIES_CODE == species_code) %>%
-    #     mutate(REGION = "NBS")
-    # 
-    # alk <- bind_rows(alk_ebs, alk_nbs)
+    if(compare == TRUE)
+    {
+      alk_all <- readRDS(here::here("data",species_data,"unstratified_alk_2021.RDS") ) #old
+      alk_ebs <- alk_all$EBS %>%
+          filter(SPECIES_CODE == species_code) %>%
+          mutate(REGION = "EBS")
+      alk_nbs <- alk_all$NBS %>%
+          bind_rows( filter(alk_ebs, YEAR == 2018) ) %>%   # Use EBS ALK for 2018 ad hoc sampling in NBS
+          filter(SPECIES_CODE == species_code) %>%
+          mutate(REGION = "NBS")
+
+      alk <- bind_rows(alk_ebs, alk_nbs)
+    }
     
     sizeComp <- readRDS(here::here("data",species_data,"EBS_NBS_SizeComp.RDS") ) %>% #readRDS(here::here("data","EBS_NBS_SizeComp.RDS") )
         dplyr::filter(YEAR >= min_year,
@@ -145,6 +150,8 @@ strata_names = c("Both","EBS","NBS")
     
     saveRDS(Data_Geostat, file = here::here("data",species_data,
                                             paste0("Data_Geostat_",species_name,".RDS")))
+    
+    write_csv(Data_Geostat, file = here::here("bridging", paste0("Data_Geostat_2022",species_name,".csv")))
     
 
 # Run Analysis ------------------------------------------------------------

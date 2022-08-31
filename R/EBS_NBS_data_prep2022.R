@@ -1,4 +1,8 @@
-library(sumfish)
+# library(sumfish)
+library(tidyverse)
+sumfish <- list.files(here::here("sumfish"))
+purrr::walk(sumfish, ~ source(here::here("sumfish", .x)))
+
 # library(here)
 # library(FishData)
 
