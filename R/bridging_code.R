@@ -95,6 +95,12 @@ o_alk <- o_alk %>% bind_cols(dupes = dupes_old) %>%
   dplyr::filter(dupes == FALSE) %>% 
   dplyr::select(-dupes)
 
+
+# sample size table -------------------------------------------------------
+
+# UPDATE: add table for sanity check to confirm same numbers tows at age
+
+
 # alk ---------------------------------------------------------------------
 
 
@@ -214,6 +220,10 @@ for(i in unique(check_alk$sex))
     
   }
 }
+
+# UPDATE: tile plot of prob of age at length
+# # 1) prob age at length new
+# # 2) prob age at length old
 
 
 # plot_alk <- bind_rows(n_alk, o_alk)
@@ -350,4 +360,12 @@ p3 <- age_comp_set %>%
 # scale_linetype_manual(values = c("dotted", "twodash", "longdash", "solid"))
 ggsave(p3, filename = paste0("sample_size_comparison.png"), path = here("bridging"))
 
+
+# * proportions -----------------------------------------------------------
+
+
+
+# * index.csv -------------------------------------------------------------
+
+# sanity check
 
