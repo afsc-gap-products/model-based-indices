@@ -224,6 +224,14 @@ for(i in unique(check_alk$sex))
 # UPDATE: tile plot of prob of age at length
 # # 1) prob age at length new
 # # 2) prob age at length old
+check_alk %>% 
+  # dplyr::filter(sex == 2) %>% # I forget which sex is female?
+  group_by(length, age) %>% 
+  summarize(mean_prob_new = mean(probability_new, na.rm = TRUE),
+            mean_prob_old = mean(probability_old, na.rm = TRUE),
+            mean_prob_diff = abs(mean_prob_new - mean_prob_old)) %>% 
+  mutate(mean_prob_diff = if_else(is.na(mean_prob_new), mean_prob_old, mean_prob_diff),
+         mean_prob_diff = if_else(is.na(mean_prob_old), mean_prob_new, mean_prob_diff))  
 
 
 # plot_alk <- bind_rows(n_alk, o_alk)
