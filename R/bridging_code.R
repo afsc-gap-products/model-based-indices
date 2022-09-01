@@ -229,9 +229,9 @@ plot_alk<-check_alk %>%
   group_by(length, age) %>% 
   summarize(mean_prob_new = mean(probability_new, na.rm = TRUE),
             mean_prob_old = mean(probability_old, na.rm = TRUE),
-            mean_prob_diff = abs(mean_prob_new - mean_prob_old)) %>% 
-  mutate(mean_prob_diff = if_else(is.na(mean_prob_new), mean_prob_old, mean_prob_diff),
-         mean_prob_diff = if_else(is.na(mean_prob_old), mean_prob_new, mean_prob_diff))  
+            mean_prob_diff = (mean_prob_new - mean_prob_old)) %>% 
+  mutate(mean_prob_diff = if_else(is.na(mean_prob_new), (0 - mean_prob_old), mean_prob_diff),
+         mean_prob_diff = if_else(is.na(mean_prob_old), (mean_prob_new - 0), mean_prob_diff))  
 
 
 #mean probability by age/length new alk
@@ -259,9 +259,9 @@ ggsave(filename = "mean_prob_old_alk.png",
 #mean difference in probability between new and old alk
 ggplot(plot_alk, aes(x = age, y = length, fill = mean_prob_diff))+
   geom_tile()+
-  scale_fill_gradient(low = "white", high = "blue")+
+  scale_fill_gradient2('mean_prob_diff', low = "blue", high = "white")+
   guides(fill = guide_colourbar(title = ""))+
-  ggtitle("Absolute Difference in Probability - New vs Old ALK")
+  ggtitle("Difference in Probability (New ALK - Old ALK)")
 ggsave(filename = "diff_in_mean_prob.png",
        path = here::here("output", "bridging"),
        height = 7,
