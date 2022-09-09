@@ -32,6 +32,11 @@ new_agecomps <- read_csv(here::here("bridging", "Data_Geostat_2022Pacific_Cod_Ag
 
 old_agecomps <- read_csv(here::here("bridging", "Data_Geostat_2021Pacific_Cod_Age_hindcast_check.csv")) #need to get age comps from VAST code; need to load combined EBS NBS
 
+new_proportions <- read_csv(here::here("bridging", "pcod_proportions_2022_newalk.csv"))
+
+old_proportions <- read_csv(here::here("bridging", "pcod_proportions_2022_oldalk.csv"))
+
+prod_21_props <- read_csv(here::here("bridging", "pcod_proportions_2021.csv"))
 
 # clean data --------------------------------------------------------------
 
@@ -64,6 +69,13 @@ o_agecomps <- old_agecomps %>%
   as_tibble() %>% 
   clean_names()
 
+# 
+new_props <- new_proportions %>% 
+  rename(age_12_plus = `age_12+`) %>% #age 12
+  select(-`...1`)
+old_props <- old_proportions %>% 
+  rename(age_12_plus = `age_12+`) %>% #age 12
+  select(-`...1`)
 
 # * filter for species ----------------------------------------------------
 
@@ -408,7 +420,21 @@ ggsave(p3, filename = paste0("sample_size_comparison.png"), path = here("bridgin
 
 # * proportions -----------------------------------------------------------
 
+new_props
+old_props
+prod_21_props
 
+dim(new_props)
+dim(old_props)
+
+check_props <- round(new_props[,1:13] - old_props[,1:13], 4)
+# check_props <- mutate(across(where(is.numeric), new_props - old_props))
+check_props_tab <- cbind(check_props, new_props[,14:15])
+# check_props_abs <- round(abs(new_props[,2:16] - old_props[,2:16]), 4)
+# check_props_abs_tab <-  cbind(check_props_abs, new_props[,17:18])
+options(scipen=999)
+write.csv(check_props_tab, here::here("bridging", "bridge_props_2022.csv"))
+# write.csv(check_props_abs_tab, here::here("bridging", "bridge_props_abs_2022.csv"))
 
 # * index.csv -------------------------------------------------------------
 
