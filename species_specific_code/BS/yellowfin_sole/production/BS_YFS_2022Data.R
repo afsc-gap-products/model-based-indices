@@ -351,7 +351,7 @@ write_rds(x = strata,
 
 ## ALK
 write_rds(x = alk, 
-          file = paste0(res_dir, "unstratified_alk_2021.RDS"))
+          file = paste0(res_dir, "unstratified_alk_", current_year, ".RDS"))
 
 ## Raw data
 write_rds(x = list(EBS = EBS, NBS = NBS, NBS18 = NBS18), 
