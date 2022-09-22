@@ -34,14 +34,17 @@ sumfish::getSQL()
 species_name <- "yellowfin_sole"
 species_code <- 10210
 start_year <- 1982
-current_year <- 2021
+current_year <- 2022
 plus_group <- 20
 min_year <- start_year
+
+which_run <- c("hindcast", "production")[2]
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Create directory to store data products
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-res_dir <- paste0("species_specific_code/BS/", species_name, "/hindcast/data/")
+res_dir <- paste0("species_specific_code/BS/", species_name, "/", 
+                  which_run, "/data/")
 if(!dir.exists(res_dir)) dir.create(res_dir)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
