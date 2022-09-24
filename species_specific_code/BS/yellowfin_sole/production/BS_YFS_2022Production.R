@@ -15,7 +15,6 @@
 rm(list = ls())
 finalanalysis <- TRUE # this will make the model work faster while testing
 
-
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Import packages ----
 ##   Notes: hints for downloading certain packages
@@ -145,7 +144,7 @@ fit <- FishStatsUtils::fit_model(
   
   ## Input settings
   "working_dir" = paste0(getwd(),"/species_specific_code/BS/",
-                         species_name, "/hindcast/results/"), 
+                         species_name, "/", which_run, "/results/"), 
   "settings" = settings, 
   "create_strata_per_region" = TRUE,
   
@@ -181,13 +180,13 @@ fit <- FishStatsUtils::fit_model(
 ## Save VAST fit object
 saveRDS(object = fit, 
         file = paste0("species_specific_code/BS/",
-                      species_name, "/hindcast/results/VASTfit.RDS"))
+                      species_name, "/", which_run, "/results/VASTfit.RDS"))
 
 ## Save diagnostics and other outputs
 results <- FishStatsUtils::plot_results( 
   fit = fit, 
   working_dir = paste0(getwd(),  "/species_specific_code/BS/",
-                       species_name, "/hindcast/results/output_plots/"),
+                       species_name, "/", which_run, "/results/output_plots/"),
   zrange = c(-3, 3), 
   n_cells = 600, 
   strata_names = c("Both", "EBS", "NBS"), 
@@ -196,12 +195,12 @@ results <- FishStatsUtils::plot_results(
 
 saveRDS(object = results, 
         file = paste0("species_specific_code/BS/", species_name, 
-                      "/hindcast/results/output_plots/diagnostics.RDS"))
+                      "/", which_run, "/results/output_plots/diagnostics.RDS"))
 
 ## ESP products
 write.csv(x = results$Range$COG_Table, 
           file = paste0("species_specific_code/BS/", species_name, 
-                        "/hindcast/results/output_plots/COG.csv"), 
+                        "/", which_run, "/results/output_plots/COG.csv"), 
           row.names = FALSE)
 
 ## Effective area occupied for ESP request
@@ -213,6 +212,6 @@ Area <- rep(x = c("Both", "EBS", "NBS"), each = length(Year))
 ln_km2 <- as.data.frame(cbind(Area, Year, ln_km2))
 ln_km2 <- ln_km2[which(ln_km2$Year %in% unique(fit$data_frame$t_i)),]
 write.csv(x = ln_km2, 
-          file = paste0("species_specific_code/BS/", species_name, 
-                        "/hindcast/results/output_plots/ln_effective_area.csv"),
+          file = paste0("species_specific_code/BS/", species_name, "/", 
+                        which_run, "/results/output_plots/ln_effective_area.csv"),
           row.names = FALSE )
