@@ -7,13 +7,13 @@ Primary contact: [@coleary-noaa](https://github.com/coleary-noaa)
 
 # Mission
 Provide VAST estimates of abundance and their standard error from GAP survey data for stock assessment authors in conjunction with traditional design-based estimators.
-- [TOR 2022](https://drive.google.com/file/d/1t13fVai8HOo3xtwxn_vazo9NDT8MrVar/view?usp=sharing)
+- [TOR 2023]()
 - [Annual stock assessment and ESP request form](https://docs.google.com/spreadsheets/d/18gr3owj5iAq1iCDX4wpQPUC9ldLz-YTsCBIfnkHqibo/edit?usp=sharing)
 - [Annual ESR request form](https://docs.google.com/spreadsheets/d/1SC-KzRmng0c2e1GpvqYQz4Ijr0_hlbGZbWiislXGGcw/edit?usp=sharing)
 - [ESP submission tool](https://apex.psmfc.org/akfin/f?p=140:LOGIN_DESKTOP:4779711459935:::::)
 
 # GAP Work Plan 
-- Species requests & alternate model-based runs/settings in from SSMA, ESP, ESR by 01 March
+- Species requests & alternate model-based runs/settings in from SSMA, ESP, ESR by 15 January
 - Run VAST with previous year survey data included as requested by SA author( March - April, code frozen by May )
 - Merge new frozen code (index & data retrival code) in git repo
 - Upload all VAST output files for hindcast and data (as an .Rdat) used to produce the indices to [google drive folder](https://drive.google.com/drive/folders/1yxn02yF0V1PNVw0_HpqeSK_XxgOy_LAT)
@@ -23,24 +23,17 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 
 # General Production Timeline Estimate
 **March - April is the time window for any model exploration/iteration, as requested**
-  - February 23 - Planning meeting with program leads
-  - March 1 - Deadline for requesters to submit product requests
+  - December - ModSquad leadership meets to prioritize species + research plans
+  - January 15 - Deadline for SAFE requesters to submit product requests
+  - early February - ModSquad planning meeting with program leads
+  - February 15 - SAFE author's revised requests given ModSquad capacity and discussion from REFM meeting
   - March 15 - TOR memo finalized and posted on the web
   - April 1 - Crab hindcasts completed
-  - May 1 - Groundfish hindcasts completed
+  - May 1 - Groundfish hindcasts completed (stop all research, decide on which to not recommend for use in base model)
   - August 25 - Model-based estimates for EBS crabs completed
   - September 25 - Model-based estimates for NBS crabs completed
-  - September 30 - Model-based estimates for groundfishes completed (for EBS-only requests)
-  - October 15 - Model-based estimates for groundfishes completed (for combined EBS-NBS requests) 
-
-# Data Reminders
-- fill in zeros for tows where none of that species was observed
-- For catch input you can either: (a) input as raw weight (‘Catch_KG’) with ‘AreaSwept_km2’ remaining as area swept values OR (b) Input as wCPUE (‘Catch_KG’ divided by effort)   with ‘AreaSwept_km2’ set to 1 
-- For GOA: exclude areas > 700 m from the extrapolation grid area (but leave observations at this depth in the data used to fit the model) 
-  to do this, follow the template code that Cecilia sent out by setting Region = "User" in make_settings(), load your extrapolation grid  'GOAThorsonGrid_Less700m' file as a     csv named ‘input_grid’ with ‘Lat’, ‘Lon’, and ‘Area_km2’ column headers, and include "input_grid"=input_grid in fit_model()
-- For GOA: years to Include: 1984* - 2019 & 1984 - 2021 *if there are ID issues for your species, make note of them in your documentation/discuss with SA author.
-
-### **Note**: if a request to only include fish west of 140 degrees, just note that there are two components to this request:  (1) excluding data from east of 170 longitude and (2) specifying this as a "strata" boundary in the model settings in the VAST code
+  - September 30 - Target date for completion of model-based estimates for groundfishes, pending bottom trawl data completion
+  - October 15 - Final deadline for completing groundfish model-based estimates 
 
 # VAST Resources 
 - VASTGAP/ModSquad folder [here](https://drive.google.com/drive/folders/1yxn02yF0V1PNVw0_HpqeSK_XxgOy_LAT)
@@ -72,7 +65,16 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 [^2]: Tweedie also involves additional changes to RhoConfig and FieldConfig to ensure that there is only a single linear predictor being estimated, as documented elsewhere
 
 # Previous TORs
+- [TOR 2022](https://drive.google.com/file/d/1t13fVai8HOo3xtwxn_vazo9NDT8MrVar/view?usp=sharing)
 - [TOR 2021](https://docs.google.com/document/d/19gFkuNcJ_ezXzKqqOS1k5YnXyj3Tm_LyTMWGWyhy8ec/edit?usp=sharing)
+
+# Data Reminders
+- fill in zeros for tows where none of that species was observed
+- For catch input you can either: (a) input as raw weight (‘Catch_KG’) with ‘AreaSwept_km2’ remaining as area swept values OR (b) Input as wCPUE (‘Catch_KG’ divided by   effort) with ‘AreaSwept_km2’ set to 1 
+- For GOA: exclude areas > 700 m from the extrapolation grid area (but leave observations at this depth in the data used to fit the model) 
+  to do this, follow the template code that Cecilia sent out by setting Region = "User" in make_settings(), load your extrapolation grid  'GOAThorsonGrid_Less700m'       file as a csv named ‘input_grid’ with ‘Lat’, ‘Lon’, and ‘Area_km2’ column headers, and include "input_grid"=input_grid in fit_model()
+
+### **Note**: if a request to only include fish west of 140 degrees, just note that there are two components to this request:  (1) excluding data from east of 170 longitude and (2) specifying this as a "strata" boundary in the model settings in the VAST code
 
 # GOA specific links & files
 - Link to GOA notes document for 2021 [here](https://docs.google.com/document/d/1fWEA8jftM7IRRwnCMtSjKqGRhM2Vzq7DgCCebPDc3ic/edit?usp=sharing)
