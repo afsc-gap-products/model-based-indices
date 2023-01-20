@@ -53,6 +53,11 @@ fit = fit_model( settings = settings,
   working_dir = run_dir )
 
 # Plot results
-plot( fit,
+out = plot( fit,
   working_dir = run_dir )
+
+# save proportions
+Prop_ct = out$Proportions$Prop_ctl[,,1]
+dimnames(Prop_ct) = list( fit$category_names, fit$year_labels )
+  write.csv( Prop_ct, file=paste0(run_dir,"Prop_ct.csv") )
 
