@@ -1,0 +1,95 @@
+### Zoack Oyafuso and Megsie Siple; zack.oyafuso@noaa.gov, margaret.siple@noaa.gov
+### code to produce model-based indices using VAST software implemented in R
+### created January 2023
+
+# OLD SETTINGS for re-running GOA 2022
+# R v4.0.2
+# From 2022 TOR: R 4.0.2 or later; 
+# VAST release 3.9.0;
+# .cpp 13.1.0; 
+# FishStatsUtils 2.11.0;
+# Matrix 1.4-0;
+# TMB 1.7.22;
+# DHARMa 0.4.5.
+# Most up to date version of INLA
+
+# Load packages and set working directory
+library(TMB)               
+library(VAST)
+
+# Comments after pkg versions indicate the version used this past run.
+packageVersion('VAST') #3.10.0
+packageVersion('FishStatsUtils') #2.12.0
+packageVersion('Matrix') #1.5.1
+packageVersion('TMB') #1.9.1
+
+# Set species 
+species_name <- c("Gadus_macrocephalus","Sebastes_variabilis","Sebastes_polyspinis", "Sebastes_alutus","Gadus_chalcogrammus",
+             "Lepidopsetta_polyxystra","Lepidopsetta_bilineata","Hippoglossoides_elassodon","Atheresthes_stomias")[5] ##change number 1 to select a difference species from the vector
+## c(P. cod, dusky rockfish, northern rockfish, POP, pollock, 
+## northern rock sole, southern rock sole, flathead sole, arrowtooth)
+#c(P. cod, dusky rockfish, northern rockfish, POP,pollock, arrowtooth)
+#dplyr::filter(COMMON_NAME %in% c("dusky and dark rockfishes unid.", "dusky rockfish"))
+
+# Load the data for VAST
+Data_Geostat <- readRDS(file = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/data/Data_Geostat_",species_name,".rds"))
+Data_Geostat$Catch_KG[which(is.na(Data_Geostat$Catch_KG))] <- 0
+#Data_Geostat <- Data_Geostat[which(Data_Geostat$Year >= 1990),]
+
+
+# Define strata
+strata.limits <- data.frame(STRATA = as.factor('All_areas'))
+#strata.limits <- data.frame('STRATA' = "west_of_140W", 'west_border' = -Inf, 'east_border' = -140 )
+FieldConfig = matrix( c("IID","IID","IID","IID","IID","IID"), ncol=2, nrow=3, dimnames=list(c("Omega","Epsilon","Beta"),c("Component_1","Component_2")) )
+RhoConfig  = c("Beta1" = 0, "Beta2" = 0, "Epsilon1" = 0, "Epsilon2" = 0)
+
+# Make settings 
+settings = make_settings(#Version = "VAST_v13_1_0", # CHECK THIS
+                          n_x = 750,#1000, 
+                          Region = "User", #"gulf_of_alaska",
+                          purpose = "index2", 
+                          fine_scale = TRUE, 
+                          ObsModel= c(2,1), #c(1,1) #c(10,2)
+                          strata.limits=strata.limits, 
+                          knot_method = "grid", 
+                          bias.correct = TRUE,
+                          use_anisotropy = TRUE)
+
+# Import extrapolation grid, these will be available on Jason's Google drive: VASTGAP\Extrapolation Grids
+GOAgrid <- read.csv(file= paste0(getwd(),"/extrapolation_grids/GOAThorsonGrid_Less700m.csv"))
+
+input_grid=cbind(Lat=GOAgrid$Lat,Lon=GOAgrid$Lon,Area_km2=GOAgrid$Shape_Area/1000000)  # Extrapolation grid area is in m^2 and is converted to km^2
+gc()
+
+# Run model
+fit = fit_model( "settings"=settings, 
+                 "Lat_i"=Data_Geostat[,'Lat'], 
+                 "Lon_i"=Data_Geostat[,'Lon'], 
+                 "t_i"=Data_Geostat[,'Year'], 
+                 "b_i"=Data_Geostat[,'Catch_KG'], 
+                 "a_i"=Data_Geostat[,'AreaSwept_km2'], 
+                 "v_i"=Data_Geostat[,'Vessel'], #### ##was ok to leave in because it's all "missing" or zero, so no vessel effects
+                 "refine" = TRUE,
+                 "input_grid"=input_grid, 
+                 optimize_args=list("lower"=-Inf,"upper"=Inf),
+                 "working_dir" = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results"),
+                 use_new_epsilon  = F) # MCS: trying this to see if it fixes error
+
+# Plot results
+plot( fit )
+
+# save the VAST model
+saveRDS(fit,file = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/",species_name,"VASTfit.RDS"))
+
+
+## Save COG (center of gravity) for ESP request
+results = plot( fit, n_cells=200^2 )
+write.csv( results$Range$COG_Table, file=paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/",species_name,"COG.csv"), row.names=FALSE )
+
+##save effective area occupied for ESP request
+report = TMB::summary.sdreport(fit$parameter_estimates$SD)
+ln_km2 = report[which(rownames(report)=="log_effective_area_ctl"),c('Estimate','Std. Error')]
+Year <- sort(unique(fit$year_labels))
+ln_km2 <- as.data.frame(cbind(ln_km2, Year))
+ln_km2 <- ln_km2[which(ln_km2$Year %in% unique(fit$data_frame$t_i)),]
+write.csv( ln_km2, file=paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/",species_name,"ln_effective_area.csv"), row.names=FALSE )
