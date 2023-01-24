@@ -5,7 +5,7 @@ library('FishData')
 library(dplyr)
 
 species_code <- c(21720,30152,30150)[1]#[2:3] #c(P.cod, dusky rockfish, dusky and dark rockfishes unid.)
-species_code <- c(30420,30060,21740,10110,10261,10262,10130)[2] #c(northern rockfish, POP, pollock, arrowtooth, northern rock sole, southern rock sole, flathead sole)
+species_code <- c(30420,30060,21740,10110,10261,10262,10130)[7] #c(northern rockfish, POP, pollock, arrowtooth, northern rock sole, southern rock sole, flathead sole)
 
 #species_code <- 10260 ## rock sole unidentified.
 PKG <- c("RODBC")
