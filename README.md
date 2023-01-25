@@ -8,7 +8,7 @@ Primary contact: [@coleary-noaa](https://github.com/coleary-noaa)
 # Mission
 Provide VAST estimates of abundance and their standard error from GAP survey data for stock assessment authors in conjunction with traditional design-based estimators.
 - [TOR 2023]()
-- [Annual stock assessment and ESP request form](https://docs.google.com/spreadsheets/d/18gr3owj5iAq1iCDX4wpQPUC9ldLz-YTsCBIfnkHqibo/edit?usp=sharing)
+- [Annual stock assessment request form](https://docs.google.com/spreadsheets/d/18gr3owj5iAq1iCDX4wpQPUC9ldLz-YTsCBIfnkHqibo/edit?usp=sharing)
 - [Annual ESR request form](https://docs.google.com/spreadsheets/d/1SC-KzRmng0c2e1GpvqYQz4Ijr0_hlbGZbWiislXGGcw/edit?usp=sharing)
 - [ESP submission tool](https://apex.psmfc.org/akfin/f?p=140:LOGIN_DESKTOP:4779711459935:::::)
 
@@ -24,20 +24,19 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 # General Production Timeline Estimate
 **March - April is the time window for any model exploration/iteration, as requested**
   - December - ModSquad leadership meets to prioritize species + research plans
-  - January 15 - Deadline for SAFE requesters to submit product requests
-  - early February - ModSquad planning meeting with program leads
+  - January 15 - Deadline for SAFE authors to submit product requests
+  - late January - ModSquad planning meeting with program leads
   - February 15 - SAFE author's revised requests given ModSquad capacity and discussion from REFM meeting
   - March 15 - TOR memo finalized and posted on the web
   - April 1 - Crab hindcasts completed
   - May 1 - Groundfish hindcasts completed (stop all research, decide on which to not recommend for use in base model)
-  - August 25 - Model-based estimates for EBS crabs completed
-  - September 25 - Model-based estimates for NBS crabs completed
-  - September 30 - Target date for completion of model-based estimates for groundfishes, pending bottom trawl data completion
+  - August 25 - Model-based estimates for EBS crabs completion target date
+  - September 25 - Model-based estimates for NBS crabs target date
+  - September 30 - Model-based estimates for groundfishes completion target date, pending bottom trawl data QAQC timeline
   - October 15 - Final deadline for completing groundfish model-based estimates 
 
 # VAST Resources 
 - VASTGAP/ModSquad folder [here](https://drive.google.com/drive/folders/1yxn02yF0V1PNVw0_HpqeSK_XxgOy_LAT)
-- VAST example from Jason [here](https://drive.google.com/file/d/1GupAajXozp6afnlO3a_8I6sHC0Ev0R-b/view)
 - VAST example from Cecilia [here](https://drive.google.com/file/d/1eNUXhVuezqWYQx0GHoKcKuHyqTssY_BC/view)
 - VAST common troubleshooting [here](https://docs.google.com/document/d/1j3Li2aacvy7d4FJxLlGDctHlDJWQgZzI5HzyMujwf8Y/edit?usp=sharing)
 - Identification of valid hauls for Bering Sea VAST indices, from Jason [here](https://docs.google.com/spreadsheets/d/1-z7AFYoTM0-RApsW9APfXX4CoA5mbk6k/edit#gid=1419989689)
@@ -77,6 +76,7 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 ### **Note**: if a request to only include fish west of 140 degrees, just note that there are two components to this request:  (1) excluding data from east of 170 longitude and (2) specifying this as a "strata" boundary in the model settings in the VAST code
 
 # GOA specific links & files
+- Link to GOA notes document for 2022 [here](https://docs.google.com/document/d/1TOMz9zaRaRd2xLsaE8J9KLn1wPYqtAwgAprJrhsLtSE/edit?usp=sharing)
 - Link to GOA notes document for 2021 [here](https://docs.google.com/document/d/1fWEA8jftM7IRRwnCMtSjKqGRhM2Vzq7DgCCebPDc3ic/edit?usp=sharing)
 - Link to GOA notes document for 2020 [here](https://docs.google.com/document/d/1M6SnI6bN16kZCuFu0Crl2BqpGB8D_CZshlqvW9TFCGY/edit?usp=sharing)
 

@@ -1,11 +1,12 @@
 library('TMB')
 library("devtools")
-library('VAST')
-library('FishData')
 library(dplyr)
 
-species_code <- c(21720,30152,30150)[1]#[2:3] #c(P.cod, dusky rockfish, dusky and dark rockfishes unid.)
-species_code <- c(30420,30060,21740,10110,10261,10262,10130)[7] #c(northern rockfish, POP, pollock, arrowtooth, northern rock sole, southern rock sole, flathead sole)
+current_end_year <- 2021
+requested_start_year <- 1990
+species_code <- c(21720,30152,30150,310)[2:3]#[4]#[1]#[2:3] #c(P.cod, dusky rockfish, dusky and dark rockfishes unid.)
+#310 Squalus suckleyi spiny dogfish
+#species_code <- c(30420,30060,21740,10110,10261,10262,10130)[2] #c(northern rockfish, POP, pollock, arrowtooth, northern rock sole, southern rock sole, flathead sole)
 
 #species_code <- 10260 ## rock sole unidentified.
 PKG <- c("RODBC")
@@ -27,7 +28,8 @@ source("R/get_connected.R")
 cruise <- RODBC::sqlQuery(channel, "SELECT * FROM RACEBASE.CRUISE")
 cruise$YEAR = as.numeric(substring(cruise$START_DATE, 8,9))
 cruise$YEAR <- ifelse(cruise$YEAR < 21, cruise$YEAR + 2000, cruise$YEAR + 1900)
-cruise = cruise[which(cruise$YEAR >= 1984),]
+cruise = cruise[which(cruise$YEAR >= requested_start_year),]
+#cruise = cruise[which(cruise$YEAR >= 1984),]
 #cruise = cruise[which(cruise$YEAR >= 1996),]
 #cruise = cruise[which(cruise$YEAR >= 1990),]
 
@@ -37,7 +39,8 @@ haul = haul[which(haul$ABUNDANCE_HAUL=='Y'),]
 haul = haul[which(haul$HAUL_TYPE == 3),]
 haul = haul[which(haul$PERFORMANCE >= 0),]
 haul$YEAR = as.numeric(substring(haul$START_TIME, 1,4))
-haul = haul[which(haul$YEAR >= 1984),]
+haul = haul[which(haul$YEAR >= requested_start_year),]
+#haul = haul[which(haul$YEAR >= 1984),]
 #haul = haul[which(haul$YEAR >= 1996),]
 #haul = haul[which(haul$YEAR >= 1990),]
 
@@ -45,6 +48,9 @@ catch <- RODBC::sqlQuery(channel, "SELECT * FROM RACEBASE.CATCH")
 catch = catch[which(catch$REGION == "GOA"),]
 
 #dplyr::filter(COMMON_NAME %in% c("dusky and dark rockfishes unid.", "dusky rockfish"))
+if(species_code == 310){
+  species_name <- "Squalus suckleyi"  #spiny dogfish
+}
 if(species_code == 21720){
   species_name <- "Gadus_macrocephalus"  #Pcod
 }
@@ -105,17 +111,17 @@ if(species_code == 10260){
 
 
 ##for everything that isn't duskies/dark rockfish
-if(species_code == 21720 | species_code == 30420 | species_code == 30060 | species_code == 21740 | species_code == 10110| species_code == 10261 | species_code == 10262| species_code == 10130 )
+if(species_code == 310 | species_code == 21720 | species_code == 30420 | species_code == 30060 | species_code == 21740 | species_code == 10110| species_code == 10261 | species_code == 10262| species_code == 10130 )
 {
   catch_by_species <- subset(catch, catch$SPECIES_CODE==species_code)
   catch_by_species <- data.frame(HAULJOIN = catch_by_species$HAULJOIN,
-                               CRUISEJOIN = catch_by_species$CRUISEJOIN,
-                               WEIGHT = catch_by_species$WEIGHT, 
-                               NUMBER_FISH = catch_by_species$NUMBER_FISH,
-                               SPECIES_CODE = catch_by_species$SPECIES_CODE,
-                               CATCHJOIN = catch_by_species$CATCHJOIN,
-                               SUBSAMPLE_CODE = catch_by_species$SUBSAMPLE_CODE,
-                               VOUCHER = catch_by_species$VOUCHER)
+                                 CRUISEJOIN = catch_by_species$CRUISEJOIN,
+                                 WEIGHT = catch_by_species$WEIGHT, 
+                                 NUMBER_FISH = catch_by_species$NUMBER_FISH,
+                                 SPECIES_CODE = catch_by_species$SPECIES_CODE,
+                                 CATCHJOIN = catch_by_species$CATCHJOIN,
+                                 SUBSAMPLE_CODE = catch_by_species$SUBSAMPLE_CODE,
+                                 VOUCHER = catch_by_species$VOUCHER)
   data_sub <- merge(haul, catch_by_species, by="HAULJOIN", all.x=TRUE)
 }
 
@@ -142,7 +148,7 @@ if(species_code == 30152 | species_code == 30150){  #this bit deals with duskies
                                   SUBSAMPLE_CODE = catch_by_species2$SUBSAMPLE_CODE,
                                   VOUCHER = catch_by_species2$VOUCHER)
   # ##merge dark and dusky data
-  data_sub1 <- merge(haul[which(haul$YEAR %in% c(1990, 1996:2019)),], catch_by_species1, by="HAULJOIN", all.x=TRUE)
+  data_sub1 <- merge(haul[which(haul$YEAR %in% c(1990, 1996:current_end_year)),], catch_by_species1, by="HAULJOIN", all.x=TRUE)
   data_sub1$SPECIES_CODE[which(is.na(data_sub1$SPECIES_CODE))] <- 30152
   data_sub1$WEIGHT[which(is.na(data_sub1$WEIGHT))] <- 0
   data_sub2 <- merge(haul[which(haul$YEAR %in% c(1984, 1987, 1990, 1993)),], catch_by_species2, by="HAULJOIN", all.x=TRUE)
@@ -162,9 +168,9 @@ nrow(data_sub[which(data_sub$NUMBER_FISH == 0),])
 
 # ##calculate effort and CPUE
 data_sub2 <- data_sub %>% 
-dplyr::mutate(EFFORT = DISTANCE_FISHED * (NET_WIDTH * 0.001) * 100) %>% 
-dplyr::mutate(wCPUE = WEIGHT/EFFORT,
-              nCPUE = NUMBER_FISH/EFFORT)
+  dplyr::mutate(EFFORT = DISTANCE_FISHED * (NET_WIDTH * 0.001) * 100) %>% 
+  dplyr::mutate(wCPUE = WEIGHT/EFFORT,
+                nCPUE = NUMBER_FISH/EFFORT)
 
 ################################################################################################################
 GOA_DF <- data_sub2
