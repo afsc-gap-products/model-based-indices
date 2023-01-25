@@ -25,7 +25,7 @@ packageVersion('TMB') #1.9.1
 
 # Set species 
 species_name <- c("Gadus_macrocephalus","Sebastes_variabilis","Sebastes_polyspinis", "Sebastes_alutus","Gadus_chalcogrammus",
-             "Lepidopsetta_polyxystra","Lepidopsetta_bilineata","Hippoglossoides_elassodon","Atheresthes_stomias")[5] ##change number 1 to select a difference species from the vector
+             "Lepidopsetta_polyxystra","Lepidopsetta_bilineata","Hippoglossoides_elassodon","Atheresthes_stomias")[1] ##change number 1 to select a difference species from the vector
 ## c(P. cod, dusky rockfish, northern rockfish, POP, pollock, 
 ## northern rock sole, southern rock sole, flathead sole, arrowtooth)
 #c(P. cod, dusky rockfish, northern rockfish, POP,pollock, arrowtooth)
@@ -73,7 +73,7 @@ fit = fit_model( "settings"=settings,
                  "input_grid"=input_grid, 
                  optimize_args=list("lower"=-Inf,"upper"=Inf),
                  "working_dir" = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results"),
-                 use_new_epsilon  = F) # MCS: trying this to see if it fixes error
+                 use_new_epsilon  = F) #fixes error
 
 # Plot results
 plot( fit )
