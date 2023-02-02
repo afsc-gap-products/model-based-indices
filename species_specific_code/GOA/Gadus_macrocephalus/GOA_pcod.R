@@ -1,95 +1,123 @@
-### Zoack Oyafuso and Megsie Siple; zack.oyafuso@noaa.gov, margaret.siple@noaa.gov
-### code to produce model-based indices using VAST software implemented in R
-### created January 2023
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Project:       VAST Run
+## Authors:       Zack Oyafuso (zack.oyafuso@noaa.gov)
+##                Megsie siple (margaret.siple@noaa.gov)
+## Assessor:      Pete Hulson (pete.hulson@noaa.gov)
+##
+## Notes:         R Version should be at least 4.0.2
+##                2023 TOR: 
+##     
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# OLD SETTINGS for re-running GOA 2022
-# R v4.0.2
-# From 2022 TOR: R 4.0.2 or later; 
-# VAST release 3.9.0;
-# .cpp 13.1.0; 
-# FishStatsUtils 2.11.0;
-# Matrix 1.4-0;
-# TMB 1.7.22;
-# DHARMa 0.4.5.
-# Most up to date version of INLA
+## Restart R Session before running
+rm(list = ls())
 
-# Load packages and set working directory
-library(TMB)               
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Package version checks ----
+##   Updated every year
+##   2023 TOR is in this google doc: 
+##   https://docs.google.com/document/d/18CeXcHhHK48hrtkiC6zygXlHj6YVrWEd/edit
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+current_year <- 2023
+VAST_cpp_version <- "VAST_v14.0.1"
+pck_version <- c("VAST" = "3.10.0",
+                 "FishStatsUtils" = "2.12.0",
+                 "Matrix" = "1.5-3",
+                 "TMB" = "1.9.2",
+                 "DHARMa" = "0.4.6")
+
+for (pck in 1:length(pck_version)) {
+  temp_version <- packageVersion(pkg = names(pck_version)[pck])
+  
+  if(temp_version == pck_version[pck])
+    message(paste0("The version of the '", names(pck_version)[pck], 
+                   "' package (", temp_version, ") is consistent",
+                   " with the ", current_year, " TOR."))
+  
+  if(!temp_version == pck_version[pck])
+    message(paste0("WARNING: ", 
+                   "The version of the '", names(pck_version)[pck], 
+                   "' package (", temp_version, ") is NOT consistent",
+                   " with the ", current_year, " TOR. Please update the '", 
+                   names(pck_version)[pck], "' package to ", 
+                   pck_version[pck]))
+  
+  rm(pck, temp_version)
+}
+
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Load VAST
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 library(VAST)
 
-# Comments after pkg versions indicate the version used this past run.
-packageVersion('VAST') #3.10.0
-packageVersion('FishStatsUtils') #2.12.0
-packageVersion('Matrix') #1.5.1
-packageVersion('TMB') #1.9.1
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Load Catch and Effort Data
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+species_name <- "Gadus_macrocephalus"
+Data_Geostat <- readRDS(file = paste0("species_specific_code/GOA/",
+                                      species_name, "/data/Data_Geostat_", 
+                                      species_name,".rds"))
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Import interpolation grid from repo
+##   grid area is in m^2 and is converted to km^2
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+GOAgrid <- read.csv(file= "extrapolation_grids/GOAThorsonGrid_Less700m.csv")
+input_grid <- with(GOAgrid,
+                   data.frame(Lat = ShapeLatitude,
+                              Lon = ShapeLongitude,
+                              Area_km2 = Shape_Area/1000000))
 
-# Set species 
-species_name <- c("Gadus_macrocephalus","Sebastes_variabilis","Sebastes_polyspinis", "Sebastes_alutus","Gadus_chalcogrammus",
-             "Lepidopsetta_polyxystra","Lepidopsetta_bilineata","Hippoglossoides_elassodon","Atheresthes_stomias")[1] ##change number 1 to select a difference species from the vector
-## c(P. cod, dusky rockfish, northern rockfish, POP, pollock, 
-## northern rock sole, southern rock sole, flathead sole, arrowtooth)
-#c(P. cod, dusky rockfish, northern rockfish, POP,pollock, arrowtooth)
-#dplyr::filter(COMMON_NAME %in% c("dusky and dark rockfishes unid.", "dusky rockfish"))
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Configure VAST Settings
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+settings <- FishStatsUtils::make_settings(
+  Version = VAST_cpp_version,
+  Region = "User",
+  purpose = "index2", 
+  n_x = 750,
+  ObsModel= c(2,1), 
+  knot_method = "grid", 
+  strata.limits = data.frame(STRATA = as.factor('All_areas')),
+  fine_scale = TRUE,
+  max_cells = 2000,
+  bias.correct = TRUE,
+  use_anisotropy = TRUE)
 
-# Load the data for VAST
-Data_Geostat <- readRDS(file = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/data/Data_Geostat_",species_name,".rds"))
-Data_Geostat$Catch_KG[which(is.na(Data_Geostat$Catch_KG))] <- 0
-#Data_Geostat <- Data_Geostat[which(Data_Geostat$Year >= 1990),]
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Run model
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+if (!dir.exists(paste0("species_specific_code/GOA/",
+                       species_name, "/results"))) {
+  dir.create(path = paste0("species_specific_code/GOA/",
+                           species_name, "/results"), 
+             recursive = TRUE)
+}
 
+result_dir <- paste0("species_specific_code/GOA/", species_name, "/results")
 
-# Define strata
-strata.limits <- data.frame(STRATA = as.factor('All_areas'))
-#strata.limits <- data.frame('STRATA' = "west_of_140W", 'west_border' = -Inf, 'east_border' = -140 )
-FieldConfig = matrix( c("IID","IID","IID","IID","IID","IID"), ncol=2, nrow=3, dimnames=list(c("Omega","Epsilon","Beta"),c("Component_1","Component_2")) )
-RhoConfig  = c("Beta1" = 0, "Beta2" = 0, "Epsilon1" = 0, "Epsilon2" = 0)
+fit <- FishStatsUtils::fit_model( 
+  "settings" = settings, 
+  "Lat_i" = Data_Geostat[, "Lat"], 
+  "Lon_i" = Data_Geostat[, "Lon"], 
+  "t_i" = Data_Geostat[, "Year"], 
+  "b_i" = Data_Geostat[, "Catch_KG"], 
+  "a_i" = Data_Geostat[, "AreaSwept_km2"], 
+  "v_i" = Data_Geostat[, "Vessel"], ## was ok to leave in because it"s all 
+                                    ## "missing" or zero, so no vessel effects
+  "refine" = TRUE,
+  "Npool" = 100,
+  "input_grid" = input_grid, 
+  "optimize_args" = list("lower" = -Inf, "upper" = Inf),
+  "working_dir" = paste0(getwd(), "/", result_dir, "/"),
+  "use_new_epsilon"  = F) #fixes error
 
-# Make settings 
-settings = make_settings(#Version = "VAST_v13_1_0", # CHECK THIS
-                          n_x = 750,#1000, 
-                          Region = "User", #"gulf_of_alaska",
-                          purpose = "index2", 
-                          fine_scale = TRUE, 
-                          ObsModel= c(2,1), #c(1,1) #c(10,2)
-                          strata.limits=strata.limits, 
-                          knot_method = "grid", 
-                          bias.correct = TRUE,
-                          use_anisotropy = TRUE)
-
-# Import extrapolation grid, these will be available on Jason's Google drive: VASTGAP\Extrapolation Grids
-GOAgrid <- read.csv(file= paste0(getwd(),"/extrapolation_grids/GOAThorsonGrid_Less700m.csv"))
-
-input_grid=cbind(Lat=GOAgrid$Lat,Lon=GOAgrid$Lon,Area_km2=GOAgrid$Shape_Area/1000000)  # Extrapolation grid area is in m^2 and is converted to km^2
-gc()
-
-# Run model
-fit = fit_model( "settings"=settings, 
-                 "Lat_i"=Data_Geostat[,'Lat'], 
-                 "Lon_i"=Data_Geostat[,'Lon'], 
-                 "t_i"=Data_Geostat[,'Year'], 
-                 "b_i"=Data_Geostat[,'Catch_KG'], 
-                 "a_i"=Data_Geostat[,'AreaSwept_km2'], 
-                 "v_i"=Data_Geostat[,'Vessel'], #### ##was ok to leave in because it's all "missing" or zero, so no vessel effects
-                 "refine" = TRUE,
-                 "input_grid"=input_grid, 
-                 optimize_args=list("lower"=-Inf,"upper"=Inf),
-                 "working_dir" = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results"),
-                 use_new_epsilon  = F) #fixes error
-
-# Plot results
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Get model outputs and diagnostics
+##   Save VAST model object as RDS file
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 plot( fit )
+saveRDS(object = fit,
+        file = paste0(getwd(), "/", result_dir, "/", 
+                      species_name, "_VASTfit.RDS"))
 
-# save the VAST model
-saveRDS(fit,file = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/",species_name,"VASTfit.RDS"))
-
-
-## Save COG (center of gravity) for ESP request
-results = plot( fit, n_cells=200^2 )
-write.csv( results$Range$COG_Table, file=paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/",species_name,"COG.csv"), row.names=FALSE )
-
-##save effective area occupied for ESP request
-report = TMB::summary.sdreport(fit$parameter_estimates$SD)
-ln_km2 = report[which(rownames(report)=="log_effective_area_ctl"),c('Estimate','Std. Error')]
-Year <- sort(unique(fit$year_labels))
-ln_km2 <- as.data.frame(cbind(ln_km2, Year))
-ln_km2 <- ln_km2[which(ln_km2$Year %in% unique(fit$data_frame$t_i)),]
-write.csv( ln_km2, file=paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/",species_name,"ln_effective_area.csv"), row.names=FALSE )
