@@ -16,4 +16,7 @@ presentation/
 /results/**/*.dll
 /results/**/*.cpp
 /results/**/*.o
+/species_specific_code/**/*.png
+/species_specific_code/**/*.RData
+/species_specific_code/**/*.csv
 /dev/
