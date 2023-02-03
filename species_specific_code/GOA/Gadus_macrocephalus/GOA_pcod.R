@@ -19,7 +19,7 @@ rm(list = ls())
 ##   https://docs.google.com/document/d/18CeXcHhHK48hrtkiC6zygXlHj6YVrWEd/edit
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 current_year <- 2023
-VAST_cpp_version <- "VAST_v14.0.1"
+VAST_cpp_version <- "VAST_v14_0_1"
 pck_version <- c("VAST" = "3.10.0",
                  "FishStatsUtils" = "2.12.0",
                  "Matrix" = "1.5-3",
@@ -109,8 +109,8 @@ fit <- FishStatsUtils::fit_model(
   "Npool" = 100,
   "input_grid" = input_grid, 
   "optimize_args" = list("lower" = -Inf, "upper" = Inf),
-  "working_dir" = paste0(getwd(), "/", result_dir, "/"),
-  "use_new_epsilon"  = F) #fixes error
+  "working_dir" = paste0(getwd(), "/", result_dir, "/"))#,
+  # "use_new_epsilon"  = F) #fixes error
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Get model outputs and diagnostics
