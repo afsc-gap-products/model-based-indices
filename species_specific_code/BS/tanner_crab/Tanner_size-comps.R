@@ -44,7 +44,7 @@ fit = fit_model( settings = settings,
   Lon_i = Data[,'LONGITUDE'],
   t_i = Data[,'YEAR'],
   b_i = as_units(Data[,'numCPUE'],"count"),
-  a_i = as_units(rep(1,nrow(Data)),"nmile2"),
+  a_i = set_units(as_units(rep(1,nrow(Data)),"nmile2"),"km2"),
   c_i = as.numeric(factor(Data[,'SIZE'],levels=category_names))-1,
   Npool = 2000,   # Will mirror hyperparameters for top-2 bins for Males
   newtonsteps = 0, # Speed up but looser convergence
@@ -60,4 +60,20 @@ out = plot( fit,
 Prop_ct = out$Proportions$Prop_ctl[,,1]
 dimnames(Prop_ct) = list( fit$category_names, fit$year_labels )
   write.csv( Prop_ct, file=paste0(run_dir,"Prop_ct.csv") )
+  
+###############
+# Unstratified area-swept
+###############
 
+Dens_ct = tapply( Data[,'numCPUE']/rep(1,nrow(Data)), 
+                  INDEX = list( factor(Data[,'SIZE'],levels=category_names), Data[,'YEAR'] ),
+                  FUN = mean )
+Dens_ct = as_units(Dens_ct, "count / nmile2" )  
+Dens_ct = set_units(Dens_ct, "count / km2" )
+
+# 
+Area = make_extrapolation_info( Region = "eastern_bering_sea" )
+N_ct = set_units(Dens_ct * sum(Area$Area_km2), "count")
+
+# 
+dimnames(N_ct) = list( "Size"=category_names, "Year"=sort(unique(Data[,'YEAR'])) )
