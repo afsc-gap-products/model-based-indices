@@ -1,9 +1,12 @@
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## Project:       Prepare EBS/NBS weight and size data
-## Author:        Jason Conner (jason.conner@noaa.gov)
-## Description:   Template for preparing haul-level CPUE and age composition 
-##                CPUE for the species of interest
-## Usage:         Establish credentials, species of interest, then run rest
+## Authors:       Zack Oyafuso (zack.oyafuso@noaa.gov)
+##                Emily Markowitz (emily.markowitz@noaa.gov)
+##                adapted from Jason Conner (jason.conner@noaa.gov)
+## Description:   Prepare haul-level CPUE and age composition CPUE for the 
+##                EBS and NBS for yellowfin sole, Limanda aspera (10210)
+##
+## Notes:         For 2022 index production
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 rm(list = ls())
 
@@ -14,9 +17,6 @@ rm(list = ls())
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 library(sumfish)
 sumfish::getSQL()
-
-## If necessary, update the SAFE lookup tables with current year's surveys
-sumfish::updateSurvey()
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Select species and years ----
@@ -31,29 +31,21 @@ sumfish::updateSurvey()
 ##   plus_group is used for the age composition calculations, where ages at or
 ##   older than the plus group are grouped as one group. 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+species_name <- "yellowfin_sole"
+species_code <- 10210
 start_year <- 1982
 current_year <- 2022
+plus_group <- 20
 min_year <- start_year
-max_cruise <- (current_year * 100) + 99
 
-# species_name <- "yellowfin_sole"
-# species_code <- 10210
-# plus_group <- 20
-
-species_name <- "BS_Pacific_Cod"
-species_code <- 21720
-plus_group <- 12
-
-# just to get standard raw data for pollock, actual assessment data may differ
-# species_name <- "pollock"
-# species_code <- 21740
+which_run <- c("hindcast", "production")[2]
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Create directory to store data products
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-res_dir <- here::here("data", species_name)
-if(!dir.exists(res_dir)) dir.create(res_dir, recursive = TRUE)
+res_dir <- paste0("species_specific_code/BS/", species_name, "/", 
+                  which_run, "/data/")
+if(!dir.exists(res_dir)) dir.create(res_dir)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Pull EBS database ----
@@ -67,19 +59,18 @@ if(!dir.exists(res_dir)) dir.create(res_dir, recursive = TRUE)
 ##          PERFORMANCE 0 is a good performance code, > 0 are satisfactory and
 ##          < 0 are bad performance codes for a particular haul.
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-# valid_EBS_hauljoin <- getSQL("select hauljoin from safe.ebs_vast_hauls")
 EBS <- sumfish::getRacebase(year = c(start_year, current_year), 
                             survey = 'EBS_SHELF', 
                             speciesCode = species_code) 
 
 EBS_nonstandard_hauls <- EBS$haul_other %>%
-    filter(CRUISE %in% c(200101, 199401, 200501, 200601) 
-           & PERFORMANCE >= 0
-           & HAUL_TYPE == 3
-           & !is.na(STRATUM))
+  filter(CRUISE %in% c(200101, 199401, 200501, 200601) 
+         & PERFORMANCE >= 0
+         & HAUL_TYPE == 3
+         & !is.na(STRATUM))
 
 EBS_nonstandard_catch <- EBS$catch_other %>%
-    filter(HAULJOIN %in% EBS_nonstandard_hauls$HAULJOIN)
+  filter(HAULJOIN %in% EBS_nonstandard_hauls$HAULJOIN)
 
 EBS$catch <- bind_rows(EBS$catch, EBS_nonstandard_catch)
 EBS$haul <- bind_rows(EBS$haul, EBS_nonstandard_hauls)
@@ -94,14 +85,9 @@ EBS$haul <- bind_rows(EBS$haul, EBS_nonstandard_hauls)
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 
 ## Standard NBS Hauls
-# valid_NBS_hauljoin <- getSQL("select hauljoin from safe.nbs_vast_hauls")
 NBS <- sumfish::getRacebase(year = c(start_year, current_year), 
                             survey = 'NBS_SHELF', 
                             speciesCode = species_code) 
-
-## Add NBS strata to EBS strata (and vice versa) for the nonstandard hauls above
-EBS$stratum <- bind_rows(EBS$stratum, NBS$stratum)
-NBS$stratum <- EBS$stratum
 
 ## 2018 NBS cruise
 NBS18.cruise <- dplyr::filter(EBS$cruise, CRUISE == 201801)
@@ -129,17 +115,17 @@ NBS18 <- list(cruise = NBS18.cruise,
 ##   Bind EBS, NBS and NBS18 haul data
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 sumEBS <- sumfish::sumHaul(EBS) %>%
-    dplyr::mutate(REGION = "EBS")
+  dplyr::mutate(REGION = "EBS")
 sumNBS <- sumfish::sumHaul(NBS) %>%
-    dplyr::mutate(REGION = "NBS")
+  dplyr::mutate(REGION = "NBS")
 sum18 <- sumfish::sumHaul(NBS18) %>%
-    dplyr::mutate(STRATUM = as.character(STRATUM),
-                  REGION = "NBS")
+  dplyr::mutate(STRATUM = as.character(STRATUM),
+                REGION = "NBS")
 
 weightAll <- sumAll <- dplyr::bind_rows(sumEBS, sumNBS,sum18) %>%
-    dplyr::filter(SPECIES_CODE %in% species_code, 
-                  YEAR >= min_year,
-                  !is.na(EFFORT))
+  dplyr::filter(SPECIES_CODE %in% species_code, 
+                YEAR >= min_year,
+                !is.na(EFFORT))
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Test for missing values
@@ -151,29 +137,29 @@ ifelse(test = length(sumAll$HAULJOIN[!sumAll$HAULJOIN %in% check_hauls]) == 0,
                    " missing hauls. Check code."))
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Expand Length Freqs to Size Comps ----
+##   Expand Length Frequencies to Size Composition ----
 ##   Filter to choose years >= min_year
 ##   Bind EBS, NBS and NBS18 size data
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 size18 <- sumfish::sumSize(NBS18) %>%
-    dplyr::mutate(STRATUM = as.character(STRATUM),
-                  REGION = 'NBS')
+  dplyr::mutate(STRATUM = as.character(STRATUM),
+                REGION = 'NBS')
 sizeNBS <- sumfish::sumSize(NBS) %>%
-    dplyr::mutate(REGION = 'NBS')
+  dplyr::mutate(REGION = 'NBS')
 sizeEBS <- sumfish::sumSize(EBS) %>%
-    dplyr::mutate(REGION = 'EBS')
+  dplyr::mutate(REGION = 'EBS')
 
 sizeAll <- sizeComp <- bind_rows(sizeEBS, sizeNBS,size18) %>%
-    dplyr::filter(YEAR >= min_year, 
-                  !is.na(EFFORT))
+  dplyr::filter(YEAR >= min_year, 
+                !is.na(EFFORT))
 
 ## Test for missing values - hauls with no zeros for species
 ifelse(
-    test = length(sizeComp$HAULJOIN[!sizeComp$HAULJOIN %in% check_hauls]) == 0,
-    yes = "No missing hauls",
-    no = paste0(length(sizeComp$HAULJOIN[!sizeComp$HAULJOIN %in% check_hauls]),
-                " missing hauls. Check code.")
-)
+  test = length(sizeComp$HAULJOIN[!sizeComp$HAULJOIN %in% check_hauls]) == 0,
+  yes = "No missing hauls",
+  no = paste0(length(sizeComp$HAULJOIN[!sizeComp$HAULJOIN %in% check_hauls]),
+              " missing hauls. Check code.")
+  )
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Age-length keys (ALKs) ----
@@ -191,18 +177,9 @@ ifelse(
 ##   EBS ALK ----
 ##   In the EBS, global_fill == TRUE is the default argument used. This 
 ##        fills a missing year/sex/length ALK by pooling the data for 
-##        that sex/length combination across years and then filling in the ALK.
-##
-##   For the EBS Pcod ALK, we will first filter out hauls prior to 1994 due to 
-##      lack of reliable age estimates during these early years
+##        that sex/length combination across years and then filling in the ALK. 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-if (EBS$species$SPECIES_CODE == 21720) {
-  EBS_4alk <- subsetRacebase(EBS, cruise = 199400:max_cruise)
-} else {
-  EBS_4alk <- EBS
-}
-    
-alk_ebs <- sumfish::sumALK(EBS_4alk, global_fill=TRUE, all_performance=FALSE)
+alk_ebs <- sumfish::sumALK(EBS)
 alk_ebs$REGION <- "EBS"
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
@@ -217,23 +194,18 @@ alk_ebs$REGION <- "EBS"
 ##   We then specify an NBS ALK where global_fill == TRUE (alk_nbs_fill), 
 ##   and we use this ALK to fill in any remaining missing NBS ALKs 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-if (NBS$species$SPECIES_CODE == 21720) {
-  NBS_4alk <- subsetRacebase(NBS, cruise = 199400:max_cruise)
-} else {
-  NBS_4alk <- NBS
-}
-alk_nbs_prime <- sumfish::sumALK(NBS_4alk, global_fill = FALSE, all_performance=FALSE)    
+alk_nbs_prime <- sumfish::sumALK(NBS, global_fill = FALSE)    
 
 ## Find missing observations of age-at-length for the NBS
 missing_test <- alk_nbs_prime %>%
-    ## For each combination of sex, year, and length bin, append a 
-    ## column called total_ratio that sums probabilities (should either be
-    ##  zero for missing or one for existing)
-    dplyr::group_by(SEX, YEAR, LENGTH) %>%
-    dplyr::summarize(total_ratio = sum(probability) ) %>%
-    ## then filter the dataframe to only those records where total_ratio == 0. 
-    ## These are the ALKs that we need to fill in 
-    dplyr::filter(total_ratio == 0)
+  ## For each combination of sex, year, and length bin, append a 
+  ## column called total_ratio that sums probabilities (should either be
+  ##  zero for missing or one for existing)
+  dplyr::group_by(SEX, YEAR, LENGTH) %>%
+  dplyr::summarize(total_ratio = sum(probability) ) %>%
+  ## then filter the dataframe to only those records where total_ratio == 0. 
+  ## These are the ALKs that we need to fill in 
+  dplyr::filter(total_ratio == 0)
 
 ## Filter ALK to only lengths that have some probability for age by using the
 ## dplyr::anti_join() to return all rows from alk_nbs_prime without a match in
@@ -245,17 +217,17 @@ alk_nbs_prime2 <- dplyr::anti_join(x = alk_nbs_prime,
 ## For those missing NBS ALKs, use the ALKs from the EBS, then append to the 
 ## available NBS ALKs
 alk_nbs_yearFill <- alk_ebs %>%
-    dplyr::inner_join(missing_test,
-                      by = c("YEAR", "SEX", "LENGTH")) %>%
-    dplyr::select(-total_ratio) %>%
-    dplyr::bind_rows(alk_nbs_prime2)
+  dplyr::inner_join(missing_test,
+                    by = c("YEAR", "SEX", "LENGTH")) %>%
+  dplyr::select(-total_ratio) %>%
+  dplyr::bind_rows(alk_nbs_prime2)
 
 ## For the remaining missing ALKs, we apply the NBS ALK with global_fill == T
 ## But first, find missing observations of age-at-length for the filled NBS key   
 missing_test2 <- alk_nbs_yearFill %>%
-    group_by(YEAR, SEX, LENGTH) %>%
-    summarize(total_ratio = sum(probability) ) %>%
-    filter(total_ratio == 0)
+  group_by(YEAR, SEX, LENGTH) %>%
+  summarize(total_ratio = sum(probability) ) %>%
+  filter(total_ratio == 0)
 
 ## Again, filter ALK to only lengths that have some probability for age 
 alk_nbs_yearFill2 <- anti_join(x = alk_nbs_yearFill, 
@@ -263,16 +235,16 @@ alk_nbs_yearFill2 <- anti_join(x = alk_nbs_yearFill,
                                by = c("SEX", "LENGTH"))
 
 ## Append NBS global (pooled years) age-at-length for missing values
-alk_nbs_fill <- sumfish::sumALK(NBS_4alk, global_fill = TRUE, all_performance=FALSE)
+alk_nbs_fill <- sumfish::sumALK(NBS, global_fill = TRUE)
 alk_nbs_globalFill <- alk_nbs_fill %>%
-    inner_join(missing_test2,
-               by = c("YEAR", "SEX", "LENGTH")) %>%
-    select(-total_ratio) %>%
-    bind_rows(alk_nbs_yearFill) %>%
-    ## We use EBS ALK for 2018 because the 2018 NBS specimen data are not filtered 
-    ## out of the ALK generation for the EBS.
-    bind_rows(filter(alk_ebs, YEAR == 2018)) %>% 
-    mutate(REGION = "NBS")
+  inner_join(missing_test2,
+             by = c("YEAR", "SEX", "LENGTH")) %>%
+  select(-total_ratio) %>%
+  bind_rows(alk_nbs_yearFill) %>%
+  ## We use EBS ALK for 2018 because the 2018 NBS specimen data are not filtered 
+  ## out of the ALK generation for the EBS.
+  bind_rows(filter(alk_ebs, YEAR == 2018)) %>% 
+  mutate(REGION = "NBS")
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Test that all probabilities add to 1
@@ -286,8 +258,8 @@ alk_nbs_globalFill <- alk_nbs_fill %>%
 ##
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 probabilities_test <- alk_nbs_globalFill %>%
-    group_by(SEX, YEAR, LENGTH) %>%
-    summarize(total_ratio = sum(probability) )
+  group_by(SEX, YEAR, LENGTH) %>%
+  summarize(total_ratio = sum(probability) )
 
 unique(probabilities_test$total_ratio)
 
@@ -305,56 +277,56 @@ alk <- rbind(alk_ebs, alk_nbs_globalFill)
 allCats <- expand.grid(HAULJOIN = unique(weightAll$HAULJOIN), 
                        AGE = unique(alk$AGE[alk$AGE<=plus_group]), 
                        noAge = 0) %>%
-    inner_join(weightAll, by = c("HAULJOIN")) 
+  inner_join(weightAll, by = c("HAULJOIN")) 
 
 ## Aggregate by Age key
 Data <- sizeComp %>%
-    ## append the alks to the sizeComp, adding columns `AGE`` and `probabilties``
-    dplyr::left_join(alk, by = c("YEAR", "REGION", "LENGTH", 
-                                 "SEX", "SPECIES_CODE")) %>%
-    ## Calculate age CPUE and truncate ages > plus group to the max age
-    dplyr::mutate(ageCPUE = nSizeCPUE * probability,
-                  AGE = ifelse(test = AGE > plus_group, 
-                               yes = plus_group, no = AGE)) %>% 
-    ## sum cpues of length bins for a given ages for each unique haul
-    dplyr::group_by(YEAR, REGION, HAULJOIN, STRATUM, 
-                    START_LONGITUDE, START_LATITUDE, nCPUE, AGE) %>%
-    dplyr::summarize(ageCPUE = sum(ageCPUE),
-                     count = dplyr::n()) %>%
-    dplyr::ungroup() %>%
-    dplyr::select(HAULJOIN, AGE, ageCPUE, count) %>%
-    ## make sure that all age categories are available for each unique haul and 
-    ## if there is no cpue for a given age, fill with zero. 
-    dplyr::right_join(allCats, by= c("HAULJOIN", "AGE")) %>%
-    dplyr::mutate(ageCPUE = ifelse(test = is.na(ageCPUE), 
-                                   yes = noAge, 
-                                   no = ageCPUE)) 
+  ## append the alks to the sizeComp, adding columns `AGE`` and `probabilties``
+  dplyr::left_join(alk, by = c("YEAR", "REGION", "LENGTH", 
+                               "SEX", "SPECIES_CODE")) %>%
+  ## Calculate age CPUE and truncate ages > plus group to the max age
+  dplyr::mutate(ageCPUE = nSizeCPUE * probability,
+                AGE = ifelse(test = AGE > plus_group, 
+                             yes = plus_group, no = AGE)) %>% 
+  ## sum cpues of length bins for a given ages for each unique haul
+  dplyr::group_by(YEAR, REGION, HAULJOIN, STRATUM, 
+                  START_LONGITUDE, START_LATITUDE, nCPUE, AGE) %>%
+  dplyr::summarize(ageCPUE = sum(ageCPUE),
+                   count = dplyr::n()) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(HAULJOIN, AGE, ageCPUE, count) %>%
+  ## make sure that all age categories are available for each unique haul and 
+  ## if there is no cpue for a given age, fill with zero. 
+  dplyr::right_join(allCats, by= c("HAULJOIN", "AGE")) %>%
+  dplyr::mutate(ageCPUE = ifelse(test = is.na(ageCPUE), 
+                                 yes = noAge, 
+                                 no = ageCPUE)) 
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Format VAST Data ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 data_geostat_index <- 
-    with(sumAll,
-         data.frame(Region = REGION,
-                    Catch_KG = wCPUE, #cpue units: kg per hectare
-                    Year = YEAR,
-                    Vessel = "missing", 
-                    AreaSwept_km2 = 0.01, # converts cpue units to: kg per km^2
-                    Lat = START_LATITUDE,
-                    Lon = START_LONGITUDE,
-                    Pass = 0 ))
+  with(sumAll,
+       data.frame(Region = REGION,
+                  Catch_KG = wCPUE, #cpue units: kg per hectare
+                  Year = YEAR,
+                  Vessel = "missing", 
+                  AreaSwept_km2 = 0.01, # converts cpue units to: kg per km^2
+                  Lat = START_LATITUDE,
+                  Lon = START_LONGITUDE,
+                  Pass = 0 ))
 
 data_geostat_agecomps <-  dplyr::transmute(
-    Data,
-    Catch_KG = ifelse(is.na(ageCPUE),0,ageCPUE),
-    Year = YEAR,
-    Vessel = "missing",
-    Age = AGE,
-    AreaSwept_km2 = .01, # Converts CPUE to km^2
-    Lat = START_LATITUDE,
-    Lon = START_LONGITUDE,
-    Pass = 0) %>%
-    data.frame()
+  Data,
+  Catch_KG = ageCPUE,
+  Year = YEAR,
+  Vessel = "missing",
+  Age = AGE,
+  AreaSwept_km2 = .01, # Converts CPUE to km^2
+  Lat = START_LATITUDE,
+  Lon = START_LONGITUDE,
+  Pass = 0) %>%
+  data.frame()
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Save output ----
@@ -362,28 +334,25 @@ data_geostat_agecomps <-  dplyr::transmute(
 
 ## Index data
 write_rds(x = weightAll, 
-          file = here::here(res_dir, "EBS_NBS_Index.RDS"))
+          file = paste0(res_dir, "EBS_NBS_Index.RDS"))
 write_rds(x = data_geostat_index, 
-          file = here::here(res_dir, "data_geostat_index.RDS"))
+          file = paste0(res_dir, "data_geostat_index.RDS"))
 
 ## Age comp data
 write_rds(x = sizeAll, 
-          file = here::here(res_dir, "EBS_NBS_SizeComp.RDS"))
+          file = paste0(res_dir, "EBS_NBS_SizeComp.RDS"))
 write_rds(x = data_geostat_agecomps, 
-          file = here::here(res_dir, "data_geostat_agecomps.RDS"))
+          file = paste0(res_dir, "data_geostat_agecomps.RDS"))
 
 ## Strata data
 strata <- dplyr::bind_rows(EBS$stratum, NBS$stratum, NBS18$stratum) 
 write_rds(x = strata, 
-          file = here::here(res_dir, "EBS_NBS_strata.RDS"))
+          file = paste0(res_dir, "EBS_NBS_strata.RDS"))
 
 ## ALK
 write_rds(x = alk, 
-          file = here::here(res_dir, "unstratified_alk.RDS"))
+          file = paste0(res_dir, "unstratified_alk_", current_year, ".RDS"))
 
-## Raw data for all regions
+## Raw data
 write_rds(x = list(EBS = EBS, NBS = NBS, NBS18 = NBS18), 
-          file = here::here(res_dir, "raw_data.RDS"))
-
-## Raw data for EBS only
-write_rds(x = EBS, file = here::here(res_dir, "raw_data_EBS.RDS"))
+          file = paste0(res_dir, "raw_data.RDS"))

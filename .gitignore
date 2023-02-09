@@ -16,8 +16,6 @@ presentation/
 /results/**/*.dll
 /results/**/*.cpp
 /results/**/*.o
-<<<<<<< HEAD
-/dev/
 species_specific_code/GOA/Atheresthes_stomias/VAST-atf_2021.R
 /species_specific_code/**/*.png
 /species_specific_code/**/*.RData

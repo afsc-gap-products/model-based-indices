@@ -12,71 +12,13 @@ library(tictoc)
 # Set species -------------------------------------------------------------
 
 species_code <- 21720
-species_name <- "Pacific_Cod_Age"
+species_name <- "Pacific_Cod_Age_hindcast_check"
+species_data <- "BS_Pacific_Cod"
+compare <- FALSE # If compare = TRUE, useing 2021 alk
 
 # Set up folder to store species specific results
-folder <- paste0(getwd(),"/species_specific_code/BS/",species_name)
-dir.create(folder)
-folder <- paste0(getwd(),"/species_specific_code/BS/",species_name,"/data")
-dir.create(folder)
-folder <- paste0(getwd(),"/species_specific_code/BS/",species_name,"/results")
-dir.create(folder)
-
-# Get data from Google drive ----------------------------------------------------------------
-# 
-# drive_auth()
-# 1
-
-# # Summary catch data for EBS and NBS with NBS 2018 included
-# googledrive::drive_download(file=as_id("1TctmzLjuFUopvdD9jqBnhNxw1NuAi87c"), 
-#                             path=here::here("data","EBS_NBS_Index.RDS"), 
-#                             overwrite = TRUE)
-# 
-# # Summary size compositions
-# googledrive::drive_download(file=as_id("1EWD-0HM_WOyfbVa66o5KUVbIwDJczHKT"), 
-#                             path=here::here("data","EBS_NBS_Sizecomp.RDS"), 
-#                             overwrite = TRUE)
-# 
-# # Pacific cod unstratified age-length key
-# googledrive::drive_download(file=as_id("1UEXMTmDZbUAVS6aKG8nNHfkuQVfSPpek"),
-#                             path=here::here("data","pcod_unstratified_alk_2019.RDS"),
-#                             overwrite = TRUE)
-# 
-# # Cold Pool Area covariate
-# googledrive::drive_download(file=as_id("119pehim03WxFjGH9tzjUF7gZDcHJeUe8"), 
-#                             path=here::here("data","cpa_areas2019.csv"), 
-#                             overwrite = TRUE)
-# 
-# # EBS Strata
-# googledrive::drive_download(file=as_id("1UZ4OBGuwqSpPhTD3idDUNqO57Fm1GYnL"), 
-#                             path=here::here("data", "shapefiles","EBS_NBS_2019_1983.cpg"), 
-#                             overwrite = TRUE)
-# googledrive::drive_download(file=as_id("1GhH47aoQ42kx3TYqMo_w0zTV4UeXYWsN"), 
-#                             path=here::here("data", "shapefiles","EBS_NBS_2019_1983.dbf"), 
-#                             overwrite = TRUE)
-# googledrive::drive_download(file=as_id("1SLOH6Ggp8PufL0XZPXLa8ZzPrwIgz68S"), 
-#                             path=here::here("data", "shapefiles","EBS_NBS_2019_1983.sbn"), 
-#                             overwrite = TRUE)
-# googledrive::drive_download(file=as_id("1Hk_t3RvwqwHp6ypL4yfUsACXfxq9IynZ"), 
-#                             path=here::here("data", "shapefiles","EBS_NBS_2019_1983.prj"), 
-#                             overwrite = TRUE)
-# googledrive::drive_download(file=as_id("16GPjJfiWL5ZNCHdimKvoQVp63PGvrVmn"), 
-#                             path=here::here("data", "shapefiles","EBS_NBS_2019_1983.sbx"), 
-#                             overwrite = TRUE)
-# googledrive::drive_download(file=as_id("1Pfg-HxarbSU2M0u-HzSHAIj7E8v-MeO4"), 
-#                             path=here::here("data", "shapefiles","EBS_NBS_2019_1983.shp"), 
-#                             overwrite = TRUE)
-# googledrive::drive_download(file=as_id("1Ke_9cy5wwXolzx34TBM1gbRPGVaS2g7b"), 
-#                             path=here::here("data", "shapefiles","EBS_NBS_2019_1983.shp.xml"), 
-#                             overwrite = TRUE)
-# googledrive::drive_download(file=as_id("1wqdoTKjVSziRdQnUQa7COuYU_2H_TyAt"), 
-#                             path=here::here("data", "shapefiles","EBS_NBS_2019_1983.shx"), 
-#                             overwrite = TRUE)
-
-# Load the data for VAST
-#Data_Geostat <- readRDS(file = paste0(getwd(),"/species_specific_code/BS/",species_name,"/data/Data_Geostat.rds"))
-Data_Geostat <- read.csv(file = paste0(getwd(),"/species_specific_code/BS/",species_name,"/data/Data_Geostat_",species_code,".csv"))
-Data_Geostat$Catch_KG[which(is.na(Data_Geostat$Catch_KG))] <- 0
+folder <- here::here("results",species_name)
+dir.create(folder, recursive = TRUE, showWarnings = F)
 
 
 # Settings ----------------------------------------------------------------
@@ -86,17 +28,17 @@ Region <- c("Eastern_Bering_Sea","Northern_Bering_Sea")
 Method <- "Mesh"
 knot_method <- "grid"
 grid_size_km <- 25
-n_x <- 250 #n_x <- 50   # Specify number of stations (a.k.a. "knots")
+n_x <- 50 #n_x <- 50   # Specify number of stations (a.k.a. "knots")
 FieldConfig <- c("Omega1"="IID", "Epsilon1"="IID", "Omega2"="IID", "Epsilon2"="IID")
 RhoConfig <- c("Beta1"=0, "Beta2"=0, "Epsilon1"=4, "Epsilon2"=4)
 OverdispersionConfig <- c("Eta1"=0, "Eta2"=0)
-ObsModel <- c(2,0)
+ObsModel <- c(2,4)
 Options <- c("Calculate_Range" = FALSE, "Calculate_effective_area" = FALSE, "treat_nonencounter_as_zero" = TRUE )
 Aniso <- FALSE
 Npool <- 100 #20
 fine_scale <- TRUE
 BiasCorr <- TRUE
-max_cells <- 3000
+max_cells <- 2000
 
 strata.limits <- data.frame('STRATA'="All_areas")
 
@@ -129,24 +71,28 @@ strata_names = c("Both","EBS","NBS")
     
     # Load age-length keys produced by sumfish
     #alk_all <- readRDS(here::here("data","unstratified_alk_2021.RDS") )
-    alk_all <- readRDS(paste0(getwd(),"/species_specific_code/BS/raw_data/unstratified_alk_2021.RDS") )
-    alk_ebs <- alk_all$EBS %>%
-        filter(SPECIES_CODE == species_code) %>%
-        mutate(REGION = "EBS")
-    alk_nbs <- alk_all$NBS %>%
-        bind_rows( filter(alk_ebs, YEAR == 2018) ) %>%   # Use EBS ALK for 2018 ad hoc sampling in NBS
-        filter(SPECIES_CODE == species_code) %>%
-        mutate(REGION = "NBS")
-  
-    alk <- bind_rows(alk_ebs, alk_nbs)
+    alk <- readRDS(here::here("data",species_data,"unstratified_alk.RDS") )
+    if(compare == TRUE)
+    {
+      alk_all <- readRDS(here::here("data",species_data,"unstratified_alk_2021.RDS") ) #old
+      alk_ebs <- alk_all$EBS %>%
+          filter(SPECIES_CODE == species_code) %>%
+          mutate(REGION = "EBS")
+      alk_nbs <- alk_all$NBS %>%
+          bind_rows( filter(alk_ebs, YEAR == 2018) ) %>%   # Use EBS ALK for 2018 ad hoc sampling in NBS
+          filter(SPECIES_CODE == species_code) %>%
+          mutate(REGION = "NBS")
+
+      alk <- bind_rows(alk_ebs, alk_nbs)
+    }
     
-    sizeComp <- readRDS(paste0(getwd(),"/species_specific_code/BS/raw_data/EBS_NBS_SizeComp.RDS") ) %>% #readRDS(here::here("data","EBS_NBS_SizeComp.RDS") )
+    sizeComp <- readRDS(here::here("data",species_data,"EBS_NBS_SizeComp.RDS") ) %>% #readRDS(here::here("data","EBS_NBS_SizeComp.RDS") )
         dplyr::filter(YEAR >= min_year,
                       SPECIES_CODE == species_code,
                       !is.na(EFFORT)
         )
-    
-    haulData <- readRDS(paste0(getwd(),"/species_specific_code/BS/raw_data/EBS_NBS_Index.RDS") ) %>% #readRDS(here::here("data","EBS_NBS_Index.RDS") )
+
+    haulData <- readRDS(here::here("data",species_data,"EBS_NBS_Index.RDS") ) %>% 
         dplyr::filter(YEAR >= min_year,
                       SPECIES_CODE == species_code,
                       !is.na(EFFORT)
@@ -170,7 +116,7 @@ strata_names = c("Both","EBS","NBS")
     right_join(allCats, by= c("HAULJOIN","AGE")) %>%
     mutate(ageCPUE = ifelse(is.na(ageCPUE), noAge, ageCPUE)
            ) %>%
-      filter(YEAR < 2020)
+      filter(YEAR < 2021)
     
     # Test CPUE
     # checkData <- Data %>%
@@ -191,7 +137,7 @@ strata_names = c("Both","EBS","NBS")
     
     # Format the data for VAST
     Data_Geostat <-  transmute(Data,
-                             Catch_KG = ageCPUE,
+                             Catch_KG = ifelse(is.na(ageCPUE),0,ageCPUE),
                              Year = YEAR,
                              Vessel = "missing",
                              Age = AGE,
@@ -202,14 +148,16 @@ strata_names = c("Both","EBS","NBS")
     ) %>%
     data.frame()
     
-    #write.csv(Data_Geostat, "Data_Geostat.csv")
-    saveRDS(Data_Geostat, file = paste0(getwd(),"/species_specific_code/BS/",species_name,"/data/Data_Geostat_",species_code,".RDS"))
+    saveRDS(Data_Geostat, file = here::here("data",species_data,
+                                            paste0("Data_Geostat_",species_name,".RDS")))
+    
+    write_csv(Data_Geostat, file = here::here("bridging", paste0("Data_Geostat_2022",species_name,".csv")))
     
 
 # Run Analysis ------------------------------------------------------------
-    Data_Geostat <- readRDS(file = paste0(getwd(),"/species_specific_code/BS/",species_name,"/data/Data_Geostat_",species_code,".RDS"))
-    Data_Geostat$Catch_KG[which(is.na(Data_Geostat$Catch_KG))] <- 0
-    
+    # Data_Geostat <- readRDS(file = here::here("species_specific_code","BS",species_name,"data",
+    #                                           paste0("Data_Geostat_",species_code,".RDS")))
+
   # Run model
   tic("running model")
   fit = fit_model( "settings"=settings, 
@@ -221,15 +169,16 @@ strata_names = c("Both","EBS","NBS")
                    "a_i"=Data_Geostat[,'AreaSwept_km2'], 
                    "v_i"=Data_Geostat[,'Vessel'],
                    Npool = Npool, 
-                   test_fit=T, 
+                   test_fit=FALSE, 
                    create_strata_per_region=TRUE,
-                   "working_dir" = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results"),
-                   "CompileDir" = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results") )
+                   "working_dir" = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results/"),
+                   "CompileDir" = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results/") )
 
   toc()  
   # Save results
   #saveRDS(fit, file = "VASTfit.RDS")
-  saveRDS(fit,file = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results/",species_name,"_VASTfit.RDS"))
+  saveRDS(fit, file = here::here("results",species_name,
+                                paste0(species_name,"_VASTfit.RDS")))
   
   
   # Plots -------------------------------------------------------------------
@@ -244,14 +193,15 @@ strata_names = c("Both","EBS","NBS")
   # Plot results
   results <- plot_results( fit, zrange = c(-3,3), n_cells = 600, strata_names = strata_names, check_residuals = FALSE )
   #saveRDS(results, file = "VASTresults.RDS")
-  saveRDS(results,file = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results/",species_name,"_results.RDS"))
+  saveRDS(results,file = here::here("data",species_name,
+                                    paste0(species_name,"_results.RDS")))
   
   
-  # If residual plots don't... uh... plot...
-  plot_quantile_residuals( fit=fit ) 
-  
-  map_list = make_map_info( "Region"=settings$Region, "spatial_list"=fit$spatial_list, "Extrapolation_List"=fit$extrapolation_list )
-  plot_maps( Obj=fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
+  # # If residual plots don't... uh... plot...
+  # plot_quantile_residuals( fit=fit ) 
+  # 
+  # map_list = make_map_info( "Region"=settings$Region, "spatial_list"=fit$spatial_list, "Extrapolation_List"=fit$extrapolation_list )
+  # plot_maps( Obj=fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
   
  
 
@@ -265,8 +215,8 @@ strata_names = c("Both","EBS","NBS")
   Years2Include <- which(VASTfit$year_labels != 2020)
   proportions <- calculate_proportion( TmbData=VASTfit$data_list, 
                                       Index=results$Index, 
-                                      Year_Set= Year_Set, 
-                                      Years2Include = Years2Include,
+                                      year_labels = Year_Set, 
+                                      years_to_plot = Years2Include,
                                       strata_names=strata_names)
   
   prop <- data.frame(t(data.frame(proportions$Prop_ctl))) %>%
@@ -279,6 +229,6 @@ strata_names = c("Both","EBS","NBS")
                          )
               )
   
-  write.csv(prop,"proportions.csv")
-  write.csv(prop,file = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results/",species_name,"_prop.RDS"))
+  write.csv(prop, here::here("results",species_name,"proportions.csv"))
+  saveRDS(prop, here::here("results",species_name,paste0(species_name,"_prop.RDS")))
   

@@ -9,7 +9,6 @@
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 rm(list = ls())
 finalanalysis <- TRUE # this will make the model work faster while troubleshooting
-init_pars <- c(FALSE, TRUE)[1]
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Import packages ----
@@ -28,8 +27,8 @@ library(VAST) # VAST 3.6.1, # devtools::install_github('james-thorson/VAST@3.8.2
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 
 R_version <- "R version 4.0.2 (2020-06-22)"
-VAST_cpp_version <- "VAST_v13_1_0"
-pck_version <- c("VAST" = "3.9.0", 
+VAST_cpp_version <- "VAST_v14_0_1"
+pck_version <- c("VAST" = "3.10.0", 
                  "FishStatsUtils" = "2.11.0", 
                  "Matrix" = "1.4-0", 
                  "TMB" = "1.7.22", 
@@ -54,7 +53,7 @@ pck_version <- c("VAST" = "3.9.0",
                      " with the 2022 TOR."))
     
     if(!temp_version == pck_version[pck])
-      message(paste0("The version of the '", names(pck_version)[pck], 
+      message(paste0("WARNING: The version of the '", names(pck_version)[pck], 
                      "' package (", temp_version, ") is NOT consistent",
                      " with the 2022 TOR. Please update the '", 
                      names(pck_version)[pck], "' package to ", pck_version[pck]))
@@ -84,24 +83,6 @@ sink()
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 Data_Geostat <- readRDS(paste0(workDir, 
                                "hindcast/data/data_geostat_agecomps.RDS"))
-
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Import init pars ----
-##   Have not tested this section yet
-##   see ?VAST::make_model for more info on the `Parameter` argument
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-if (init_pars) {
-  par_file <- paste0(workDir, 
-                     "hindcast/results_age/starting_parameters.RDS")
-  
-  if (file.exists(par_file)){
-    init_pars <- readRDS(par_file)
-  } else( {
-    print("starting_parameters.RDS does not exist")
-    init_pars <- "generate"
-  } )
-  
-} else (init_pars <- "generate")
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Set VAST settings ----
@@ -145,8 +126,6 @@ fit <- FishStatsUtils::fit_model(
   "a_i" = Data_Geostat[, "AreaSwept_km2"], 
   "v_i" = Data_Geostat[, "Vessel"],
   
-  "Parameters" = init_pars,
-  
   ## Model tuning
   "Npool" = 100,
   "refine" = TRUE,
@@ -157,11 +136,11 @@ fit <- FishStatsUtils::fit_model(
 ##   Save results locally ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-## Save VAST fit object
+## VAST fit object
 saveRDS(object = fit, 
         file = paste0(workDir, "/hindcast/results_age/VASTfit.RDS"))
 
-## Save parameter estimates
+## Parameter estimates
 saveRDS(object = fit$ParHat, 
         file = paste0(workDir, "hindcast/results_age/starting_parameters.RDS"))
 
@@ -183,13 +162,14 @@ map_list = FishStatsUtils::make_map_info(
   "spatial_list" = fit$spatial_list, 
   "Extrapolation_List" = fit$extrapolation_list)
 
-##   Predicted density maps for each age group across years
-n_ages <- length(unique(Data_Geostat$Age)) 
-Year_set <- sort(unique((Data_Geostat$Year)))
+## Predicted density maps for each age group across years
+n_ages <- length(unique(Data_Geostat$Age))
+Year_Set <- fit$year_labels
 
 if(!dir.exists(paste0(workDir, "/hindcast/results_age/predicted_density/"))){
   dir.create(paste0(workDir, "/hindcast/results_age/predicted_density/"))
 }
+
 FishStatsUtils::plot_maps( 
   fit = fit, 
   plot_set = 3,
@@ -230,14 +210,12 @@ FishStatsUtils::plot_maps(
   working_dir = paste0(workDir, "/hindcast/results_age/",
                        "spatiotemporal_effects/")) 
 
-## Proportions
-Year_Set <- fit$year_labels
-Years2Include <- which(fit$year_labels != 2020)
+## Predicted Proportions
 proportions <- FishStatsUtils::calculate_proportion( 
   TmbData = fit$data_list, 
   Index = results$Index, 
   year_labels = Year_Set, 
-  years_to_plot = Years2Include,
+  years_to_plot = which(fit$year_labels != 2020),
   strata_names = strata_names, 
   DirName = paste0(getwd(),  "/species_specific_code/BS/",
                    speciesName, "/hindcast/results_age/output_plots/"))

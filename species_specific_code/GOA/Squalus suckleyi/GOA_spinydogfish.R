@@ -16,24 +16,24 @@ packageVersion('TMB')
 packageVersion('DHARMa')
 
 # Set species 
-species_name <- "Sebastes_variabilis"
-## dusky rockfish
+species_name <- "Squalus suckleyi"
+## spiny dogfish
 #dplyr::filter(COMMON_NAME %in% c("dusky and dark rockfishes unid.", "dusky rockfish"))
 knots <- c(500,750,100)[2]
 model <- c("poisson_delta","delta")[1]
-obs <- c("gamma","lognormal")[2]
+obs <- c("gamma","lognormal")[1]
 
 # Load the data for VAST
-Data_Geostat <- readRDS(file = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/Data_Geostat_",species_name,".rds"))
+Data_Geostat <- readRDS(file = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/data/Data_Geostat_",species_name,".rds"))
 #Data_Geostat <- readRDS(file = paste0(getwd(),"/data/Data_Geostat_",species_name,".rds"))
 Data_Geostat$Catch_KG[which(is.na(Data_Geostat$Catch_KG))] <- 0
 
 # Define strata
-#strata.limits <- data.frame(STRATA = as.factor('All_areas'))
-#strata c(3, 4, 1, 2)
-strata.limits <- data.frame('STRATA' = as.factor(c("Total","Western","Central","Eastern")), 
-                  'west_border' = c(-Inf,-Inf, -159,-147), 
-                  'east_border' = c(Inf,-159,-147,Inf ))
+strata.limits <- data.frame(STRATA = as.factor('All_areas'))
+#strata c(3, 1, 2)
+#strata.limits <- data.frame('STRATA' = as.factor(c("Western","Central","Eastern")), 
+#                  'west_border' = c(-Inf, -159,-147), 
+#                  'east_border' = c(-159,-147,Inf ))
 FieldConfig = matrix( c("IID","IID","IID","IID","IID","IID"), ncol=2, nrow=3, dimnames=list(c("Omega","Epsilon","Beta"),c("Component_1","Component_2")) )
 RhoConfig  = c("Beta1" = 0, "Beta2" = 0, "Epsilon1" = 0, "Epsilon2" = 0)
 
@@ -43,13 +43,12 @@ settings = make_settings( Version = "VAST_v14_0_1",
                           Region = "User", #"gulf_of_alaska",
                           purpose = "index2", 
                           fine_scale = TRUE, 
-                          ObsModel= c(1,1), #c(2,1) #c(10,2)
+                          ObsModel= c(2,1), #c(1,1) #c(10,2)
                           strata.limits=strata.limits, 
                           knot_method = "grid", 
                           bias.correct = TRUE,
-                          use_anisotropy = TRUE#,
-                          #max_cells = 2000
-                          )
+                          use_anisotropy = TRUE,
+                          max_cells = 2000)
 
 # Import extrapolation grid, these will be available on Jason's Google drive: VASTGAP\Extrapolation Grids
 GOAgrid <- read.csv(file= paste0(getwd(),"/GOA_extrapolation_grids/GOAThorsonGrid_Less700m.csv"))
@@ -72,14 +71,14 @@ fit = fit_model( "settings"=settings,
 
 
 # Plot results
-plot( fit, "working_dir" = paste0(paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results") ) )
+plot( fit, "working_dir" = paste0(paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results") ))
 
 # save the VAST model
 saveRDS(fit,file = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/",species_name,"VASTfit.RDS"))
 
 
 ## Save COG (center of gravity) for ESP request
-results = plot( fit, n_cells=200^2 , "working_dir" = paste0(paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results") ))
+results = plot( fit, n_cells=200^2, "working_dir" = paste0(paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results") ) )
 write.csv( results$Range$COG_Table, file=paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/",species_name,"COG.csv"), row.names=FALSE )
 
 ##save effective area occupied for ESP request
