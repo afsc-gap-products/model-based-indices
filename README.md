@@ -7,7 +7,7 @@ Primary contact: [@coleary-noaa](https://github.com/coleary-noaa)
 
 # Mission
 Provide VAST estimates of abundance and their standard error from GAP survey data for stock assessment authors in conjunction with traditional design-based estimators.
-- [TOR 2023]()
+- [Draft TOR 2023](https://docs.google.com/document/d/18CeXcHhHK48hrtkiC6zygXlHj6YVrWEd/edit?usp=share_link&ouid=110653283533112338587&rtpof=true&sd=true)
 - [Annual stock assessment request form](https://docs.google.com/spreadsheets/d/18gr3owj5iAq1iCDX4wpQPUC9ldLz-YTsCBIfnkHqibo/edit?usp=sharing)
 - [Annual ESR request form](https://docs.google.com/spreadsheets/d/1SC-KzRmng0c2e1GpvqYQz4Ijr0_hlbGZbWiislXGGcw/edit?usp=sharing)
 - [ESP submission tool](https://apex.psmfc.org/akfin/f?p=140:LOGIN_DESKTOP:4779711459935:::::)
@@ -43,8 +43,9 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 - Slack VAST support group (ask Cecilia for an invite)
 
 # Software versions used for model-based index production
-- **2022**: Rv4.0.2 or later VAST v3.8.2, FishStatsUtils v2.10.0, cpp VAST_v13_1_0, TMB v1.7.22, Matrix v1.4-0, DHARMa 0.4.5
-- **2021**: Rv4.0.2 VAST v3.6.1, FishStatsUtils v2.8.0, cpp VAST_v12_0_0, TMB v1.7.18, Matrix v1.2.18
+- **2023**: Rv4.0.2 or later; VAST v3.10.0; .cpp 14.0.1; FishStatsUtils 2.12.0; Matrix 1.5-3; TMB 1.9.2; DHARMa 0.4.6
+- **2022**: Rv4.0.2 or later; VAST v3.8.2, FishStatsUtils v2.10.0, cpp VAST_v13_1_0, TMB v1.7.22, Matrix v1.4-0, DHARMa 0.4.5
+- **2021**: Rv4.0.2; VAST v3.6.1, FishStatsUtils v2.8.0, cpp VAST_v12_0_0, TMB v1.7.18, Matrix v1.2.18
 - **2020**: VAST v3.3.0, FishStatsUtils v2.5.0, cpp VAST_v8_2_0
 
 # Initial model settings to generate model-based indices
