@@ -37,6 +37,7 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 
 # VAST Resources 
 - VASTGAP/ModSquad folder [here](https://drive.google.com/drive/folders/1yxn02yF0V1PNVw0_HpqeSK_XxgOy_LAT)
+- ModSquad training materials [here](https://drive.google.com/drive/folders/1TZRrEwka7OEICC6D81LiuGtYJMSxdaFe?usp=sharing)
 - VAST example from Cecilia [here](https://drive.google.com/file/d/1eNUXhVuezqWYQx0GHoKcKuHyqTssY_BC/view)
 - VAST common troubleshooting [here](https://docs.google.com/document/d/1j3Li2aacvy7d4FJxLlGDctHlDJWQgZzI5HzyMujwf8Y/edit?usp=sharing)
 - Identification of valid hauls for Bering Sea VAST indices, from Jason [here](https://docs.google.com/spreadsheets/d/1-z7AFYoTM0-RApsW9APfXX4CoA5mbk6k/edit#gid=1419989689)
