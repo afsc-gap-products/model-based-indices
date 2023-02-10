@@ -44,9 +44,13 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 - Slack VAST support group (ask Cecilia for an invite)
 
 # Minimum standard of versions of software and key dependencies (i.e., using these versions or later)
-- **2023**: Rv4.0.2; VAST v3.9.0; FishStatsUtils v2.10.0, cpp VAST_v13_1_0, TMB v1.7.22, Matrix v1.4-0, DHARMa 0.4.5
-- **2022**: Rv4.0.2; VAST v3.8.2, FishStatsUtils v2.10.0, cpp VAST_v13_1_0, TMB v1.7.22, Matrix v1.4-0, DHARMa 0.4.5
-- **2021**: Rv4.0.2; VAST v3.6.1, FishStatsUtils v2.8.0, cpp VAST_v12_0_0, TMB v1.7.18, Matrix v1.2.18
+- **2023**: 
+  - Rv4.0.2: VAST v3.9.0, FishStatsUtils v2.10.0, cpp VAST_v13_1_0, TMB v1.7.22, Matrix v1.4-0, DHARMa 0.4.5; or,
+  - MRAN v4.0.2: VAST v3.9.0, FishStatsUtils v2.10.0, cpp VAST_v13_1_0, TMB v1.7.16, Matrix v1.2-18, DHARMa v0.3.2
+- **2022**: 
+  - Rv4.0.2: VAST v3.8.2, FishStatsUtils v2.10.0, cpp VAST_v13_1_0, TMB v1.7.22, Matrix v1.4-0, DHARMa 0.4.5; or,
+  - MRAN v4.0.2: VAST v3.9.0, FishStatsUtils v2.10.0, cpp VAST_v13_1_0, TMB v1.7.16, Matrix v1.2-18, DHARMa v0.3.2
+- **2021**: Rv4.0.2: VAST v3.6.1, FishStatsUtils v2.8.0, cpp VAST_v12_0_0, TMB v1.7.18, Matrix v1.2.18
 - **2020**: VAST v3.3.0, FishStatsUtils v2.5.0, cpp VAST_v8_2_0
 
 # Initial model settings to generate model-based indices
