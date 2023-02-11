@@ -56,14 +56,12 @@ for (pck in 1:length(pck_version)) {
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 folder <- paste0(getwd(), "/species_specific_code/BS/", 
                  species_name, "/", which_model, "/")
-if(!dir.exists(folder)) dir.create(path = paste0(folder, "results/"), 
-                                   recursive = TRUE)
+if(!dir.exists(paste0(folder, "results/"))) 
+  dir.create(path = paste0(folder, "results/"), recursive = TRUE)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Record sessionInfo ----
-##   
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## Save package versions
 sink(file = paste0(folder, "results/session_info.txt"), 
      type = "output")
 sessionInfo()
