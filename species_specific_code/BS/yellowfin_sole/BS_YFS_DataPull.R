@@ -32,7 +32,7 @@ sumfish::getSQL()
 species_name <- "yellowfin_sole"
 species_code <- 10210
 start_year <- 1982
-current_year <- 2021
+current_year <- 2022
 plus_group <- 20
 min_year <- start_year
 
