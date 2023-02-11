@@ -147,7 +147,7 @@ fit <- FishStatsUtils::fit_model(
 
 ## Save VAST fit object
 saveRDS(object = fit, 
-        file = paste0(folder, "results/VASTfit.RDS"))
+        file = paste0(folder, "results/", species_name, "_VASTfit.RDS"))
 
 ## Save diagnostics and other outputs
 results <- FishStatsUtils::plot_results( 
@@ -160,5 +160,5 @@ results <- FishStatsUtils::plot_results(
   n_samples = 0)
 
 saveRDS(object = results, 
-        file = paste0(folder, "output_plots/diagnostics.RDS"))
+        file = paste0(folder, "results/output_plots/diagnostics.RDS"))
 
