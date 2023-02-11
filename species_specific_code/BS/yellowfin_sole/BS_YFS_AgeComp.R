@@ -8,72 +8,58 @@
 ## Description:   VAST estimates of age composition for EBS+NBS yellowfin sole
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 rm(list = ls())
-finalanalysis <- TRUE # this will make the model work faster while troubleshooting
+which_model <- c("hindcast", "production")[1]
+species_name <- "yellowfin_sole"
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Import packages ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-library(VAST) # VAST 3.6.1, # devtools::install_github('james-thorson/VAST@3.8.2', INSTALL_opts='--no-staged-install')
-# source("http://www.math.ntnu.no/inla/givemeINLA.R")  
-# remotes::install_github("James-Thorson-NOAA/VAST", ref="3.8.2") 
-# remotes::install_github("nwfsc-assess/geostatistical_delta-GLMM", ref="3.3.0") 
-# remotes::install_github("James-Thorson-NOAA/FishStatsUtils@2.10.2")
-
-# install.packages(pkgs = "https://cran.r-project.org/bin/windows/contrib/4.2/Matrix_1.4-0.zip", repos = NULL)
-# install.packages(pkgs = "https://cran.r-project.org/src/contrib/Archive/TMB/TMB_1.7.22.tar.gz", repos = NULL)
+library(VAST) 
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   System preferences ----
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-
-R_version <- "R version 4.0.2 (2020-06-22)"
+##   Updated every year
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+current_year <- 2023
 VAST_cpp_version <- "VAST_v14_0_1"
-pck_version <- c("VAST" = "3.10.0", 
-                 "FishStatsUtils" = "2.11.0", 
-                 "Matrix" = "1.4-0", 
-                 "TMB" = "1.7.22", 
-                 "DHARMa" = "0.4.5")
+pck_version <- c("VAST" = "3.10.0",
+                 "FishStatsUtils" = "2.12.0",
+                 "Matrix" = "1.5-3",
+                 "TMB" = "1.9.2",
+                 "DHARMa" = "0.4.6")
 
-{
-  if(sessionInfo()$R.version$version.string == R_version) 
-    message(paste0(sessionInfo()$R.version$version.string, 
-                   " is consistent with the 2022 TOR."))
+for (pck in 1:length(pck_version)) {
+  temp_version <- packageVersion(pkg = names(pck_version)[pck])
   
-  if(!sessionInfo()$R.version$version.string == R_version) 
-    message(paste0(sessionInfo()$R.version$version.string, 
-                   " is NOT consistent with the 2022 TOR. ",
-                   "Please update R version to ", R_version))
+  if(temp_version == pck_version[pck])
+    message(paste0("The version of the '", names(pck_version)[pck], 
+                   "' package (", temp_version, ") is consistent",
+                   " with the ", current_year, " TOR."))
   
-  for (pck in 1:length(pck_version)) {
-    temp_version <- packageVersion(pkg = names(pck_version)[pck])
-    
-    if(temp_version == pck_version[pck])
-      message(paste0("The version of the '", names(pck_version)[pck], 
-                     "' package (", temp_version, ") is consistent",
-                     " with the 2022 TOR."))
-    
-    if(!temp_version == pck_version[pck])
-      message(paste0("WARNING: The version of the '", names(pck_version)[pck], 
-                     "' package (", temp_version, ") is NOT consistent",
-                     " with the 2022 TOR. Please update the '", 
-                     names(pck_version)[pck], "' package to ", pck_version[pck]))
-  }
+  if(!temp_version == pck_version[pck])
+    message(paste0("WARNING: ", 
+                   "The version of the '", names(pck_version)[pck], 
+                   "' package (", temp_version, ") is NOT consistent",
+                   " with the ", current_year, " TOR. Please update the '", 
+                   names(pck_version)[pck], "' package to ", 
+                   pck_version[pck]))
+  
   rm(pck, temp_version)
 }
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Create results folder ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+folder <- paste0(getwd(), "/species_specific_code/BS/", 
+                 species_name, "/", which_model, "/")
+if(!dir.exists(paste0(folder, "results_age/"))) 
+  dir.create(path = paste0(folder, "results_age/"), recursive = TRUE)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Set species and output directory ----
 ##   Record session information
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-species <- 10210
-speciesName <- "yellowfin_sole"
-workDir <- paste0("species_specific_code/BS/", speciesName, "/")
-
-if(!dir.exists(paste0(workDir, "/hindcast/results_age/"))) 
-  dir.create(paste0(workDir, "/hindcast/results_age/"))
-
-## Record package versions
-sink(paste0(workDir, "/hindcast/results_age/session_info.txt"), 
+sink(file = paste0(folder, "results_age/session_info.txt"), 
      type = "output")
 sessionInfo()
 sink()
@@ -81,8 +67,8 @@ sink()
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Import data ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-Data_Geostat <- readRDS(paste0(workDir, 
-                               "hindcast/data/data_geostat_agecomps.RDS"))
+Data_Geostat <- readRDS(file = paste0(folder, 
+                                      "data/data_geostat_agecomps.RDS"))
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Set VAST settings ----
@@ -91,7 +77,7 @@ settings <- FishStatsUtils::make_settings(
   n_x = 50,
   Region = c("northern_bering_sea", "eastern_bering_sea"),
   purpose = "index2",
-  fine_scale = ifelse(test = finalanalysis, yes = TRUE, no = FALSE),
+  fine_scale = TRUE,
   strata.limits = data.frame(STRATA = as.factor('All_areas')),
   ObsModel = c(2, 1),
   FieldConfig = c("Omega1" = "IID", "Epsilon1" = "IID", 
@@ -102,18 +88,17 @@ settings <- FishStatsUtils::make_settings(
   Version = VAST_cpp_version,
   max_cells = 2000,
   knot_method = "grid",
-  bias.correct = ifelse(test = finalanalysis, yes = TRUE, no = FALSE))
+  bias.correct = TRUE)
 
 strata_names <- c("Both", "EBS", "NBS")
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Run VAST model ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-# Data_Geostat <- subset(x = Data_Geostat)
 fit <- FishStatsUtils::fit_model(
   
   ## Input settings
-  "working_dir" = paste0(getwd(), "/", workDir, "/hindcast/results_age/"),
+  "working_dir" = paste0(folder, "results_age/"),
   "settings" = settings, 
   "create_strata_per_region" = TRUE,
   
@@ -129,7 +114,7 @@ fit <- FishStatsUtils::fit_model(
   ## Model tuning
   "Npool" = 100,
   "refine" = TRUE,
-  "newtonsteps" = ifelse(finalanalysis, 1, 0), 
+  "newtonsteps" = 1, 
   "test_fit" = FALSE)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -138,23 +123,21 @@ fit <- FishStatsUtils::fit_model(
 
 ## VAST fit object
 saveRDS(object = fit, 
-        file = paste0(workDir, "/hindcast/results_age/VASTfit.RDS"))
+        file = paste0(folder, "results_age/VASTfit.RDS"))
 
 ## Parameter estimates
 saveRDS(object = fit$ParHat, 
-        file = paste0(workDir, "hindcast/results_age/starting_parameters.RDS"))
+        file = paste0(workDir, "results_age/starting_parameters.RDS"))
 
 ## General output plots, DHARMa residuals
 results <- FishStatsUtils::plot_results( 
   fit = fit, 
-  working_dir = paste0(getwd(),  "/species_specific_code/BS/",
-                       speciesName, "/hindcast/results_age/output_plots/"),
+  working_dir = paste0(folder, "results_age/output_plots/"),
   plot_set = NULL,
   strata_names = strata_names, 
   check_residuals = TRUE)
 saveRDS(object = results, 
-        file = paste0("species_specific_code/BS/", speciesName, 
-                      "/hindcast/results_age/output_plots/diagnostics.RDS"))
+        file = paste0(folder, "results_age/output_plots/diagnostics.RDS"))
 
 ## Mapping information
 map_list = FishStatsUtils::make_map_info( 
@@ -166,8 +149,8 @@ map_list = FishStatsUtils::make_map_info(
 n_ages <- length(unique(Data_Geostat$Age))
 Year_Set <- fit$year_labels
 
-if(!dir.exists(paste0(workDir, "/hindcast/results_age/predicted_density/"))){
-  dir.create(paste0(workDir, "/hindcast/results_age/predicted_density/"))
+if(!dir.exists(paste0(folder, "results_age/predicted_density/"))){
+  dir.create(paste0(folder, "results_age/predicted_density/"))
 }
 
 FishStatsUtils::plot_maps( 
@@ -178,11 +161,11 @@ FishStatsUtils::plot_maps(
   Obj = fit$tmb_list$Obj, 
   year_labels = Year_Set,
   PlotDF = map_list[["PlotDF"]],
-  working_dir = paste0(workDir, "/hindcast/results_age/predicted_density/")) 
+  working_dir = paste0(folder, "results_age/predicted_density/")) 
 
 ## Predicted Spatial Fields
-if(!dir.exists(paste0(workDir, "/hindcast/results_age/spatial_effects/"))){
-  dir.create(paste0(workDir, "/hindcast/results_age/spatial_effects/"))
+if(!dir.exists(paste0(folder, "results_age/spatial_effects/"))){
+  dir.create(paste0(folder, "results_age/spatial_effects/"))
 }
 FishStatsUtils::plot_maps( 
   fit = fit, 
@@ -192,12 +175,11 @@ FishStatsUtils::plot_maps(
   year_labels = Year_Set,
   Obj = fit$tmb_list$Obj, 
   PlotDF = map_list[["PlotDF"]],
-  working_dir = paste0(workDir, "/hindcast/results_age/spatial_effects/")) 
+  working_dir = paste0(folder, "results_age/spatial_effects/")) 
 
 ## Predicted Spatiotemporal Fields
-if(!dir.exists(paste0(workDir, 
-                      "/hindcast/results_age/spatiotemporal_effects/"))){
-  dir.create(paste0(workDir, "/hindcast/results_age/spatiotemporal_effects/"))
+if(!dir.exists(paste0(folder, "results_age/spatiotemporal_effects/"))){
+  dir.create(paste0(folder, "results_age/spatiotemporal_effects/"))
 }
 FishStatsUtils::plot_maps( 
   fit = fit, 
@@ -207,8 +189,7 @@ FishStatsUtils::plot_maps(
   year_labels = Year_Set,
   Obj = fit$tmb_list$Obj, 
   PlotDF = map_list[["PlotDF"]],
-  working_dir = paste0(workDir, "/hindcast/results_age/",
-                       "spatiotemporal_effects/")) 
+  working_dir = paste0(folder, "results_age/spatiotemporal_effects/")) 
 
 ## Predicted Proportions
 proportions <- FishStatsUtils::calculate_proportion( 
@@ -217,8 +198,7 @@ proportions <- FishStatsUtils::calculate_proportion(
   year_labels = Year_Set, 
   years_to_plot = which(fit$year_labels != 2020),
   strata_names = strata_names, 
-  DirName = paste0(getwd(),  "/species_specific_code/BS/",
-                   speciesName, "/hindcast/results_age/output_plots/"))
+  DirName = paste0(folder, "results_age/output_plots/"))
 
 prop <- t(data.frame(proportions$Prop_ctl))
 colnames(prop) <- c(paste0("age_", seq(from = 1, length = ncol(prop) - 1 )),
@@ -226,14 +206,10 @@ colnames(prop) <- c(paste0("age_", seq(from = 1, length = ncol(prop) - 1 )),
 rownames(prop) <- as.vector(sapply(X = strata_names, 
                                    FUN = function(x) paste0(x, "_", Year_Set)))
 
-if(!dir.exists(paste0(workDir, "/hindcast/results_age/proportions/"))){
-  dir.create(paste0(workDir, "/hindcast/results_age/proportions/"))
+if(!dir.exists(paste0(folder, "results_age/proportions/"))){
+  dir.create(paste0(folder, "results_age/proportions/"))
 }
 saveRDS(object = proportions, 
-        file = paste0(workDir, 
-                      "/hindcast/results_age/proportions/",
-                      "VAST_proportions.RDS"))
+        file = paste0(folder, "results_age/proportionsVAST_proportions.RDS"))
 write.csv(x = prop, 
-          file = paste0(workDir, 
-                        "/hindcast/results_age/proportions/",
-                        "clean_proportions.csv"))
+          file = paste0(folder, "results_age/proportions/clean_proportions.csv"))
