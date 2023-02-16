@@ -24,6 +24,18 @@ library(VAST)
 ##   System preferences ----
 ##   Updated every year
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# # Install R packages
+# .rs.restartR() # restart R before doing these updates - these are delicate installs
+# require(devtools)
+# # 3 means do NOT install updates for dependent packages
+# install_version("Matrix", version = "1.5-3", repos = "http://cran.us.r-project.org")
+# install_version("TMB", version = "1.9.2", repos = "http://cran.us.r-project.org")
+# install_version("DHARMa", version = "0.4.6", repos = "http://cran.us.r-project.org")
+# devtools::install_github("james-thorson/FishStatsUtils@2.12.0")
+# devtools::install_github("James-Thorson-NOAA/VAST@3.10.0")
+
+# Check R packages
 current_year <- 2023
 VAST_cpp_version <- "VAST_v14_0_1"
 pck_version <- c("VAST" = "3.10.0",
