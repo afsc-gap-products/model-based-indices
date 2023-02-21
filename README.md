@@ -11,6 +11,7 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 - [Annual stock assessment request form](https://docs.google.com/spreadsheets/d/18gr3owj5iAq1iCDX4wpQPUC9ldLz-YTsCBIfnkHqibo/edit?usp=sharing)
 - [Annual ESR request form](https://docs.google.com/spreadsheets/d/1SC-KzRmng0c2e1GpvqYQz4Ijr0_hlbGZbWiislXGGcw/edit?usp=sharing)
 - [ESP submission tool](https://apex.psmfc.org/akfin/f?p=140:LOGIN_DESKTOP:4779711459935:::::)
+- [2023 GOA notes](https://docs.google.com/document/d/1u97oBL31v5llxO1-5GLu1-x7k0zbU0LgviFEkWYdSCs/edit)
 
 # GAP Work Plan 
 - Species requests & alternate model-based runs/settings in from SSMA, ESP, ESR by 15 January
