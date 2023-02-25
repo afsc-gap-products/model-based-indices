@@ -18,7 +18,7 @@ packageVersion('VAST')
 sessionInfo()
 
 ## Set species 
-Species <- c("Gadus_macrocephalus","Sebastes_variabilis","Sebastes_polyspinis", "Sebastes_alutus","Gadus chalcogrammus", "Lepidopsetta polyxystra","Lepidopsetta bilineata","Hippoglossoides elassodon","Atheresthes stomias")[4] 
+species_name <- c("Gadus_macrocephalus","Sebastes_variabilis","Sebastes_polyspinis", "Sebastes_alutus","Gadus chalcogrammus", "Lepidopsetta polyxystra","Lepidopsetta bilineata","Hippoglossoides elassodon","Atheresthes stomias")[4] 
 ### 4 is for POP
 ## c(P. cod, dusky rockfish, northern rockfish, POP, pollock, 
 ## northern rock sole, southern rock sole, flathead sole, arrowtooth)
@@ -30,12 +30,12 @@ Species <- c("Gadus_macrocephalus","Sebastes_variabilis","Sebastes_polyspinis", 
 ## ## 
 ## Load the data for VAST
 
-POPdata <- readRDS(paste0(getwd(),"/Sebastes_alutus/data/Data_Geostat_Sebastes_alutus.rds"))
+POPdata <- readRDS(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/data/Data_Geostat_Sebastes_alutus.rds"))
 POPdata<-POPdata[POPdata$Year>1989, ]## Pete Hulson requested data from 1990 onwards
 
 ## Define settings
 
-settings = make_settings( Version = "VAST_v12_0_0", #.cpp version, not software #e.g., "VAST_v12_0_0"
+settings = make_settings( Version = "VAST_v13_1_0", #.cpp version, not software #e.g., "VAST_v12_0_0"
                           n_x = 750, #knots aka spatial resolution of our estimates
                           Region = "User", #Region = "gulf_of_alaska" , go to ?make_settings for other built in extrapolation grids
                           purpose = "index2", #changes default settings
@@ -69,7 +69,7 @@ fit <- fit_model( "settings"= settings, #all of the settings we set up above
 ## ## 
 ## Plot results
 #if you need to link VAST as a .dll:
-#dyn.load(dynlib("VAST_v12_0_0"))
+#dyn.load(dynlib("VAST_v13_1_0"))
 plot( fit )
 
 ## ## 

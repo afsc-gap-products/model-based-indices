@@ -7,10 +7,11 @@ Primary contact: [@coleary-noaa](https://github.com/coleary-noaa)
 
 # Mission
 Provide VAST estimates of abundance and their standard error from GAP survey data for stock assessment authors in conjunction with traditional design-based estimators.
-- [Draft TOR 2023](https://docs.google.com/document/d/18CeXcHhHK48hrtkiC6zygXlHj6YVrWEd/edit?usp=share_link&ouid=110653283533112338587&rtpof=true&sd=true)
+- [TOR 2023](https://drive.google.com/file/d/1Jog0lZx3Y9D0yRqDSl2X-BSqR_zyEJUw/view)
 - [Annual stock assessment request form](https://docs.google.com/spreadsheets/d/18gr3owj5iAq1iCDX4wpQPUC9ldLz-YTsCBIfnkHqibo/edit?usp=sharing)
 - [Annual ESR request form](https://docs.google.com/spreadsheets/d/1SC-KzRmng0c2e1GpvqYQz4Ijr0_hlbGZbWiislXGGcw/edit?usp=sharing)
 - [ESP submission tool](https://apex.psmfc.org/akfin/f?p=140:LOGIN_DESKTOP:4779711459935:::::)
+- [2023 GOA notes](https://docs.google.com/document/d/1u97oBL31v5llxO1-5GLu1-x7k0zbU0LgviFEkWYdSCs/edit)
 
 # GAP Work Plan 
 - Species requests & alternate model-based runs/settings in from SSMA, ESP, ESR by 15 January
