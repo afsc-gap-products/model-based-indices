@@ -23,7 +23,7 @@ names(goa_strata@data) <- tolower(names(goa_strata@data))
 #plot(AK_land, add = TRUE)
 
 ## Plot strata, colored by catch rate
-dat_strat <- dat %>% group_by(stratum) %>% summarise(mean_cpue = mean(Catch_KG)) # or specific to years diverging?
+dat_strat <- dat %>% filter(Year %in% c(2013,2015,2017,2019,2021)) %>% group_by(stratum) %>% summarise(mean_cpue = mean(Catch_KG)) # or specific to years diverging?
 
 goa_strata@data <- left_join(goa_strata@data, dat_strat)
 
@@ -35,8 +35,8 @@ goa_sf <- st_as_sf(goa_strata)
 ggplot() + 
   geom_sf(data = goa_sf, aes(fill = mean_cpue), color = NA) + 
   scale_fill_viridis() +
-  ggtitle("design-based: all years")
-ggsave(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/results/design_based_mean_density_all_years.png"),
+  ggtitle("design-based: problem years")
+ggsave(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/results/design_based_mean_density_problem_years.png"),
        width = 6,
        height = 2,
        units = "in")
@@ -45,7 +45,7 @@ ggsave(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/results/design
 m <- readRDS(file = paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/results/Sebastes_alutusVASTfit.RDS"))
 
 # extract predictions and aggregate within polygons of goa_strata
-d <- rowMeans(m$Report$D_gct[,1,(max(dat$Year)+1) - unique(dat$Year)]) # or specific to years diverging?
+d <- rowMeans(m$Report$D_gct[,1,match(c(2013,2015,2017,2019,2021), min(dat$Year):max(dat$Year))]) # or specific to years diverging?
 d_df <- cbind(as.data.frame(m$extrapolation_list$Data_Extrap)[,1:2], d)
 
 dgeo <- SpatialPoints(d_df[c("Lon", "Lat")], CRS("+proj=longlat +ellps=WGS84 +datum=NAD83 +no_defs")) 
@@ -69,8 +69,8 @@ v_sf <- st_as_sf(v)
 ggplot() + 
   geom_sf(data = v_sf, aes(fill = mean_cpue), color = NA) + 
   scale_fill_viridis() +
-  ggtitle("model-based: all years")
-ggsave(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/results/model_based_mean_density_all_years.png"),
+  ggtitle("model-based: problem years")
+ggsave(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/results/model_based_mean_density_problem_years.png"),
        width = 6,
        height = 2,
        units = "in")
