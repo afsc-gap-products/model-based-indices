@@ -28,3 +28,33 @@ devtools::install_github("James-Thorson-NOAA/VAST@3.10.0")
 #devtools::install_local(paste0(usr,"/Downloads/VAST-3.10.0.tar.gz"), dependencies=FALSE)
 #devtools::install_local(paste0(usr,"/Downloads/Matrix_1.4-0.tar.gz"), dependencies=FALSE)
 #devtools::install_local(paste0(usr,"/Downloads/DHARMa_0.4.5.tar.gz"), dependencies=FALSE)
+
+
+# Check R packages ------------------------------------------------------------------------------------
+
+current_year <- 2023
+VAST_cpp_version <- "VAST_v14_0_1"
+pck_version <- c("VAST" = "3.10.0",
+                 "FishStatsUtils" = "2.12.0",
+                 "Matrix" = "1.5-3",
+                 "TMB" = "1.9.2",
+                 "DHARMa" = "0.4.6")
+
+for (pck in 1:length(pck_version)) {
+  temp_version <- packageVersion(pkg = names(pck_version)[pck])
+  
+  if(temp_version == pck_version[pck])
+    message(paste0("The version of the '", names(pck_version)[pck], 
+                   "' package (", temp_version, ") is consistent",
+                   " with the ", current_year, " TOR."))
+  
+  if(!temp_version == pck_version[pck])
+    message(paste0("WARNING: ", 
+                   "The version of the '", names(pck_version)[pck], 
+                   "' package (", temp_version, ") is NOT consistent",
+                   " with the ", current_year, " TOR. Please update the '", 
+                   names(pck_version)[pck], "' package to ", 
+                   pck_version[pck]))
+  
+  rm(pck, temp_version)
+}
