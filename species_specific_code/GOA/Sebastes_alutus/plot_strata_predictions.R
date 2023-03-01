@@ -20,7 +20,7 @@ names(goa_strata) <- tolower(names(goa_strata))
 
 ## Plot strata, colored by catch rate
 dat_strat <- dat %>% filter(!Year %in% years) %>% group_by(stratum) %>% summarise(mean_cpue = mean(Catch_KG)) 
-goa_strata <- left_join(goa_strata, dat_strat)
+goa_strata <- left_join(goa_strata, dat_strat, by = "stratum")
 
 ggplot() + 
   geom_sf(data = goa_strata, aes(fill = mean_cpue), color = NA) + 
