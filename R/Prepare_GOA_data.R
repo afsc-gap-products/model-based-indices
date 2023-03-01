@@ -1,5 +1,5 @@
-library('TMB')
-library("devtools")
+library(TMB)
+library(devtools)
 library(dplyr)
 
 current_end_year <- 2021
@@ -176,6 +176,8 @@ data_sub2 <- data_sub %>%
 GOA_DF <- data_sub2
 
 Data_Geostat <-  transmute(GOA_DF,
+                           Hauljoin = HAULJOIN,
+                           Stratum = STRATUM,
                            Catch_KG = wCPUE*100, # sumfish calculates CPUE in kg/ha this converts it to kg/km^2
                            Year = YEAR,
                            Vessel = "missing",
