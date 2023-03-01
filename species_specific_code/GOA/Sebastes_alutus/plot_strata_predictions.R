@@ -16,7 +16,7 @@ goa_strata <- st_read("C:/Users/lewis.barnett/Work/AFSC/Rprojects/Optimal_Alloca
 names(goa_strata) <- tolower(names(goa_strata))
 
 ## Plot strata, colored by catch rate
-dat_strat <- dat %>% filter(!Year %in% focal_years) %>% group_by(stratum) %>% summarise(mean_cpue = mean(Catch_KG)) 
+dat_strat <- dat %>% filter(!Year %in% years) %>% group_by(stratum) %>% summarise(mean_cpue = mean(Catch_KG)) 
 goa_strata <- left_join(goa_strata, dat_strat)
 
 ggplot() + 
@@ -32,7 +32,7 @@ ggsave(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/results/design
 m <- readRDS(file = paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/results/Sebastes_alutusVASTfit.RDS"))
 
 # extract predictions and aggregate within strata polygons
-d <- rowMeans(m$Report$D_gct[,1,match(focal_years, min(dat$Year):max(dat$Year))]) 
+d <- rowMeans(m$Report$D_gct[,1,match(years, min(dat$Year):max(dat$Year))]) 
 d_df <- cbind(as.data.frame(m$extrapolation_list$Data_Extrap)[,1:2], d)
 
 dgeo <- st_as_sf(d_df, coords = c("Lon", "Lat"), crs = "+proj=longlat +ellps=WGS84 +datum=NAD83 +no_defs")
@@ -58,13 +58,24 @@ ggsave(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/results/model_
        height = 2,
        units = "in")
 
-# plot difference between db and mb (db-mb)
-joined_sf <- st_join(goa_strata, v_sf)
-ggplot() + geom_sf(data = joined_sf, aes(fill = mean_cpue.x - mean_cpue.y), color = NA) + 
-  scale_fill_viridis(option="cividis") +
+# compute and plot contrast between db and mb (db-mb)
+joined_sf <- st_join(goa_strata, v_sf) %>% 
+  mutate(diff_cpue = mean_cpue.x - mean_cpue.y, lr_cpue = log(mean_cpue.x / mean_cpue.y))
+  
+ggplot() + geom_sf(data = joined_sf, aes(fill = diff_cpue), color = NA) + 
+  scale_fill_gradient2() +
   ggtitle("difference in predictions (db-mb)") +
   labs(fill = "cpue difference")
 ggsave(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/results/difference_mean_density_",paste0(min(years),"_",max(years)),".png"),
+       width = 6,
+       height = 2,
+       units = "in")
+
+ggplot() + geom_sf(data = joined_sf, aes(fill = lr_cpue), color = NA) + 
+  scale_fill_gradient2() +
+  ggtitle("log-ratio of predictions log(db/mb)") +
+  labs(fill = "log-ratio cpue")
+ggsave(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/results/logratio_mean_density_",paste0(min(years),"_",max(years)),".png"),
        width = 6,
        height = 2,
        units = "in")
