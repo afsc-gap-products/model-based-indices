@@ -5,7 +5,7 @@ library(ggplot2)
 library(viridis)
 
 # load data passed to fit_model, with stratum field from RACEBASE
-dat <- readRDS(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/data/Data_Geostat_Sebastes_alutus_stratum.rds"))
+dat <- readRDS(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/data/Data_Geostat_Sebastes_alutus.rds"))
 
 # specify years of interest and remaining years to compare with
 focal_years <- c(2013,2015,2017,2019,2021)
