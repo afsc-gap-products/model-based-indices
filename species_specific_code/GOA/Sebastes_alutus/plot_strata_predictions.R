@@ -10,7 +10,7 @@ dat <- readRDS(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/data/D
 # specify years of interest and remaining years to compare with
 focal_years <- c(2013,2015,2017,2019,2021)
 other_years <- unique(dat$Year)[!unique(dat$Year) %in% focal_years]
-years <- other_years
+years <- focal_years
 
 # design-based ----
 
@@ -64,7 +64,7 @@ ggsave(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/results/model_
        units = "in")
 
 # compute and plot contrast between db and mb (db-mb)
-joined_sf <- st_join(goa_strata, v_sf) %>% 
+joined_sf <- st_join(goa_strata, v_sf, largest = TRUE) %>% 
   mutate(diff_cpue = mean_cpue.x - mean_cpue.y, lr_cpue = log(mean_cpue.x / mean_cpue.y))
   
 ggplot() + geom_sf(data = joined_sf, aes(fill = diff_cpue), color = NA) + 
