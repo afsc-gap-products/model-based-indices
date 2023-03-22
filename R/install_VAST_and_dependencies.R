@@ -1,13 +1,13 @@
 ## install VAST and dependencies with versions as in 2023 TOR
 
 .rs.restartR() # restart R before doing these updates - these are delicate installs
-require(devtools)
+library(devtools)
 
 install_version("Matrix", version = "1.5-3", repos = "http://cran.us.r-project.org")
 install_version("TMB", version = "1.9.2", repos = "http://cran.us.r-project.org")
 install_version("DHARMa", version = "0.4.6", repos = "http://cran.us.r-project.org")
-devtools::install_github("james-thorson/FishStatsUtils@2.12.0")
-devtools::install_github("James-Thorson-NOAA/VAST@3.10.0") 
+install_github("james-thorson/FishStatsUtils@2.12.0")
+install_github("James-Thorson-NOAA/VAST@3.10.0") 
 #devtools::install_github("kaskr/TMB_contrib_R/TMBhelper")
 
 # or try this if you are having trouble with the VAST installation
