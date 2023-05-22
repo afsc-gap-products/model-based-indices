@@ -26,6 +26,7 @@ sink()
 
 # Make sure package versions are correct for current year ------------------
 current_year <- 2023
+prev_year <- current_year-1
 VAST_cpp_version <- "VAST_v14_0_1"
 pck_version <- c("VAST" = "3.10.0",
                  "FishStatsUtils" = "2.12.0",
@@ -99,11 +100,10 @@ strata_names = c("Both","EBS","NBS")
     min_year <- 1994
     
     # Load age-length keys produced by sumfish
-    #alk_all <- readRDS(here::here("data","unstratified_alk_2021.RDS") )
-    alk <- readRDS(here::here("data",species_data,"unstratified_alk.RDS") )
+    alk <- readRDS(paste0(workDir,"data/unstratified_alk.RDS") )
     if(compare == TRUE)
     {
-      alk_all <- readRDS(here::here("data",species_data,"unstratified_alk_2021.RDS") ) #old
+      alk_all <- readRDS(paste0(workDir,"data/",prev_year,"/unstratified_alk.RDS") )
       alk_ebs <- alk_all$EBS %>%
           filter(SPECIES_CODE == species_code) %>%
           mutate(REGION = "EBS")
@@ -115,13 +115,13 @@ strata_names = c("Both","EBS","NBS")
       alk <- bind_rows(alk_ebs, alk_nbs)
     }
     
-    sizeComp <- readRDS(here::here("data",species_data,"EBS_NBS_SizeComp.RDS") ) %>% #readRDS(here::here("data","EBS_NBS_SizeComp.RDS") )
+    sizeComp <- readRDS(paste0(workDir,"data/EBS_NBS_SizeComp.RDS") ) %>% 
         dplyr::filter(YEAR >= min_year,
                       SPECIES_CODE == species_code,
                       !is.na(EFFORT)
         )
 
-    haulData <- readRDS(here::here("data",species_data,"EBS_NBS_Index.RDS") ) %>% 
+    haulData <- readRDS(paste0(workDir,"data/EBS_NBS_Index.RDS") ) %>% 
         dplyr::filter(YEAR >= min_year,
                       SPECIES_CODE == species_code,
                       !is.na(EFFORT)
@@ -143,9 +143,7 @@ strata_names = c("Both","EBS","NBS")
     ungroup() %>%
     select(HAULJOIN,AGE, ageCPUE, count) %>%
     right_join(allCats, by= c("HAULJOIN","AGE")) %>%
-    mutate(ageCPUE = ifelse(is.na(ageCPUE), noAge, ageCPUE)
-           ) %>%
-      filter(YEAR < 2021)
+    mutate(ageCPUE = ifelse(is.na(ageCPUE), noAge, ageCPUE)) # %>% filter(YEAR < 2021) 
     
     # Test CPUE
     # checkData <- Data %>%
@@ -177,10 +175,7 @@ strata_names = c("Both","EBS","NBS")
     ) %>%
     data.frame()
     
-    saveRDS(Data_Geostat, file = here::here("data",species_data,
-                                            paste0("Data_Geostat_",species_name,".RDS")))
-    
-    write_csv(Data_Geostat, file = here::here("bridging", paste0("Data_Geostat_2022",species_name,".csv")))
+    saveRDS(Data_Geostat, file = paste0(workDir,"data/Data_Geostat_comps_",species_name,".RDS"))
     
 
 # Run Analysis ------------------------------------------------------------
@@ -217,8 +212,7 @@ strata_names = c("Both","EBS","NBS")
   # Plot results
   results <- plot_results( fit, zrange = c(-3,3), n_cells = 2000, strata_names = strata_names, check_residuals = TRUE )
   #saveRDS(results, file = "VASTresults.RDS")
-  saveRDS(results,file = here::here("data",species_name,
-                                    paste0(species_name,"_results.RDS")))
+  saveRDS(results,file = paste0(workDir,"/results_age/",species_name,"_results.RDS"))
   
   
   # # If residual plots don't... uh... plot...
@@ -253,6 +247,6 @@ strata_names = c("Both","EBS","NBS")
                          )
               )
   
-  write.csv(prop, here::here("results",species_name,"proportions.csv"))
-  saveRDS(prop, here::here("results",species_name,paste0(species_name,"_prop.RDS")))
+  write.csv(prop, paste0(workDir,"/results_age/",species_name,"_proportions.csv"))
+  saveRDS(prop, paste0(workDir,"/results_age/",species_name,"_proportions.RDS"))
   
