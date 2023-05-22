@@ -1,40 +1,73 @@
-#' VAST 2021 Example Script
-#' 
-#' Use this script to standardize VAST runs for Mod Squad products in 2021. 
-
 library(here) 
 library(googledrive)
 library(tidyverse)
 library(VAST) 
 library(sf)
 library(scales)
+library(coldpool)
+library(akgfmaps)
 
-# Set species -------------------------------------------------------------
+# Set species, model -------------------------------------------------------
 
+which_model <- c("hindcast", "production")[1]
 species <- 21720
-species_name <- "PacificCod_EBS_NBS_index_numbers_check"
-species_data <- "BS_Pacific_Cod"
-workDir <- here::here("results",species_name)
-dir.create(workDir, recursive = TRUE)
-setwd(workDir)
+species_name <- "pacific_cod"
+
+workDir <- paste0(getwd(),"/species_specific_code/BS/", 
+                      species_name, "/", which_model, "/")
+if(!dir.exists(workDir))
+  dir.create(path = workDir, recursive = TRUE)
+if(!dir.exists(paste0(workDir, "results/")))
+  dir.create(path = paste0(workDir, "results/"), recursive = TRUE)
 
 
+# Record sessionInfo -------------------------------------------------------
+sink(file = paste0(workDir, "results/session_info.txt"), 
+     type = "output")
+sessionInfo()
+sink()
+
+# Make sure package versions are correct for current year ------------------
+current_year <- 2023
+VAST_cpp_version <- "VAST_v14_0_1"
+pck_version <- c("VAST" = "3.10.0",
+                 "FishStatsUtils" = "2.12.0",
+                 "Matrix" = "1.5-3",
+                 "TMB" = "1.9.2",
+                 "DHARMa" = "0.4.6")
+
+for (pck in 1:length(pck_version)) {
+  temp_version <- packageVersion(pkg = names(pck_version)[pck])
+  
+  if(temp_version == pck_version[pck])
+    message(paste0("The version of the '", names(pck_version)[pck], 
+                   "' package (", temp_version, ") is consistent",
+                   " with the ", current_year, " TOR."))
+  
+  if(!temp_version == pck_version[pck])
+    message(paste0("WARNING: ", 
+                   "The version of the '", names(pck_version)[pck], 
+                   "' package (", temp_version, ") is NOT consistent",
+                   " with the ", current_year, " TOR. Please update the '", 
+                   names(pck_version)[pck], "' package to ", 
+                   pck_version[pck]))
+  
+  rm(pck, temp_version)
+}
 
 # VAST Settings -----------------------------------------------------------
-Version <- "VAST_v13_1_0"
 Region <- c("Eastern_Bering_Sea","Northern_Bering_Sea")
 strata_names = c("Both","EBS","NBS")
 Method <- "Mesh"
 knot_method <- "grid"
 grid_size_km <- 25
-n_x <- 750   # Specify number of stations (a.k.a. "knots")
+n_x <- 750
 FieldConfig <- c("Omega1"="IID", "Epsilon1"="IID", "Omega2"="IID", "Epsilon2"="IID")
 RhoConfig <- c("Beta1"=0, "Beta2"=0, "Epsilon1"=4, "Epsilon2"=4)
 OverdispersionConfig <- c("Eta1"=0, "Eta2"=0)
 ObsModel <- c(2,4)
 Options <-  c("Calculate_Range"=TRUE, "Calculate_effective_area"=TRUE, "treat_nonencounter_as_zero"=FALSE )
 Aniso <- TRUE
-Npool <- 100
 BiasCorr <- TRUE
 getJointPrecision <- TRUE
 getReportCovariance <- TRUE
@@ -55,7 +88,7 @@ settings <- make_settings(
     OverdispersionConfig = OverdispersionConfig,
     Options = Options,
     use_anisotropy = Aniso,
-    Version = Version,
+    Version = VAST_cpp_version,
     max_cells = max_cells,
     knot_method = knot_method,
     bias.correct = BiasCorr
@@ -63,7 +96,7 @@ settings <- make_settings(
 
 # Format catch data -------------------------------------------------------
 
-sumAll <- read_rds(here::here("data",species_data,"EBS_NBS_Index.RDS"))
+sumAll <- read_rds(paste0(workDir, "data/EBS_NBS_Index.RDS"))
 
 
 Data <- sumAll %>%
@@ -81,34 +114,23 @@ Data_Geostat <-  dplyr::transmute(Data,
 ) %>%
     data.frame()
 
-saveRDS(Data_Geostat, file = here::here("data",species_data,
-                                        paste0("Data_Geostat_",species_name,".RDS")))
+saveRDS(Data_Geostat, file = paste0(workDir,"data/Data_Geostat_",species_name,".RDS"))
 
 
 # Cold Pool covariate -----------------------------------------------------
-CP <- read.csv(here::here("data","cpa_out_ste_simplified.csv"))
-covariate_data <- CP[ which(as.integer(CP[,'YEAR']) %in% unique(Data_Geostat[,'Year'])), ]
-covariate_data <- data.frame( "Year"=covariate_data[,"YEAR"],
-                              "Lat"=mean(Data_Geostat[,'Lat']),
-                              "Lon"=mean(Data_Geostat[,'Lon']),
-                              apply(covariate_data[c(-1,-3)],
-                                    MARGIN=2,
-                                    FUN=function(vec){(vec-mean(vec))/sd(vec)}) ) %>%
-    bind_rows(c(Year=2020L,
-                "Lat"=mean(Data_Geostat[,'Lat']),
-                "Lon"=mean(Data_Geostat[,'Lon']),
-                AREA_LTE2_KM2=0)) %>%
-    data.frame()
-
-saveRDS(covariate_data, file = "Data_ColdPool.RDS")  
+cpe <- scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)
+covariate_data <- data.frame(Year = c(coldpool:::cold_pool_index$YEAR, 2020),
+                             Lat = mean(Data_Geostat$Lat),
+                             Lon = mean(Data_Geostat$Lon), 
+                             cpe = c(cpe, 0))
 
     # Load covariates
-    formula <- ~ AREA_LTE2_KM2
+    formula <- ~ cpe
     Xconfig_zcp <- array(2, dim=c(2,1,1) )
     X1config_cp <- as.matrix(2)
     X2config_cp <- as.matrix(2)
 
-
+    
 # Build the model ---------------------------------------------------------
 fit <- fit_model( "settings"=settings, 
                   "Lat_i"=Data_Geostat[,'Lat'], 
@@ -126,11 +148,8 @@ fit <- fit_model( "settings"=settings,
                   "X1config_cp" <- X1config_cp,
                   "X2config_cp" <- X2config_cp ,
                   "covariate_data"=covariate_data,
-                  "Npool" = Npool,
                   "test_fit" = TRUE,
                   "working_dir" = workDir
-                  
-                  
 )
 
 
@@ -141,12 +160,7 @@ saveRDS(fit, file = "VASTfit.RDS")
 
 # Plots -------------------------------------------------------------------
     # If you need to load a fit in a new session:
-    dyn.load(dynlib("VAST_v13_1_0"))
-
-    # Record package versions
-    sink("session_info.txt", type = "output")
-    sessionInfo()
-    sink()
+    #dyn.load(dynlib(VAST_cpp_version))
     
     # Plot results
     results <- plot_results( fit, 
@@ -156,14 +170,14 @@ saveRDS(fit, file = "VASTfit.RDS")
                              check_residuals=TRUE,
                              n_samples=0 )
     
-    saveRDS(results, file = "VASTresults.RDS")
+    saveRDS(results, file = paste0(workDir, "results/VASTresults.RDS"))
     
     
     # If residual plots don't... uh... plot...
-    plot_quantile_residuals( fit=fit ) 
-    
-    map_list = make_map_info( "Region"=settings$Region, "spatial_list"=fit$spatial_list, "Extrapolation_List"=fit$extrapolation_list )
-    plot_maps( Obj=fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
+    # plot_quantile_residuals( fit=fit ) 
+    # 
+    # map_list = make_map_info( "Region"=settings$Region, "spatial_list"=fit$spatial_list, "Extrapolation_List"=fit$extrapolation_list )
+    # plot_maps( Obj=fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
     
     
     # ESP products
@@ -182,9 +196,9 @@ saveRDS(fit, file = "VASTfit.RDS")
 # Plot DB vs VAST Comparison ----------------------------------------------
     
     # Load shapefile with strata boundaries
-    EBS_strata <- st_read( here("data","shapefiles"), layer = "EBS_NBS_2019_1983") 
-    total_area <- sum(EBS_strata$AREA_KM2)
-    EBS_strata <- mutate(EBS_strata, area_ratio = AREA_KM2/total_area)
+    EBS_strata <- akgfmaps::get_base_layers("ebs")
+    total_area <- sum(EBS_strata$survey.strata$F_AREA)
+    EBS_strata <- mutate(EBS_strata$survey.strata, area_ratio = F_AREA/total_area)
     
     # Convert Data_Geostat to sf and transform projection
     sf_geostat <- st_as_sf(Data_Geostat, coords = c("Lon", "Lat"), remove = FALSE, 
@@ -201,7 +215,7 @@ saveRDS(fit, file = "VASTfit.RDS")
         filter(!is.na(STRATUM) ) %>%
         group_by(Year, STRATUM) %>%
         summarize( mean_cpue = mean(Catch_KG),
-                   area = first(AREA_KM2),
+                   area = first(F_AREA),
                    var_cpue = ( var(Catch_KG) / n() ),
                    Stratum_biomass = mean_cpue * area,
                    Stratum_biomass_var = ifelse(is.na(var_cpue),0, var_cpue * area^2)
@@ -216,7 +230,7 @@ saveRDS(fit, file = "VASTfit.RDS")
         mutate(Estimator = "Design-based") %>%
         ungroup()
     
-    VASTindex <- read_csv( paste0(workDir,"/Table_for_SS3.csv") ) %>%
+    VASTindex <- read_csv( paste0(workDir,"results/Table_for_SS3.csv") ) %>%
         mutate(Estimator = "VAST") %>%
         filter(Fleet == "Both")
     
