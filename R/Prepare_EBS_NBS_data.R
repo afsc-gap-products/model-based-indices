@@ -16,7 +16,8 @@ library(sumfish)
 sumfish::getSQL()
 
 ## If necessary, update the SAFE lookup tables with current year's surveys
-sumfish::updateSurvey()
+## Need to do this once per year before production runs
+#sumfish::updateSurvey()
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Select species and years ----
@@ -32,18 +33,20 @@ sumfish::updateSurvey()
 ##   older than the plus group are grouped as one group. 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+which_model <- c("hindcast", "production")[1]
+current_year <- 2023
+
 start_year <- 1982
-current_year <- 2022
 min_year <- start_year
 max_cruise <- (current_year * 100) + 99
+
+species_name <- "pacific_cod"
+species_code <- 21720
+plus_group <- 12
 
 # species_name <- "yellowfin_sole"
 # species_code <- 10210
 # plus_group <- 20
-
-species_name <- "BS_Pacific_Cod"
-species_code <- 21720
-plus_group <- 12
 
 # just to get standard raw data for pollock, actual assessment data may differ
 # species_name <- "pollock"
@@ -52,8 +55,9 @@ plus_group <- 12
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Create directory to store data products
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-res_dir <- here::here("data", species_name)
-if(!dir.exists(res_dir)) dir.create(res_dir, recursive = TRUE)
+res_dir <- paste0("species_specific_code/BS/",
+                  species_name,"/",which_model,"/","data/")
+if(!dir.exists(res_dir)) dir.create(res_dir)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Pull EBS database ----
