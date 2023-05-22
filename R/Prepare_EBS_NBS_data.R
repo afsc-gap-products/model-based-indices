@@ -15,7 +15,7 @@ rm(list = ls())
 library(sumfish)
 sumfish::getSQL()
 
-## If necessary, update the SAFE lookup tables with current year's surveys
+## Update the SAFE lookup tables with current year's surveys
 ## Need to do this once per year before production runs
 #sumfish::updateSurvey()
 
@@ -313,9 +313,10 @@ allCats <- expand.grid(HAULJOIN = unique(weightAll$HAULJOIN),
 
 ## Aggregate by Age key
 Data <- sizeComp %>%
-    ## append the alks to the sizeComp, adding columns `AGE`` and `probabilties``
+    ## append the alks to the sizeComp, adding columns `AGE` and `probability`
     dplyr::left_join(alk, by = c("YEAR", "REGION", "LENGTH", 
-                                 "SEX", "SPECIES_CODE")) %>%
+                                 "SEX", "SPECIES_CODE"), 
+                     relationship = "many-to-many") %>%
     ## Calculate age CPUE and truncate ages > plus group to the max age
     dplyr::mutate(ageCPUE = nSizeCPUE * probability,
                   AGE = ifelse(test = AGE > plus_group, 
