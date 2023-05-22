@@ -1,29 +1,58 @@
-
-# Notes -------------------------------------------------------------------
-# Formerly:  Run_comps_2019-09-27.R from Jim Thorson's email
-# For 2021, running this code again, as wrapper functions have proven problematic.
-
 #library(googledrive)
 library(tidyverse)
 library(rgdal)
 library(VAST)
 library(tictoc)
 
-# Set species -------------------------------------------------------------
+# Set species, model -------------------------------------------------------
 
-species_code <- 21720
-species_name <- "Pacific_Cod_Age_hindcast_check"
-species_data <- "BS_Pacific_Cod"
-compare <- FALSE # If compare = TRUE, useing 2021 alk
+which_model <- c("hindcast", "production")[1]
+compare <- FALSE # If compare = TRUE, using prior year's alk
+species <- 21720
+species_name <- "pacific_cod"
 
-# Set up folder to store species specific results
-folder <- here::here("results",species_name)
-dir.create(folder, recursive = TRUE, showWarnings = F)
+workDir <- paste0(getwd(),"/species_specific_code/BS/", 
+                  species_name, "/", which_model, "/")
+if(!dir.exists(workDir))
+  dir.create(path = workDir, recursive = TRUE)
+if(!dir.exists(paste0(workDir, "results_age/")))
+  dir.create(path = paste0(workDir, "results_age/"), recursive = TRUE)
 
+# Record sessionInfo -------------------------------------------------------
+sink(file = paste0(workDir, "results/session_info.txt"), 
+     type = "output")
+sessionInfo()
+sink()
+
+# Make sure package versions are correct for current year ------------------
+current_year <- 2023
+VAST_cpp_version <- "VAST_v14_0_1"
+pck_version <- c("VAST" = "3.10.0",
+                 "FishStatsUtils" = "2.12.0",
+                 "Matrix" = "1.5-3",
+                 "TMB" = "1.9.2",
+                 "DHARMa" = "0.4.6")
+
+for (pck in 1:length(pck_version)) {
+  temp_version <- packageVersion(pkg = names(pck_version)[pck])
+  
+  if(temp_version == pck_version[pck])
+    message(paste0("The version of the '", names(pck_version)[pck], 
+                   "' package (", temp_version, ") is consistent",
+                   " with the ", current_year, " TOR."))
+  
+  if(!temp_version == pck_version[pck])
+    message(paste0("WARNING: ", 
+                   "The version of the '", names(pck_version)[pck], 
+                   "' package (", temp_version, ") is NOT consistent",
+                   " with the ", current_year, " TOR. Please update the '", 
+                   names(pck_version)[pck], "' package to ", 
+                   pck_version[pck]))
+  
+  rm(pck, temp_version)
+}
 
 # Settings ----------------------------------------------------------------
-
-Version <- "VAST_v13_1_0"
 Region <- c("Eastern_Bering_Sea","Northern_Bering_Sea")
 Method <- "Mesh"
 knot_method <- "grid"
@@ -55,7 +84,7 @@ settings <- make_settings(
                       OverdispersionConfig = OverdispersionConfig,
                       Options = Options,
                       use_anisotropy = Aniso,
-                      Version = Version,
+                      Version = VAST_cpp_version,
                       max_cells = max_cells,
                       knot_method = knot_method,
                       bias.correct = BiasCorr
@@ -171,27 +200,22 @@ strata_names = c("Both","EBS","NBS")
                    Npool = Npool, 
                    test_fit=FALSE, 
                    create_strata_per_region=TRUE,
-                   "working_dir" = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results/"),
-                   "CompileDir" = paste0(getwd(),"/species_specific_code/BS/",species_name,"/results/") )
+                   "working_dir" = paste0(workDir,"/results_age/"),
+                   "CompileDir" = paste0(workDir,"/results_age/")
+  )
 
   toc()  
   # Save results
   #saveRDS(fit, file = "VASTfit.RDS")
-  saveRDS(fit, file = here::here("results",species_name,
-                                paste0(species_name,"_VASTfit.RDS")))
+  saveRDS(fit, file = paste0(workDir,"/results_age/",species_name,"_VASTfit.RDS"))
   
   
   # Plots -------------------------------------------------------------------
   # If you need to load a fit in a new session:
-  dyn.load(dynlib("VAST_v13_1_0"))
-  
-  # Record package versions
-  sink("session_info.txt", type = "output")
-  sessionInfo()
-  sink()
+  #dyn.load(dynlib("VAST_v14_0_1"))
   
   # Plot results
-  results <- plot_results( fit, zrange = c(-3,3), n_cells = 600, strata_names = strata_names, check_residuals = FALSE )
+  results <- plot_results( fit, zrange = c(-3,3), n_cells = 2000, strata_names = strata_names, check_residuals = TRUE )
   #saveRDS(results, file = "VASTresults.RDS")
   saveRDS(results,file = here::here("data",species_name,
                                     paste0(species_name,"_results.RDS")))
