@@ -18,7 +18,7 @@ if(!dir.exists(paste0(workDir, "results_age/")))
   dir.create(path = paste0(workDir, "results_age/"), recursive = TRUE)
 
 # Record sessionInfo -------------------------------------------------------
-sink(file = paste0(workDir, "results/session_info.txt"), 
+sink(file = paste0(workDir, "results_age/session_info.txt"), 
      type = "output")
 sessionInfo()
 sink()
