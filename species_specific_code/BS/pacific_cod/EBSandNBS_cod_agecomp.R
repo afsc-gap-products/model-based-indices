@@ -1,4 +1,3 @@
-#library(googledrive)
 library(tidyverse)
 library(rgdal)
 library(VAST)
@@ -7,7 +6,7 @@ library(tictoc)
 # Set species, model -------------------------------------------------------
 
 which_model <- c("hindcast", "production")[1]
-compare <- FALSE # If compare = TRUE, using prior year's alk
+compare <- TRUE # If compare = TRUE, using prior year's alk
 species <- 21720
 species_name <- "pacific_cod"
 
