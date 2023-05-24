@@ -3,6 +3,9 @@
 .rs.restartR() # restart R before doing these updates - these are delicate installs
 library(devtools)
 
+# install INLA if not installed previously
+#install.packages("INLA", repos = c(getOption("repos"), INLA = "https://inla.r-inla-download.org/R/stable"), dependencies = TRUE)
+
 devtools::install_version("Matrix", version = "1.5-3", repos = "http://cran.us.r-project.org")
 devtools::install_version("TMB", version = "1.9.2", repos = "http://cran.us.r-project.org")
 devtools::install_version("DHARMa", version = "0.4.6", repos = "http://cran.us.r-project.org")
