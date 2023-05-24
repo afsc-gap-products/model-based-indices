@@ -1,5 +1,4 @@
-library(tidyverse)
-library(rgdal)
+library(dplyr)
 library(VAST)
 library(tictoc)
 
@@ -99,32 +98,22 @@ strata_names = c("Both","EBS","NBS")
     min_year <- 1994
     
     # Load age-length keys produced by sumfish
-    alk <- readRDS(paste0(workDir,"data/unstratified_alk.RDS") )
+    alk <- readRDS(paste0(workDir,"data/unstratified_alk.RDS"))
     if(compare == TRUE)
     {
-      alk_all <- readRDS(paste0(workDir,"data/",prev_year,"/unstratified_alk.RDS") )
-      alk_ebs <- alk_all$EBS %>%
-          filter(SPECIES_CODE == species_code) %>%
-          mutate(REGION = "EBS")
-      alk_nbs <- alk_all$NBS %>%
-          bind_rows( filter(alk_ebs, YEAR == 2018) ) %>%   # Use EBS ALK for 2018 ad hoc sampling in NBS
-          filter(SPECIES_CODE == species_code) %>%
-          mutate(REGION = "NBS")
+      alk_all <- readRDS(paste0(workDir,"data/",prev_year,"_production/unstratified_alk.RDS") )
+      alk_ebs <- alk_all %>% filter(REGION == "EBS")
+      alk_nbs <- alk_all %>% filter(REGION == "NBS") %>%
+          bind_rows( filter(alk_ebs, YEAR == 2018) )   # Use EBS ALK for 2018 ad hoc sampling in NBS
 
       alk <- bind_rows(alk_ebs, alk_nbs)
     }
     
     sizeComp <- readRDS(paste0(workDir,"data/EBS_NBS_SizeComp.RDS") ) %>% 
-        dplyr::filter(YEAR >= min_year,
-                      SPECIES_CODE == species_code,
-                      !is.na(EFFORT)
-        )
+      filter(YEAR >= min_year, !is.na(EFFORT))
 
     haulData <- readRDS(paste0(workDir,"data/EBS_NBS_Index.RDS") ) %>% 
-        dplyr::filter(YEAR >= min_year,
-                      SPECIES_CODE == species_code,
-                      !is.na(EFFORT)
-        )
+        dplyr::filter(YEAR >= min_year, !is.na(EFFORT))
     
     # Get summary calculations - this also fills zeroes within year - add sex if generating sex-specific agecomps
     allCats <- expand.grid(HAULJOIN=unique(haulData$HAULJOIN), AGE = unique(alk$AGE[alk$AGE<=plus_group]), noAge = 0) %>%
@@ -133,7 +122,7 @@ strata_names = c("Both","EBS","NBS")
     
     # Aggregate by Age key
     Data <- sizeComp %>%
-    left_join(alk, by = c("YEAR", "REGION", "LENGTH","SEX","SPECIES_CODE")) %>%
+    left_join(alk, by = c("YEAR", "REGION", "LENGTH","SEX","SPECIES_CODE"), relationship = "many-to-many") %>%
     mutate(ageCPUE = nSizeCPUE * probability,
            AGE = ifelse(AGE > plus_group,plus_group, AGE)) %>% 
     group_by(YEAR,REGION,HAULJOIN,STRATUM,START_LONGITUDE, START_LATITUDE,nCPUE, AGE) %>%
@@ -178,8 +167,8 @@ strata_names = c("Both","EBS","NBS")
     
 
 # Run Analysis ------------------------------------------------------------
-    # Data_Geostat <- readRDS(file = here::here("species_specific_code","BS",species_name,"data",
-    #                                           paste0("Data_Geostat_",species_code,".RDS")))
+    # Data_Geostat <- readRDS(file = here::here("species_specific_code","BS",species_name,which_model,"data",
+    #                                           paste0("Data_Geostat_comps_",species_code,".RDS")))
 
   # Run model
   tic("running model")
