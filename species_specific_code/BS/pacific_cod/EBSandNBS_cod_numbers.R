@@ -1,5 +1,3 @@
-library(here) 
-library(googledrive)
 library(tidyverse)
 library(VAST) 
 library(sf)
