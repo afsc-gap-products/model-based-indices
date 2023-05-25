@@ -5,7 +5,7 @@ library(tictoc)
 # Set species, model -------------------------------------------------------
 
 which_model <- c("hindcast", "production")[1]
-compare <- TRUE # If compare = TRUE, using prior year's alk
+compare <- FALSE # If compare = TRUE, using prior year's alk
 species <- 21720
 species_name <- "pacific_cod"
 
@@ -198,7 +198,8 @@ strata_names = c("Both","EBS","NBS")
   #dyn.load(dynlib("VAST_v14_0_1"))
   
   # Plot results
-  results <- plot_results( fit, zrange = c(-3,3), n_cells = 2000, strata_names = strata_names, check_residuals = TRUE )
+  results <- plot_results( fit, zrange = c(-3,3), n_cells = 2000, strata_names = strata_names, 
+                           check_residuals = TRUE,  working_dir =  paste0(workDir,"/results_age"))
   #saveRDS(results, file = "VASTresults.RDS")
   saveRDS(results,file = paste0(workDir,"/results_age/",species_name,"_results.RDS"))
   
