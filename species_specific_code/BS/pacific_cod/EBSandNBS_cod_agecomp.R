@@ -199,16 +199,16 @@ strata_names = c("Both","EBS","NBS")
   
   # Plot results
   results <- plot_results( fit, zrange = c(-3,3), n_cells = 2000, strata_names = strata_names, 
-                           check_residuals = TRUE,  working_dir =  paste0(workDir,"/results_age"))
+                           check_residuals = TRUE,  working_dir =  paste0(workDir,"/results_age/"))
   #saveRDS(results, file = "VASTresults.RDS")
   saveRDS(results,file = paste0(workDir,"/results_age/",species_name,"_results.RDS"))
   
   
   # # If residual plots don't... uh... plot...
-  # plot_quantile_residuals( fit=fit ) 
+  # plot_quantile_residuals( fit=fit)
   # 
   # map_list = make_map_info( "Region"=settings$Region, "spatial_list"=fit$spatial_list, "Extrapolation_List"=fit$extrapolation_list )
-  # plot_maps( Obj=fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
+  # plot_maps(fit=fit, n_cells = 2000, Obj=fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]])
   
  
 
