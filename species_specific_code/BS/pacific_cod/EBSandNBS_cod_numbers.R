@@ -96,10 +96,6 @@ settings <- make_settings(
 
 sumAll <- read_rds(paste0(workDir, "data/EBS_NBS_Index.RDS"))
 
-
-Data <- sumAll %>%
-   dplyr::filter(SPECIES_CODE==species)
-
 # Format the data for VAST
 Data_Geostat <-  dplyr::transmute(Data,
                                Catch_KG = nCPUE*100, # sumfish calculates CPUE in kg/ha this converts it to kg/km^2
@@ -144,7 +140,7 @@ fit <- fit_model( "settings"=settings,
                   "X1_formula"=formula,
                   "X2_formula"=formula,
                   "X1config_cp" <- X1config_cp,
-                  "X2config_cp" <- X2config_cp ,
+                  "X2config_cp" <- X2config_cp,
                   "covariate_data"=covariate_data,
                   "test_fit" = TRUE,
                   "working_dir" = workDir
