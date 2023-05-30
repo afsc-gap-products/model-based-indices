@@ -5,6 +5,7 @@
 .RDS
 .Rdat
 .txt
+.png
 data/
 results/
 results_age/
