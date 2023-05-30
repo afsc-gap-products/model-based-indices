@@ -3,12 +3,13 @@ Type: Package
 Title: Vector-Autoregressive Spatio-Temporal (VAST) Model
 Version: 3.10.0
 Date: 2022-11-18
-Authors@R: c(person(given = "James", family = "Thorson", role = c("aut", "cre"), email = "James.Thorson@noaa.gov", comment = c(ORCID =
-               "0000-0001-7415-1010")), person(given="Cole", family="Monnahan", role="ctb", email="Cole.Monnahan@noaa.gov") )
-Description: VAST is an R package for conducting spatio-temporal analysis of data from multiple categories (species, sizes, etc.), and
-               includes both spatial and spatio-temporal variation in density for each category, with either factor-analysis or
-               autoregressive correlations among categories, with derived calculation of abundance indices, center-of-gravity, and
-               area-occupied.
+Authors@R: c(person(given = "James", family = "Thorson", role = c("aut", "cre"), email = "James.Thorson@noaa.gov", comment
+             = c(ORCID = "0000-0001-7415-1010")), person(given="Cole", family="Monnahan", role="ctb",
+             email="Cole.Monnahan@noaa.gov") )
+Description: VAST is an R package for conducting spatio-temporal analysis of data from multiple categories (species,
+             sizes, etc.), and includes both spatial and spatio-temporal variation in density for each category, with
+             either factor-analysis or autoregressive correlations among categories, with derived calculation of
+             abundance indices, center-of-gravity, and area-occupied.
 Imports: abind, effects, INLA, stats, ThorsonUtilities, utils, remotes, devtools
 Depends: TMB (>= 1.8.0), FishStatsUtils, R (>= 3.5.0)
 Suggests: testthat, knitr, rmarkdown, pscl, tweedie, mgcv, lme4
@@ -32,10 +33,10 @@ GithubUsername: James-Thorson-NOAA
 GithubRef: 3.10.0
 GithubSHA1: 4ce60813feb7c4e1cc43349c864c5d7218c4ba1e
 NeedsCompilation: no
-Packaged: 2023-05-05 19:36:05 UTC; lewis.barnett
+Packaged: 2023-05-24 20:51:36 UTC; lewis.barnett
 Author: James Thorson [aut, cre] (<https://orcid.org/0000-0001-7415-1010>), Cole Monnahan [ctb]
 Maintainer: James Thorson <James.Thorson@noaa.gov>
-Built: R 4.3.0; ; 2023-05-05 19:36:09 UTC; windows
+Built: R 4.3.0; ; 2023-05-24 20:51:48 UTC; windows
 
 -- File: C:/Program Files/R/R-4.3.0/library/VAST/Meta/package.rds 
 Package: FishStatsUtils
@@ -43,13 +44,14 @@ Type: Package
 Title: Utilities (shared code and data) for FishStats spatio-temporal modeling toolbox
 Version: 2.12.0
 Date: 2022-11-18
-Authors@R: c(person(given = "James", family = "Thorson", role = c("aut", "cre"), email = "James.Thorson@noaa.gov", comment = c(ORCID =
-               "0000-0001-7415-1010")) )
-Description: FishStatsUtils contains utilities (shared code and data) used by multiple packages (VAST, SpatialDeltaGLMM, MIST, Spatial_FA,
-               SpatialDFA, surplus_production, EOFR) that are designed for spatio-temporal analysis of ecological data.
-Imports: abind, alphahull, corpcor, corrplot, DHARMa, ecodist, fastcluster, INLA, plotrix, RANN, sf, raster, reshape2, rgdal,
-               rnaturalearth, rnaturalearthdata, seriation, shape, sp, stats, TMB (>= 1.8.0), TMBhelper (>= 1.4.0), utils, viridisLite,
-               spacetime, gstat
+Authors@R: c(person(given = "James", family = "Thorson", role = c("aut", "cre"), email = "James.Thorson@noaa.gov", comment
+             = c(ORCID = "0000-0001-7415-1010")) )
+Description: FishStatsUtils contains utilities (shared code and data) used by multiple packages (VAST, SpatialDeltaGLMM,
+             MIST, Spatial_FA, SpatialDFA, surplus_production, EOFR) that are designed for spatio-temporal analysis of
+             ecological data.
+Imports: abind, alphahull, corpcor, corrplot, DHARMa, ecodist, fastcluster, INLA, plotrix, RANN, sf, raster, reshape2,
+             rgdal, rnaturalearth, rnaturalearthdata, seriation, shape, sp, stats, TMB (>= 1.8.0), TMBhelper (>= 1.4.0),
+             utils, viridisLite, spacetime, gstat
 Depends: R (>= 3.5.0), units
 Enhances: tidyr
 Suggests: testthat
@@ -73,9 +75,9 @@ GithubUsername: james-thorson
 GithubRef: 2.12.0
 GithubSHA1: 57e18bbd94ee592e212230ff00df27fbce0acb1e
 NeedsCompilation: no
-Packaged: 2023-05-05 19:34:36 UTC; lewis.barnett
+Packaged: 2023-05-05 20:17:13 UTC; lewis.barnett
 Author: James Thorson [aut, cre] (<https://orcid.org/0000-0001-7415-1010>)
 Maintainer: James Thorson <James.Thorson@noaa.gov>
-Built: R 4.3.0; ; 2023-05-05 19:34:48 UTC; windows
+Built: R 4.3.0; ; 2023-05-05 20:17:43 UTC; windows
 
 -- File: C:/Program Files/R/R-4.3.0/library/FishStatsUtils/Meta/package.rds 
