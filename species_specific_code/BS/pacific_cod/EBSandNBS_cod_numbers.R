@@ -172,14 +172,14 @@ saveRDS(fit, file = "VASTfit.RDS")
     
     
     # If residual plots don't... uh... plot...
-    # plot_quantile_residuals( fit=fit ) 
+    # plot_quantile_residuals( fit=fit )
     # 
     # map_list = make_map_info( "Region"=settings$Region, "spatial_list"=fit$spatial_list, "Extrapolation_List"=fit$extrapolation_list )
-    # plot_maps( Obj=fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
+    # plot_maps(fit=fit, n_cells = 600, Obj=fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
     
     
     # ESP products
-    write.csv( results$Range$COG_Table, file="COG.csv", row.names=FALSE )
+    write.csv( results$Range$COG_Table, file=paste0(workDir,"results/COG.csv"), row.names=FALSE )
     
     ##save effective area occupied for ESP request
     report = TMB::summary.sdreport(fit$parameter_estimates$SD)
@@ -187,7 +187,7 @@ saveRDS(fit, file = "VASTfit.RDS")
     Year <- sort(unique(fit$year_labels))
     ln_km2 <- as.data.frame(cbind(ln_km2, Year))
     ln_km2 <- ln_km2[which(ln_km2$Year %in% unique(fit$data_frame$t_i)),]
-    write.csv( ln_km2, file="ln_effective_area.csv", row.names=FALSE )
+    write.csv( ln_km2, file=paste0(workDir,"results/ln_effective_area.csv"), row.names=FALSE )
     
 
 
@@ -210,8 +210,8 @@ saveRDS(fit, file = "VASTfit.RDS")
     
     # Calculate the DBEs
     Strata_Geostat <- sf_geostat_strata %>%
-        filter(!is.na(STRATUM) ) %>%
-        group_by(Year, STRATUM) %>%
+        filter(!is.na(Stratum) ) %>%
+        group_by(Year, Stratum) %>%
         summarize( mean_cpue = mean(Catch_KG),
                    area = first(F_AREA),
                    var_cpue = ( var(Catch_KG) / n() ),
@@ -228,13 +228,13 @@ saveRDS(fit, file = "VASTfit.RDS")
         mutate(Estimator = "Design-based") %>%
         ungroup()
     
-    VASTindex <- read_csv( paste0(workDir,"results/Table_for_SS3.csv") ) %>%
+    VASTindex <- read_csv( paste0(workDir,"results/Index.csv") ) %>%
         mutate(Estimator = "VAST") %>%
-        filter(Fleet == "Both")
+        filter(Stratum == "Both")
     
     index_compare <- bind_rows(
-        select(DB_Geostat, Year, total_biomass_mt, total_biomass_mt_se,Estimator),
-        select(VASTindex, Year, total_biomass_mt = Estimate_metric_tons, total_biomass_mt_se = SD_mt,Estimator)
+        dplyr::select(as.data.frame(DB_Geostat), Year, total_biomass_mt, total_biomass_mt_se, Estimator),
+        dplyr::mutate(VASTindex, Year=Time, total_biomass_mt = Estimate/1000, total_biomass_mt_se = `Std. Error for Estimate`/1000,Estimator)
     )
     
     
@@ -261,6 +261,6 @@ saveRDS(fit, file = "VASTfit.RDS")
         theme(axis.text.x=element_text(angle=90,vjust=.5))
     print(spPlot)
 
-    ggsave(paste0(species_name,"_Index_compare.png"), width=8, height=6, units="in")
+    ggsave(paste0(workDir,"results/Index_compare.png"), width=8, height=6, units="in")
    
 
