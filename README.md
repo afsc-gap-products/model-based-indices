@@ -15,10 +15,10 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 
 # GAP Work Plan 
 - Species requests & alternate model-based runs/settings in from SSMA, ESP, ESR by 15 January
-- Run VAST with previous year survey data included as requested by SA author( March - April, code frozen by May )
+- Run VAST with previous year survey data included as requested by SA author (March - April, code frozen by May)
 - Merge new frozen code (index & data retrival code) in git repo
 - Upload all VAST output files for hindcast and data (as an .Rdat) used to produce the indices to [google drive folder](https://drive.google.com/drive/folders/1yxn02yF0V1PNVw0_HpqeSK_XxgOy_LAT)
-- Notify the assessment lead & Cecilia (GOA) /Lewis (Bering) that you’ve completed hindcasts ( March - April )
+- Notify the assessment lead & Cecilia (GOA) /Lewis (Bering) that you’ve completed hindcasts (March - April)
 - Run hindcasts again after survey with updated data (August - Sept., completed by 30 September) and upload results to the appropriate region production folder [on google drive](https://drive.google.com/drive/folders/1yxn02yF0V1PNVw0_HpqeSK_XxgOy_LAT), including data used
 - merge final index code & data pull code onto repo
 
