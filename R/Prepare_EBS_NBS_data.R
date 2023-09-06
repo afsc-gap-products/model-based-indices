@@ -33,7 +33,7 @@ sumfish::getSQL()
 ##   older than the plus group are grouped as one group. 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-which_model <- c("hindcast", "production")[1]
+which_model <- c("hindcast", "production")[2]
 current_year <- 2023
 
 start_year <- 1982
