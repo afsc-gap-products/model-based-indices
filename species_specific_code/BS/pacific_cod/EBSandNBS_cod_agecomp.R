@@ -4,7 +4,7 @@ library(tictoc)
 
 # Set species, model -------------------------------------------------------
 
-which_model <- c("hindcast", "production")[1]
+which_model <- c("hindcast", "production")[2]
 compare <- FALSE # If compare = TRUE, using prior year's alk
 species <- 21720
 species_name <- "pacific_cod"
@@ -99,14 +99,8 @@ strata_names = c("Both","EBS","NBS")
     
     # Load age-length keys produced by sumfish
     alk <- readRDS(paste0(workDir,"data/unstratified_alk.RDS"))
-    if(compare == TRUE)
-    {
-      alk_all <- readRDS(paste0(workDir,"data/",prev_year,"_production/unstratified_alk.RDS") )
-      alk_ebs <- alk_all %>% filter(REGION == "EBS")
-      alk_nbs <- alk_all %>% filter(REGION == "NBS") %>%
-          bind_rows( filter(alk_ebs, YEAR == 2018) )   # Use EBS ALK for 2018 ad hoc sampling in NBS
-
-      alk <- bind_rows(alk_ebs, alk_nbs)
+    if(compare == TRUE){
+      alk <- readRDS(paste0(workDir,"data/",prev_year,"_production/unstratified_alk.RDS") )
     }
     
     sizeComp <- readRDS(paste0(workDir,"data/EBS_NBS_SizeComp.RDS") ) %>% 
