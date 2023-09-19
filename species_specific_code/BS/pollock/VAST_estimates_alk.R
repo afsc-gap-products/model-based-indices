@@ -82,14 +82,14 @@ strata_names = c("Both","EBS","NBS")
 
 Date = Sys.Date()
 RunDir = paste0(workDir,"/Comps_",Date,"_",Species,"_npool=",Npool,"_BiasCorr=",BiasCorr,"/")
-dir.create(RunDir)
+dir.create(RunDir, recursive = TRUE)
 setwd(RunDir)
 
 
 # Age Composition ---------------------------------------------------------
 
 # pollock data ------------------------------------------------------------
-
+## TODO: set relative path to DDC output.
 Data_Geostat <- read.csv(here("output","VAST_ddc_alk_2022.csv"))
 
 # check for sample size
