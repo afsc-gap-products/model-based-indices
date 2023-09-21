@@ -17,8 +17,7 @@ library(getPass)
 ##   Set constants
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 requested_start_year <- 1990
-species_code <- c("Gadus_macrocephalus" = 21720, 
-                  "Gadus_chalcogrammus" = 21740)[1]
+species_code <- c("Gadus_macrocephalus" = 21720)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Connect to Oracle. Make sure to connect to network or VPN
@@ -96,26 +95,4 @@ save(Data_Geostat,
      file = paste0("species_specific_code/GOA/",
                    names(species_code), "/data/Data_Geostat_", 
                    names(species_code), ".RData"))
-
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   For ESP runs, create a subsetted df for those data west of -140 Lon
-##   Save object as both an RDS and RData file.
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Data_Geostat_w140 <- subset(x = Data_Geostat,
-                            subset = Lon < -140)
-
-if (!dir.exists(paths = paste0("species_specific_code/GOA/Pcod_WPlk_ESP/",
-                               names(species_code), "_w140/data/")))
-  dir.create(path = paste0("species_specific_code/GOA/Pcod_WPlk_ESP/",
-                            names(species_code), "_w140/data/"), 
-             recursive = TRUE)
-
-saveRDS(object = Data_Geostat_w140,
-        file = paste0("species_specific_code/GOA/Pcod_WPlk_ESP/",
-                      names(species_code), "_w140/data/Data_Geostat_", 
-                      names(species_code), "_w140.rds"))
-
-save(Data_Geostat_w140, 
-     file = paste0("species_specific_code/GOA/Pcod_WPlk_ESP/",
-                   names(species_code), "_w140/data/Data_Geostat_", 
-                   names(species_code), "_w140.RData"))
+				   
