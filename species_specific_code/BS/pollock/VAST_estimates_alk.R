@@ -29,6 +29,7 @@ library(TMB)
 
 species <- 21740
 this_year <- lubridate::year(today())
+# this_year <- 2022  # different year for debugging
 Species = "Walleye Pollock Agecomp"
 speciesName <- paste0("Walleye_Pollock_age_",lubridate::year(today()),"_EBS-NBS")
 workDir <- here::here("VAST_results", speciesName)
@@ -78,25 +79,24 @@ settings <- make_settings(
 
 strata_names = c("Both","EBS","NBS")
 
-#### Explore the data ####
-
-Date = Sys.Date()
-RunDir = paste0(workDir,"/Comps_",Date,"_",Species,"_npool=",Npool,"_BiasCorr=",BiasCorr,"/")
-dir.create(RunDir, recursive = TRUE)
-setwd(RunDir)
-
-
 # Age Composition ---------------------------------------------------------
 
 # pollock data ------------------------------------------------------------
-## TODO: set relative path to DDC output.
-Data_Geostat <- read.csv(here("output","VAST_ddc_alk_2022.csv"))
+
+Data_Geostat <- read.csv(here("output", paste0("VAST_ddc_alk_", this_year, ".csv")))
 
 # check for sample size
 table(Data_Geostat$Age)
 
 
 # Run Analysis ------------------------------------------------------------
+
+#### Explore the data ####
+
+Date = Sys.Date()
+RunDir = paste0(workDir,"/Comps_",Date,"_",Species,"_npool=",Npool,"_BiasCorr=",BiasCorr,"/")
+dir.create(RunDir, recursive = TRUE)
+setwd(RunDir)
 
 # Run model
 fit = fit_model( "settings"=settings, 
