@@ -84,6 +84,7 @@ strata_names = c("Both","EBS","NBS")
 # pollock data ------------------------------------------------------------
 
 Data_Geostat <- read.csv(here("output", paste0("VAST_ddc_alk_", this_year, ".csv")))
+Data_Geostat$AreaSwept_km2 <- 1  # set to 1 b/c we're using CPUE, not catch
 
 # check for sample size
 table(Data_Geostat$Age)
@@ -103,11 +104,11 @@ fit = fit_model( "settings"=settings,
                  "Lat_i"=Data_Geostat[,'Lat'], 
                  "Lon_i"=Data_Geostat[,'Lon'], 
                  "t_i"=Data_Geostat[,'Year'],  # "t_i"=rep(2019,nrow(Data_Geostat)),
-                 "c_i"=Data_Geostat[,'Age'], 
-                 "b_i"=Data_Geostat[,'Catch_KG'],
+                 "c_iz"=Data_Geostat[,'Age'] - 1,  # need to change this so index starts at 0
+                 "b_i"=Data_Geostat[,'Catch_KG'],  # This is actually CPUE
                  # "b_i"=as_units(Data_Geostat[,'Catch_KG'], "count"), #new for 2023 changes
                  "a_i"=Data_Geostat[,'AreaSwept_km2'], 
-                 "v_i"=Data_Geostat[,'Vessel'],
+                 # "v_i"=Data_Geostat[,'Vessel'],  # not using vessel data
                  Npool = Npool, 
                  test_fit=T,
                  # newtonsteps = 0,       # for testing
