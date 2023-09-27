@@ -11,13 +11,13 @@
 ##                https://docs.google.com/document/d/18CeXcHhHK48hrtkiC6zygXlHj6YVrWEd/edit
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 rm(list = ls())
-which_model <- c("hindcast", "production")[1]
+which_model <- c("hindcast", "production")[2]
 species_name <- "yellowfin_sole"
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Import packages ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-library(coldpool) 
+# library(coldpool) 
 library(VAST) 
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -75,11 +75,21 @@ Data_Geostat <- readRDS(file = paste0(folder, "data/data_geostat_index.rds"))
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Load coldpool covariate data ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-mean_bt_lt100m <- scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)
-covariate_data <- data.frame(Year = c(coldpool:::cold_pool_index$YEAR, 2020),
+# mean_bt_lt100m <- scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)
+# covariate_data <- data.frame(Year = c(coldpool:::cold_pool_index$YEAR, 2020),
+#                              Lat = mean(Data_Geostat$Lat),
+#                              Lon = mean(Data_Geostat$Lon), 
+#                              mean_bt_lt100m = c(mean_bt_lt100m, 0))
+
+# coldpool package wouldnt load on this version of R
+# write.csv(file = "mean_bt_lt100m.csv", 
+#           x = data.frame(year = coldpool:::cold_pool_index$YEAR, 
+#                          mean_bt_lt100m = scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)))
+mean_bt_lt100m <- read.csv(file = paste0(folder, "/data/mean_bt_lt100m.csv"))
+covariate_data <- data.frame(Year = c(mean_bt_lt100m$year, 2020),
                              Lat = mean(Data_Geostat$Lat),
                              Lon = mean(Data_Geostat$Lon), 
-                             mean_bt_lt100m = c(mean_bt_lt100m, 0))
+                             mean_bt_lt100m = c(mean_bt_lt100m$mean_bt_lt100m, 0))
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Set VAST settings ----
