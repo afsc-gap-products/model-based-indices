@@ -7,7 +7,7 @@ library(akgfmaps)
 
 # Set species, model -------------------------------------------------------
 
-which_model <- c("hindcast", "production")[1]
+which_model <- c("hindcast", "production")[2]
 species <- 21720
 species_name <- "pacific_cod"
 
