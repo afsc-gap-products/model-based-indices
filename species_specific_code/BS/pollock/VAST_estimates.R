@@ -77,6 +77,7 @@ if(data_choice  == 'a') {
 
 species <- 21740
 this_year <- lubridate::year(today())
+# this_year <- 2022  # set a different year for debugging
 speciesName <- paste0("Walleye_Pollock_index_",this_year,"_",region_select)
 workDir <- here::here("VAST_results", speciesName)
 dir.create(workDir, showWarnings = FALSE)
