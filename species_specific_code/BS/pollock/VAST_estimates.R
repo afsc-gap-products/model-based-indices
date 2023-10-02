@@ -128,7 +128,7 @@ table(Data_Geostat$Year)
 
 # Cold pool covariate -----------------------------------------------------
 
-devtools::install_github("afsc-gap-products/coldpool",  force = TRUE, R_REMOTES_NO_ERRORS_FROM_WARNINGS= TRUE)#, lib = .libPaths()[2])
+#devtools::install_github("afsc-gap-products/coldpool",  force = TRUE, R_REMOTES_NO_ERRORS_FROM_WARNINGS= TRUE)#, lib = .libPaths()[2])
 coldpool:::cold_pool_index
 
 cold_pool <- coldpool:::cold_pool_index %>%
@@ -225,8 +225,8 @@ X2config_cp <- as.matrix(2)
 # quick fit:
 
 settings_quick <- settings
-settings_quick$n_x <- 100
-settings_quick$bias.correct <- FALSE
+settings_quick$n_x <- 750
+settings_quick$bias.correct <- TRUE
 
 options(max.print = .Machine$integer.max)
 
@@ -270,7 +270,7 @@ full_fit <- fit_model( "settings"=settings,
                   "b_i"=Data_Geostat[,'Catch_KG_km2'],
                   "a_i"=Data_Geostat[,'AreaSwept_km2'], 
                   "v_i"=Data_Geostat[,'Vessel'],
-                  parameters=fit_check$ParHat,   #use params from quick run as starting point
+                  #parameters=fit_check$ParHat,   #use params from quick run as starting point
                   "create_strata_per_region"=TRUE,
                   "getJointPrecision"=getJointPrecision, # turn on for full run
                   "getReportCovariance"=getReportCovariance,  # turn on for full run
@@ -284,7 +284,7 @@ full_fit <- fit_model( "settings"=settings,
                   # "run_model" = FALSE,    #for testing -- if an issue, try uncommenting this one
                   # "build_model" = FALSE,  #for testing
                   # test_fit = FALSE,       #for testing
-                  # newtonsteps=0,          #for testing
+                  newtonsteps=1,          #for testing
                   # CheckForBugs = FALSE,   #for testing
                   "working_dir" = workDir
 )
