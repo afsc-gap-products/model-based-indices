@@ -123,6 +123,8 @@ fit = fit_model( "settings"=settings,
 
 saveRDS(fit, file = paste0(workDir,"/VASTfit_age.RDS"))
 
+#Load results if using a previous model run
+fit <- readRDS(file = paste0(workDir,"/VASTfit_age.RDS"))
 
 # Plots -------------------------------------------------------------------
 # If you need to load a fit in a new session:
@@ -140,6 +142,9 @@ results <- plot_results( fit, #zrange = c(-3,3), n_cells = 600,
                          strata_names = strata_names, 
                          check_residuals = TRUE )
 saveRDS(results, file = "VASTresults_age.RDS")
+
+#Load results if taking a previous model run
+readRDS(file = paste0(getwd(), "/VASTresults_age.RDS"))
 
 # Expand to proportional population numbers -------------------------------
 VASTfit <- fit
@@ -176,15 +181,85 @@ write.csv(prop,"proportions.csv")
 
 # read_csv()
 new_props <- read.csv(paste0(RunDir, "/proportions.csv"))
-old_props <- read.csv(here("VAST_results", "pollock_proportions_2021.csv"))
+old_props <- read.csv(here("VAST_results", "pollock_proportions_2022.csv"))
 
 dim(new_props)
 dim(old_props)
+new_props <- new_props[,-1]
 
-check_props <- round(new_props[,2:16] - old_props[,2:16], 4)
-check_props_tab <- cbind(check_props, new_props[,17:18])
-check_props_abs <- round(abs(new_props[,2:16] - old_props[,2:16]), 4)
-check_props_abs_tab <-  cbind(check_props_abs, new_props[,17:18])
+new_props <- subset(new_props, new_props$Year < 2023)
+
+check_props <- round(new_props[,1:15] - old_props[,1:15], 4)
+check_props_tab <- cbind(check_props, new_props[,16:17])
+check_props_abs <- round(abs(new_props[,1:15] - old_props[,1:15]), 4)
+check_props_abs_tab <-  cbind(check_props_abs, new_props[,16:17])
 options(scipen=999)
 write.csv(check_props_tab, here::here("VAST_results", "bridge_props_2022.csv"))
 write.csv(check_props_abs_tab, here::here("VAST_results", "bridge_props_abs_2022.csv"))
+
+#Simple plots to compare age comps of hindcast versus previous years' productions run
+png(file='2023_age_comp_bridge.png')
+par(mfrow=c(8,5), mar=c(1,1,2,1), oma=c(3,4,0,0))
+for(i in 1: length(unique(old_props$Year))){
+
+  if(unique(old_props$Year)[i]==2020){
+    next
+  }
+  
+ylims <- c(0, max(as.vector(unlist(new_props[,c(1:15)][which(new_props$Year==(unique(old_props$Year))[i] & new_props$Region=='Both'),])), as.vector(unlist(old_props[,c(1:15)][which(old_props$Year==(unique(old_props$Year))[i] & old_props$Region=='Both'),]))))
+
+#Hindcast proportions
+barplot(height=as.vector(unlist(new_props[,c(1:15)][which(new_props$Year==(unique(new_props$Year))[i] & new_props$Region=='Both'),])), col=rgb(0,0,153, alpha=100, max=255), border=rgb(0,0,153, alpha=200, max=255))
+
+#Previous years' production run proportions
+barplot(height=as.vector(unlist(old_props[,c(1:15)][which(old_props$Year==(unique(old_props$Year))[i] & old_props$Region=='Both'),])), col=rgb(255, 153, 51, alpha=100, max=255), border=rgb(255, 153, 51, alpha=200, max=255), add=TRUE)
+axis(side=1, at=c(1:15), labels=c(1:15), cex.axis=0.85)
+mtext(side=3, (unique(old_props$Year))[i], cex=0.65)
+
+
+if(unique(old_props$Year)[i]==2019){
+  mtext(side=1, 'Age', line=2.5 )
+}
+if(unique(old_props$Year)[i]==2002){
+  mtext(side=2, 'Proportion-at-age', line=3)
+}
+if(i==1){
+  legend(x=5, y=ylims[2]*1.12, pch=15, bty='n', col=c(rgb(0,0,153, alpha=150, max=255), rgb(255, 153, 51, alpha=150, max=255)), legend=c('2023 Hind', '2022 Prod'), pt.cex=1.5, x.intersp=0.5)
+}
+
+}
+dev.off()
+
+#Plot differences between last year's production run and current years hindcast
+png(file='2023_age_comp_bridge_diffs.png')
+par(mfrow=c(8,5), mar=c(1,1,2,1), oma=c(3,4,0,0))
+for(i in 1: length(unique(old_props$Year))){
+  
+  if(unique(old_props$Year)[i]==2020){
+    next
+  }
+  
+  ylims <- c(0, max(as.vector(unlist(new_props[,c(1:15)][which(new_props$Year==(unique(old_props$Year))[i] & new_props$Region=='Both'),])), as.vector(unlist(old_props[,c(1:15)][which(old_props$Year==(unique(old_props$Year))[i] & old_props$Region=='Both'),]))))
+  
+  #% difference in proportions between hindcast and past production
+  diffs <- as.vector(
+    (unlist(new_props[,c(1:15)][which(new_props$Year==(unique(new_props$Year))[i] & new_props$Region=='Both'),])-
+     unlist(old_props[,c(1:15)][which(old_props$Year==(unique(old_props$Year))[i] & old_props$Region=='Both'),]))
+    #/unlist(old_props[,c(1:15)][which(old_props$Year==(unique(old_props$Year))[i] & old_props$Region=='Both'),])
+    )
+  
+  barplot(100*diffs,col=rgb(0,0,153, alpha=100, max=255), border=rgb(0,0,153, alpha=200, max=255))
+  
+  #Previous years' production run proportions
+  axis(side=1, at=c(1:15), labels=c(1:15), cex.axis=0.85)
+  mtext(side=3, (unique(old_props$Year))[i], cex=0.65)
+  
+  
+  if(unique(old_props$Year)[i]==2019){
+    mtext(side=1, 'Age', line=2.5 )
+  }
+  if(unique(old_props$Year)[i]==2002){
+    mtext(side=2, 'Percent difference between 2022 production and 2023 hindcast', line=3)
+  }
+}
+dev.off()
