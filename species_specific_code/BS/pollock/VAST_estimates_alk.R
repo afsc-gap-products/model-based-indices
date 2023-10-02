@@ -38,7 +38,7 @@ dir.create(workDir, showWarnings = FALSE)
 
 # Settings ----------------------------------------------------------------
 
-Version <- "VAST_v13_1_0"
+Version <- "VAST_v14_0_1"
 Region <- c("Eastern_Bering_Sea","Northern_Bering_Sea")
 Method = "Mesh"
 knot_method <- "grid"
