@@ -2,13 +2,14 @@ library(TMB)
 library(devtools)
 library(dplyr)
 
-current_end_year <- 2021
+current_end_year <- 2023
 requested_start_year <- 1990
 species_code <- c(21720,30152,30150,310)[2:3]#[4]#[1]#[2:3] #c(P.cod, dusky rockfish, dusky and dark rockfishes unid.)
 #310 Squalus suckleyi spiny dogfish
 #species_code <- c(30420,30060,21740,10110,10261,10262,10130)[2] #c(northern rockfish, POP, pollock, arrowtooth, northern rock sole, southern rock sole, flathead sole)
-
 #species_code <- 10260 ## rock sole unidentified.
+#species_code <- 23041 # capelin
+
 PKG <- c("RODBC")
 for (p in PKG) {
   if(!require(p,character.only = TRUE)) {  
@@ -83,6 +84,9 @@ if(species_code == 10130){
 }
 if(species_code == 10260){
   species_name <- "Lepidopsetta_sp." #rock sole unid.
+}
+if(species_code == 23041){
+  species_name <- "capelin" 
 }
 
 # Set up folder to store species specific results
