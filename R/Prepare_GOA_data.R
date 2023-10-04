@@ -115,7 +115,7 @@ if(species_code == 10260){
 
 
 ##for everything that isn't duskies/dark rockfish
-if(species_code == 310 | species_code == 21720 | species_code == 30420 | species_code == 30060 | species_code == 21740 | species_code == 10110| species_code == 10261 | species_code == 10262| species_code == 10130 )
+if(species_code == 23041 | species_code == 310 | species_code == 21720 | species_code == 30420 | species_code == 30060 | species_code == 21740 | species_code == 10110| species_code == 10261 | species_code == 10262| species_code == 10130 )
 {
   catch_by_species <- subset(catch, catch$SPECIES_CODE==species_code)
   catch_by_species <- data.frame(HAULJOIN = catch_by_species$HAULJOIN,
