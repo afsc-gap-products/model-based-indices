@@ -94,10 +94,10 @@ settings <- make_settings(
 
 # Format catch data -------------------------------------------------------
 
-sumAll <- read_rds(paste0(workDir, "data/EBS_NBS_Index.RDS"))
+dat <- read_rds(paste0(workDir, "data/EBS_NBS_Index.RDS"))
 
 # Format the data for VAST
-Data_Geostat <-  dplyr::transmute(Data,
+Data_Geostat <-  dplyr::transmute(dat,
                                Catch_KG = nCPUE*100, # sumfish calculates CPUE in kg/ha this converts it to kg/km^2
                                Year = YEAR,
                                Vessel = "missing",
