@@ -128,7 +128,7 @@ table(Data_Geostat$Year)
 
 # Cold pool covariate -----------------------------------------------------
 
-#devtools::install_github("afsc-gap-products/coldpool",  force = TRUE, R_REMOTES_NO_ERRORS_FROM_WARNINGS= TRUE)#, lib = .libPaths()[2])
+# devtools::install_github("afsc-gap-products/coldpool",  force = TRUE, R_REMOTES_NO_ERRORS_FROM_WARNINGS= TRUE)#, lib = .libPaths()[2])
 coldpool:::cold_pool_index
 
 cold_pool <- coldpool:::cold_pool_index %>%
@@ -170,7 +170,8 @@ covariate_data <- read.csv(here("output", "cold_pool_scaled_formatted.csv"))
 
 # VAST Settings -----------------------------------------------------------
 # Version <- get_latest_version( package="VAST" )
-Version <- "VAST_v13_1_0" #2022
+Version <- "VAST_v14_0_0"  #2023
+# Version <- "VAST_v13_1_0" #2022
 # Version <- "VAST_v12_0_0" #2021
 Region <- use_region
 strata_names <- use_strata_names
@@ -225,7 +226,7 @@ X2config_cp <- as.matrix(2)
 # quick fit:
 
 settings_quick <- settings
-settings_quick$n_x <- 750
+settings_quick$n_x <- 100  # 100 knots for testing
 settings_quick$bias.correct <- TRUE
 
 options(max.print = .Machine$integer.max)
