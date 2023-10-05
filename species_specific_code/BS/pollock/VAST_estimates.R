@@ -169,8 +169,8 @@ write.csv(covariate_data, here("output", "cold_pool_scaled_formatted.csv"))
 covariate_data <- read.csv(here("output", "cold_pool_scaled_formatted.csv"))
 
 # VAST Settings -----------------------------------------------------------
-# Version <- get_latest_version( package="VAST" )
-Version <- "VAST_v14_0_0"  #2023
+Version <- get_latest_version( package="VAST" )
+# Version <- "VAST_v14_0_1"  #2023 not recognized?
 # Version <- "VAST_v13_1_0" #2022
 # Version <- "VAST_v12_0_0" #2021
 Region <- use_region
