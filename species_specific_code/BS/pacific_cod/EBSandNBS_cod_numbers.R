@@ -56,7 +56,6 @@ for (pck in 1:length(pck_version)) {
 # VAST Settings -----------------------------------------------------------
 Region <- c("Eastern_Bering_Sea","Northern_Bering_Sea")
 strata_names = c("Both","EBS","NBS")
-Method <- "Mesh"
 knot_method <- "grid"
 grid_size_km <- 25
 n_x <- 750
