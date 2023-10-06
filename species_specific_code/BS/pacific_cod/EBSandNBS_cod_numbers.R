@@ -1,3 +1,5 @@
+## TODO: set up results directories properly, some of the output is going to root dir
+
 library(tidyverse)
 library(VAST) 
 library(sf)
