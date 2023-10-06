@@ -110,22 +110,25 @@ strata_names = c("Both","EBS","NBS")
         dplyr::filter(YEAR >= min_year, !is.na(EFFORT))
     
     # Get summary calculations - this also fills zeroes within year - add sex if generating sex-specific agecomps
-    allCats <- expand.grid(HAULJOIN=unique(haulData$HAULJOIN), AGE = unique(alk$AGE[alk$AGE<=plus_group]), noAge = 0) %>%
+    allCats <- expand.grid(HAULJOIN=unique(haulData$HAULJOIN), 
+                           AGE = unique(alk$AGE[alk$AGE<=plus_group]), 
+                           noAge = 0) %>%
     inner_join(haulData, by = c("HAULJOIN")) 
     
     
     # Aggregate by Age key
     Data <- sizeComp %>%
-    left_join(alk, by = c("YEAR", "REGION", "LENGTH","SEX","SPECIES_CODE"), relationship = "many-to-many") %>%
-    mutate(ageCPUE = nSizeCPUE * probability,
-           AGE = ifelse(AGE > plus_group,plus_group, AGE)) %>% 
-    group_by(YEAR,REGION,HAULJOIN,STRATUM,START_LONGITUDE, START_LATITUDE,nCPUE, AGE) %>%
-    summarize(ageCPUE = sum(ageCPUE),
-              count=n()) %>%
-    ungroup() %>%
-    select(HAULJOIN,AGE, ageCPUE, count) %>%
-    right_join(allCats, by= c("HAULJOIN","AGE")) %>%
-    mutate(ageCPUE = ifelse(is.na(ageCPUE), noAge, ageCPUE)) # %>% filter(YEAR < 2021) 
+      left_join(alk, by = c("YEAR", "REGION", "LENGTH","SEX","SPECIES_CODE"), 
+                relationship = "many-to-many") %>%
+      mutate(ageCPUE = nSizeCPUE * probability,
+             AGE = ifelse(AGE > plus_group,plus_group, AGE)) %>% 
+      group_by(YEAR,REGION,HAULJOIN,STRATUM,START_LONGITUDE, 
+               START_LATITUDE,nCPUE,AGE) %>%
+      summarize(ageCPUE = sum(ageCPUE), count=n()) %>%
+      ungroup() %>%
+      select(HAULJOIN,AGE, ageCPUE, count) %>%
+      right_join(allCats, by= c("HAULJOIN","AGE")) %>%
+      mutate(ageCPUE = ifelse(is.na(ageCPUE), noAge, ageCPUE)) # %>% filter(YEAR < 2021) 
     
     # Test CPUE
     # checkData <- Data %>%
