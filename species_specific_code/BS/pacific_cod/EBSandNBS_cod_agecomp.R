@@ -131,21 +131,21 @@ strata_names = c("Both","EBS","NBS")
       mutate(ageCPUE = ifelse(is.na(ageCPUE), noAge, ageCPUE)) # %>% filter(YEAR < 2021) 
     
     # Test CPUE
-    # checkData <- Data %>%
-    #   group_by(YEAR,HAULJOIN, nCPUE) %>%
-    #   summarize(sum_age_cpue = sum(ageCPUE)) %>%
-    #   mutate(diff = nCPUE - sum_age_cpue) 
+    checkData <- Data %>%
+      group_by(YEAR,HAULJOIN, nCPUE) %>%
+      summarize(sum_age_cpue = sum(ageCPUE)) %>%
+      mutate(diff = nCPUE - sum_age_cpue)
 
-    # dbSummary <- Data %>%
-    #   group_by(YEAR, STRATUM, AGE) %>%
-    #   summarize(meanAgeCPUE = mean(ageCPUE)) %>%
-    #   inner_join(bind_rows(NBS$stratum,EBS$stratum), by="STRATUM") %>%
-    #   mutate(agePopStratum = meanAgeCPUE * STRATUM_AREA) %>%
-    #   group_by(YEAR, AGE) %>%
-    #   summarize(agePopTotal = sum(agePopStratum)) %>%
-    #   ungroup()
+    dbSummary <- Data %>%
+      group_by(YEAR, STRATUM, AGE) %>%
+      summarize(meanAgeCPUE = mean(ageCPUE)) %>%
+      inner_join(bind_rows(NBS$stratum,EBS$stratum), by="STRATUM") %>%
+      mutate(agePopStratum = meanAgeCPUE * STRATUM_AREA) %>%
+      group_by(YEAR, AGE) %>%
+      summarize(agePopTotal = sum(agePopStratum)) %>%
+      ungroup()
 
-    # write.csv(dbSummary, "design-estimate.csv")
+    write.csv(dbSummary, "design-estimate.csv")
     
     # Format the data for VAST
     Data_Geostat <-  transmute(Data,
