@@ -3,9 +3,9 @@
 .Rhistory
 .RData
 .Ruserdata
-.RDS
+*.RDS
 .Rdat
-.txt
+*.txt
 *.png
 *.csv
 data/
