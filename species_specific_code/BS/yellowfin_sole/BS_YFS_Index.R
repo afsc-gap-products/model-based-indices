@@ -103,7 +103,7 @@ settings <- FishStatsUtils::make_settings(
   ObsModel = c(2, 1),
   FieldConfig = c("Omega1" = "IID", "Epsilon1" = "IID", 
                   "Omega2" = "IID", "Epsilon2" = "IID"),
-  RhoConfig = c("Beta1" = 0, "Beta2" = 0, "Epsilon1" = 4, "Epsilon2" = 4),
+  RhoConfig = c("Beta1" = 0, "Beta2" = 0, "Epsilon1" = 2, "Epsilon2" = 4),
   OverdispersionConfig = c("Eta1" = 0, "Eta2" = 0),
   Options = c("Calculate_Range" = TRUE, 
               "Calculate_effective_area" = TRUE, 
@@ -139,9 +139,8 @@ fit <- FishStatsUtils::fit_model(
   "getsd" = TRUE,
   
   ## Model tuning
-  "newtonsteps" = 1,
+  "newtonsteps" = 2,
   "Npool" = 100,
-  
   ## Covariate data
   "X1_formula"= ~ mean_bt_lt100m,
   "X2_formula"= ~ mean_bt_lt100m,
