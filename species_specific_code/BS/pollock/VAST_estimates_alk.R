@@ -38,7 +38,8 @@ dir.create(workDir, showWarnings = FALSE)
 
 # Settings ----------------------------------------------------------------
 
-Version <- "VAST_v14_0_1"
+Version <- get_latest_version( package="VAST" )
+# Version <- "VAST_v14_0_1"
 Region <- c("Eastern_Bering_Sea","Northern_Bering_Sea")
 Method = "Mesh"
 knot_method <- "grid"
@@ -100,6 +101,7 @@ dir.create(RunDir, recursive = TRUE)
 setwd(RunDir)
 
 # Run model
+start.time <- Sys.time() #"2023-10-12 06:14:31 PDT"
 fit = fit_model( "settings"=settings, 
                  "Lat_i"=Data_Geostat[,'Lat'], 
                  "Lon_i"=Data_Geostat[,'Lon'], 
