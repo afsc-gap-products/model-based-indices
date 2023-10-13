@@ -100,6 +100,9 @@ RunDir = paste0(workDir,"/Comps_",Date,"_",Species,"_npool=",Npool,"_BiasCorr=",
 dir.create(RunDir, recursive = TRUE)
 setwd(RunDir)
 
+fit_check <- readRDS(file = paste0(workDir,"/VASTfit_age.RDS"))
+fit_check$ParHat
+
 # Run model
 start.time <- Sys.time() #"2023-10-12 06:14:31 PDT"
 fit = fit_model( "settings"=settings, 
@@ -111,11 +114,12 @@ fit = fit_model( "settings"=settings,
                  # "b_i"=as_units(Data_Geostat[,'Catch_KG'], "count"), #new for 2023 changes
                  "a_i"=Data_Geostat[,'AreaSwept_km2'], 
                  # "v_i"=Data_Geostat[,'Vessel'],  # not using vessel data
+                 parameters=fit_check$ParHat,   #use params from quick run as starting point
                  Npool = Npool, 
-                 test_fit=T,
-                 # newtonsteps = 0,       # for testing
+                 # test_fit=T,
+                 newtonsteps = 0,       # for testing
                  # getsd = FALSE,         # for testing
-                 # test_fit = FALSE,      # for testing
+                 test_fit = FALSE,      # for testing
                  # "run_model" = FALSE,   # for testing
                  # "build_model" = FALSE, # for testing
                  # CheckForBugs = FALSE,  # for testing
