@@ -30,18 +30,16 @@ library(TMB)
 species <- 21740
 this_year <- lubridate::year(today())
 # this_year <- 2022  # different year for debugging
-Species = "Walleye Pollock Agecomp"
+Species = "pollock"
 speciesName <- paste0("Walleye_Pollock_age_",lubridate::year(today()),"_EBS-NBS")
-workDir <- here::here("VAST_results", speciesName)
+workDir <- here::here("species_specific_code","BS",Species)
 dir.create(workDir, showWarnings = FALSE)
-# setwd(workDir)
 
 # Settings ----------------------------------------------------------------
 
 Version <- get_latest_version( package="VAST" )
 # Version <- "VAST_v14_0_1"
 Region <- c("Eastern_Bering_Sea","Northern_Bering_Sea")
-Method = "Mesh"
 knot_method <- "grid"
 grid_size_km = 25
 n_x = 50   # Specify number of stations (a.k.a. "knots")
@@ -84,7 +82,7 @@ strata_names = c("Both","EBS","NBS")
 
 # pollock data ------------------------------------------------------------
 
-Data_Geostat <- read.csv(here("output", paste0("VAST_ddc_alk_", this_year, ".csv")))
+Data_Geostat <- read.csv(here("species_specific_code","BS",Species,"data",paste0("VAST_ddc_alk_", this_year, ".csv")))
 Data_Geostat$AreaSwept_km2 <- 1  # set to 1 b/c we're using CPUE, not catch
 
 # check for sample size
@@ -96,7 +94,7 @@ table(Data_Geostat$Age)
 #### Explore the data ####
 
 Date = Sys.Date()
-RunDir = paste0(workDir,"/Comps_",Date,"_",Species,"_npool=",Npool,"_BiasCorr=",BiasCorr,"/")
+RunDir = paste0(workDir,"/results","/Comps/")
 dir.create(RunDir, recursive = TRUE)
 setwd(RunDir)
 
@@ -112,8 +110,8 @@ fit = fit_model( "settings"=settings,
                  "a_i"=Data_Geostat[,'AreaSwept_km2'], 
                  # "v_i"=Data_Geostat[,'Vessel'],  # not using vessel data
                  Npool = Npool, 
-                 test_fit=T,
-                 # newtonsteps = 0,       # for testing
+                 test_fit=F,
+                 newtonsteps = 0,       # for testing
                  # getsd = FALSE,         # for testing
                  # test_fit = FALSE,      # for testing
                  # "run_model" = FALSE,   # for testing
@@ -126,7 +124,7 @@ fit = fit_model( "settings"=settings,
 saveRDS(fit, file = paste0(workDir,"/VASTfit_age.RDS"))
 
 #Load results if using a previous model run
-fit <- readRDS(file = paste0(workDir,"/VASTfit_age.RDS"))
+#fit <- readRDS(file = paste0(workDir,"/VASTfit_age.RDS"))
 
 # Plots -------------------------------------------------------------------
 # If you need to load a fit in a new session:
