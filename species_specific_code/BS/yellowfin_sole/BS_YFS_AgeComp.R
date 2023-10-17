@@ -114,7 +114,7 @@ fit <- FishStatsUtils::fit_model(
   ## Model tuning
   "Npool" = 100,
   "refine" = TRUE,
-  "newtonsteps" = 0, 
+  "newtonsteps" = 1, 
   "test_fit" = FALSE#, 
   # "startpar" = parameter_estimates$par,
   # "use_new_epsilon"  = FALSE,
