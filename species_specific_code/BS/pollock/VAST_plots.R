@@ -8,12 +8,18 @@ library(here)
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
+library(reshape2)
 library(ggsidekick)
 # Set ggplot theme
 theme_set(theme_sleek())
 
 ### VAST index ----------------------------------------------------------------
 index <- read.csv("Index.csv")
+
+# Calculate 2023 difference for EBS
+ebs_23_diff <- ((index[84, 5] - index[83, 5]) / index[83, 5]) * 100
+ebs_23_mean <- (index[84, 5] / mean((index %>% filter(Stratum == "EBS"))[, 5])) * 100
+
 colnames(index)[6] <- "error"  # easier column name for plotting
 
 index_all_areas <- ggplot(index, aes(x = Time, y = (Estimate / 1000000000))) +
@@ -30,9 +36,80 @@ ggsave(index_all_areas, filename = here("species_specific_code", "BS", "pollock"
 
 # Plot just EBS
 index_ebs <- ggplot(index %>% filter(Stratum == "EBS"), aes(x = Time, y = (Estimate / 1000000000))) +
-  geom_line(linetype = "dashed") +
+  geom_line() +
   geom_pointrange(aes(ymin = (Estimate / 1000000000) - (error / 1000000000),
                       ymax = (Estimate / 1000000000) + (error / 1000000000)), alpha = 0.8) +
   scale_shape(solid = FALSE) +
   xlab("Year") + ylab("Index (Mt)") 
 index_ebs
+
+
+### Compare VAST comps to hindcast --------------------------------------------
+# Plot Difference between hindcast and production run -------------------------
+new_props <- read.csv("proportions.csv")[, -1]
+old_props <- read.csv("proportions_2022.csv")[, -1]
+
+new_props <- subset(new_props, new_props$Year < 2023)
+
+check_props <- round(new_props[,1:15] - old_props[,1:15], 4)
+check_props_tab <- cbind(check_props, new_props[,16:17])
+check_props_abs <- round(abs(new_props[,1:15] - old_props[,1:15]), 4)
+check_props_abs_tab <-  cbind(check_props_abs, new_props[,16:17])
+options(scipen=999)
+write.csv(check_props_tab, here("VAST_results", "bridge_props_2023.csv"))
+write.csv(check_props_abs_tab, here("VAST_results", "bridge_props_abs_2023.csv"))
+
+colnames(check_props_tab)[1:15] <- 1:15
+props_plot <- melt(check_props_tab, id.vars = c("Year", "Region"), 
+                   variable.name = "Age", value.name = "Proportion") %>%
+  # add column for coloring the bars in the plot based on positive/negative
+  mutate(sign = case_when(Proportion >= 0 ~ "positive",
+                          Proportion < 0 ~ "negative"))
+
+# Plot both regions together and without 2020
+comp_diff <- ggplot(props_plot %>% filter(Region == "EBS" & Year != 2020), 
+                    aes(x = Age, y = Proportion, fill = sign)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  scale_fill_manual(values = c("cornflowerblue", "darkred")) +
+  scale_x_discrete(breaks = c(1, 5, 10, 15)) +
+  ylab("Difference between 2023 production and 2022 hindcast") +
+  facet_wrap(~ Year, ncol = 8) 
+comp_diff
+
+ggsave(comp_diff, filename = here("VAST_results", "2023_age_comp_diff.png"),
+       width=200, height=130, units="mm", dpi=300)
+
+# Plot hindcast and production runs together ----------------------------------
+colnames(new_props)[1:15] <- 1:15
+colnames(old_props)[1:15] <- 1:15
+new_props_long <- melt(new_props, id.vars = c("Year", "Region"),
+                       variable.name = "Age", value.name = "Proportion")
+new_props_long$version <- "2023"
+old_props_long <- melt(old_props, id.vars = c("Year", "Region"),
+                       variable.name = "Age", value.name = "Proportion")
+old_props_long$version <- "2022 hindcast"
+
+all_props <- rbind.data.frame(new_props_long, old_props_long) %>%
+  filter(Year != 2020 & Region == "EBS") %>%  # remove 2020
+  ggplot(., aes(x = Age, y = Proportion, fill = version)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = c("gray", "darkslateblue")) +
+  scale_x_discrete(breaks = c(1, 5, 10, 15)) +
+  ylab("Proportion-at-age") +
+  facet_wrap(~ Year, ncol = 8) 
+all_props
+
+ggsave(all_props, filename = here("VAST_results", "2023_age_comp_compare.png"),
+       width=200, height=130, units="mm", dpi=300)
+
+
+### Cold pool extent covariate ------------------------------------------------
+# Cold pool covariabe
+cold_pool <- read.csv(here("output", "cold_pool_scaled_formatted.csv")) %>%
+  ggplot(., aes(x = Year, y = area_lte2_km2)) +
+  geom_bar(stat = "identity") +
+  ylab("Cold pool covariate")
+cold_pool
+
+ggsave(cold_pool, filename = here("output", "cold_pool_covariate.png"),
+       width = 120, height = 100, unit = "mm", dpi = 300)
