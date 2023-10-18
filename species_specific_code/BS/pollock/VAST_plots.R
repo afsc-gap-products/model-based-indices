@@ -1,6 +1,5 @@
 # Custom plots of VAST results for pollock
 # By: Sophia Wassermann
-# By: Caitlin I. Allen Akselrud
 # Contact: sophia.wassermann@noaa.gov
 # Date created: 2023.10.17
 
