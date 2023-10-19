@@ -12,6 +12,8 @@ library(ggsidekick)
 # Set ggplot theme
 theme_set(theme_sleek())
 
+this_year <- 2023
+
 ### VAST index ----------------------------------------------------------------
 index <- read.csv("Index.csv")
 
@@ -21,11 +23,12 @@ ebs_23_mean <- (index[84, 5] / mean((index %>% filter(Stratum == "EBS"))[, 5])) 
 
 colnames(index)[6] <- "error"  # easier column name for plotting
 
-index_all_areas <- ggplot(index, aes(x = Time, y = (Estimate / 1000000000))) +
-  geom_line(linetype = "dashed") +
+index_all_areas <- ggplot(index %>% filter(Time != 2020), 
+                          aes(x = Time, y = (Estimate / 1000000000))) +
+  geom_line(alpha = 0.4) +
   geom_pointrange(aes(ymin = (Estimate / 1000000000) - (error / 1000000000),
                       ymax = (Estimate / 1000000000) + (error / 1000000000)), alpha = 0.8) +
-  scale_shape(solid = FALSE) +
+  ylim(0, NA) +
   xlab("Year") + ylab("Index (Mt)") +
   facet_wrap(~ Stratum, ncol = 1)
 index_all_areas
@@ -34,11 +37,11 @@ ggsave(index_all_areas, filename = here("species_specific_code", "BS", "pollock"
        width=130, height=160, units="mm", dpi=300)
 
 # Plot just EBS
-index_ebs <- ggplot(index %>% filter(Stratum == "EBS"), aes(x = Time, y = (Estimate / 1000000000))) +
-  geom_line() +
+index_ebs <- ggplot(index %>% filter(Stratum == "EBS" & Time != 2020), aes(x = Time, y = (Estimate / 1000000000))) +
+  geom_line(alpha = 0.4) +
   geom_pointrange(aes(ymin = (Estimate / 1000000000) - (error / 1000000000),
                       ymax = (Estimate / 1000000000) + (error / 1000000000)), alpha = 0.8) +
-  scale_shape(solid = FALSE) +
+  ylim(0, NA) +
   xlab("Year") + ylab("Index (Mt)") 
 index_ebs
 
@@ -112,3 +115,42 @@ cold_pool
 
 ggsave(cold_pool, filename = here("output", "cold_pool_covariate.png"),
        width = 120, height = 100, unit = "mm", dpi = 300)
+
+
+### ESP plots -----------------------------------------------------------------
+# Center of gravity -----------------------------------------------------------
+cog <- read.csv(here("VAST_results", "COG.csv")) 
+cog$m[cog$m == 1] <- "Eastings"
+cog$m[cog$m == 2] <- "Northings"
+
+cog_plot <- ggplot(cog, aes(x = Year, y = COG_hat)) +
+  geom_line(alpha = 0.4) +
+  geom_pointrange(aes(ymin = (COG_hat - SE), ymax = (COG_hat + SE))) +
+  ylab("Center of Gravity") +
+  facet_wrap(~ m, ncol = 1, scales = "free_y")
+cog_plot
+
+ggsave(cog_plot, filename = here("VAST_results", "2023_pollock_COG.png"),
+       width = 150, height = 180, unit = "mm", dpi = 300)
+
+# Area occupied ---------------------------------------------------------------
+options(scipen = 999)
+area <- read.csv(here("VAST_results", "ln_effective_area.csv")) 
+area$Region <- c(rep("Both", length(1982:this_year) - 1), 
+                 rep("EBS", length(1982:this_year) - 1),
+                 rep("NBS", length(1982:this_year) - 1))
+colnames(area)[2] <- "error"
+area$Estimate <- exp(area$Estimate)
+area$error <- area$error
+
+area_plot <- ggplot(area, aes(x = Year, y = Estimate, color = Region)) +
+  geom_line(alpha = 0.4) +
+  geom_pointrange(aes(ymin = (Estimate - (Estimate * error)), 
+                      ymax = (Estimate + (Estimate * error))),
+                  alpha = 0.8) +
+  scale_y_continuous(labels = scales::comma, limits = c(0, NA)) +
+  ylab("Effective area occupied (km^2)")
+area_plot
+
+ggsave(area_plot, filename = here("VAST_results", "2023_pollock_area.png"),
+       width = 150, height = 100, unit = "mm", dpi = 300)
