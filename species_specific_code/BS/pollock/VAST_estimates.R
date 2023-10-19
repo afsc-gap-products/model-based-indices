@@ -361,3 +361,32 @@ Year <- sort(unique(full_fit$year_labels))
 ln_km2 <- as.data.frame(cbind(ln_km2, Year))
 ln_km2 <- ln_km2[which(ln_km2$Year %in% unique(full_fit$data_frame$t_i)),]
 write.csv( ln_km2, file="ln_effective_area.csv", row.names=FALSE )
+
+### Get variance-covariance matrix --------------------------------------------
+# # Read in fit if from a previous session
+# full_fit <- readRDS(here("VAST_results", "VASTfit_full.RDS"))
+
+# Save stuff
+Save <- list("Opt" = full_fit$parameter_estimates,
+             "Report" = full_fit$Report,
+             "ParHat" = full_fit$ParHat,
+             "TmbData" = full_fit$data_list,
+             "Spatial_List" = full_fit$spatial_list,
+             "Extrapolation_List" = full_fit$extrapolation_list)
+# save(Save, file = here("Vast_results","Save_index.RData"))
+
+# Naming
+Names <- paste(rep(colnames(full_fit$extrapolation_list$a_el), each=length(full_fit$year_labels)),
+               rep(full_fit$year_labels, ncol(full_fit$extrapolation_list$a_el)), sep="_" )
+
+# Cov for the log-index
+Which <- which(names(Save$Opt$SD$value) == "ln_Index_ctl")
+Cov_ln_Index <- Save$Opt$SD$cov[Which, Which]
+colnames(Cov_ln_Index) = rownames(Cov_ln_Index) = Names
+write.csv(Cov_ln_Index, file = here("VAST_results", "Cov_ln_Index.csv"))
+
+# Cov for the index
+Which <- which(names(Save$Opt$SD$value) == "Index_ctl")
+Cov_Index <- Save$Opt$SD$cov[Which, Which]
+colnames(Cov_Index) = rownames(Cov_ln_Index) = Names
+write.csv(Cov_Index, file = here("VAST_results", "Cov_Index.csv"))
