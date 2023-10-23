@@ -30,12 +30,12 @@ species_name <- c("Gadus_macrocephalus","Sebastes_variabilis","Sebastes_polyspin
 ## ## 
 ## Load the data for VAST
 
-POPdata <- readRDS(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/data/Data_Geostat_Sebastes_alutus.rds"))
+POPdata <- readRDS(paste0(getwd(),"/species_specific_code/GOA/Sebastes_alutus/data/production/Data_Geostat_Sebastes_alutus.rds"))
 POPdata<-POPdata[POPdata$Year>1989, ]## Pete Hulson requested data from 1990 onwards
 
 ## Define settings
 
-settings = make_settings( Version = "VAST_v13_1_0", #.cpp version, not software #e.g., "VAST_v12_0_0"
+settings = make_settings( #Version = "VAST_v13_1_0", #.cpp version, not software #e.g., "VAST_v12_0_0"
                           n_x = 750, #knots aka spatial resolution of our estimates
                           Region = "User", #Region = "gulf_of_alaska" , go to ?make_settings for other built in extrapolation grids
                           purpose = "index2", #changes default settings
@@ -75,4 +75,4 @@ plot( fit )
 ## ## 
 ## save the VAST model
 #saveRDS(fit,file = paste0(getwd(),"/",Species,"/",Species,"VASTfit.RDS"))
-saveRDS(fit,file = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/",species_name,"VASTfit.RDS"))
+saveRDS(fit,file = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results/","production/","VASTfit.RDS"))
