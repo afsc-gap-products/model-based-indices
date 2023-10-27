@@ -1,3 +1,5 @@
+## TODO: set up results directories properly, some of the output is going to root dir
+
 library(tidyverse)
 library(VAST) 
 library(sf)
@@ -7,7 +9,7 @@ library(akgfmaps)
 
 # Set species, model -------------------------------------------------------
 
-which_model <- c("hindcast", "production")[1]
+which_model <- c("hindcast", "production")[2]
 species <- 21720
 species_name <- "pacific_cod"
 
@@ -56,7 +58,6 @@ for (pck in 1:length(pck_version)) {
 # VAST Settings -----------------------------------------------------------
 Region <- c("Eastern_Bering_Sea","Northern_Bering_Sea")
 strata_names = c("Both","EBS","NBS")
-Method <- "Mesh"
 knot_method <- "grid"
 grid_size_km <- 25
 n_x <- 750
@@ -94,10 +95,10 @@ settings <- make_settings(
 
 # Format catch data -------------------------------------------------------
 
-sumAll <- read_rds(paste0(workDir, "data/EBS_NBS_Index.RDS"))
+dat <- read_rds(paste0(workDir, "data/EBS_NBS_Index.RDS"))
 
 # Format the data for VAST
-Data_Geostat <-  dplyr::transmute(Data,
+Data_Geostat <-  dplyr::transmute(dat,
                                Catch_KG = nCPUE*100, # sumfish calculates CPUE in kg/ha this converts it to kg/km^2
                                Year = YEAR,
                                Vessel = "missing",

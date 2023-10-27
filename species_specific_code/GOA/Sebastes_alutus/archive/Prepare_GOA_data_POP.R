@@ -4,9 +4,9 @@ library(dplyr)
 
 current_end_year <- 2023
 requested_start_year <- 1990
-species_code <- c(21720,30152,30150,310)[2:3]#[4]#[1]#[2:3] #c(P.cod, dusky rockfish, dusky and dark rockfishes unid.)
+#species_code <- c(21720,30152,30150,310)[2:3]#[4]#[1]#[2:3] #c(P.cod, dusky rockfish, dusky and dark rockfishes unid.)
 #310 Squalus suckleyi spiny dogfish
-#species_code <- c(30420,30060,21740,10110,10261,10262,10130)[2] #c(northern rockfish, POP, pollock, arrowtooth, northern rock sole, southern rock sole, flathead sole)
+species_code <- c(30420,30060,21740,10110,10261,10262,10130)[2] #c(northern rockfish, POP, pollock, arrowtooth, northern rock sole, southern rock sole, flathead sole)
 #species_code <- 10260 ## rock sole unidentified.
 #species_code <- 23041 # capelin
 
@@ -17,13 +17,7 @@ for (p in PKG) {
     require(p,character.only = TRUE)}
 }
 
-# channel<-odbcConnect(dsn = "AFSC",
-#                      uid = " ", # change
-#                      pwd = " ", #change
-#                      believeNRows = FALSE)
 
-# odbcGetInfo(channel)
-source("R/get_connected.R")
 
 ##need to connect to VPN for this to work
 cruise <- RODBC::sqlQuery(channel, "SELECT * FROM RACEBASE.CRUISE")

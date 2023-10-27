@@ -116,7 +116,10 @@ fit <- FishStatsUtils::fit_model(
 ##   Get model outputs and diagnostics
 ##   Save VAST model object as RDS file
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-plot( fit )
+plot(fit, 
+     working_dir = paste0(getwd(), "/", result_dir),
+     check_residuals = TRUE)
+
 saveRDS(object = fit,
         file = paste0(getwd(), "/", result_dir, "/", 
                       species_name, "_VASTfit.RDS"))

@@ -15,6 +15,7 @@ rm(list = ls())
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 library(sumfish)
 sumfish::getSQL()
+model_run <- c("hindcast", "production")[2]
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Select species and years ----
@@ -32,14 +33,15 @@ sumfish::getSQL()
 species_name <- "yellowfin_sole"
 species_code <- 10210
 start_year <- 1982
-current_year <- 2022
+current_year <- 2023
 plus_group <- 20
 min_year <- start_year
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Create directory to store data products
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-res_dir <- paste0("species_specific_code/BS/", species_name, "/hindcast/data/")
+res_dir <- paste0("species_specific_code/BS/", species_name, "/", 
+                  model_run, "/data/")
 if(!dir.exists(res_dir)) dir.create(res_dir)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -351,3 +353,4 @@ write_rds(x = alk,
 ## Raw data
 write_rds(x = list(EBS = EBS, NBS = NBS, NBS18 = NBS18), 
           file = paste0(res_dir, "raw_data.RDS"))
+

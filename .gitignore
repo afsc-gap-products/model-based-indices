@@ -23,7 +23,9 @@ species_specific_code/GOA/Atheresthes_stomias/VAST-atf_2021.R
 /species_specific_code/**/*.png
 /species_specific_code/**/*.RData
 /species_specific_code/**/*.csv
-/dev/
 output/
 VAST_results/
 .DS_Store
+/species_specific_code/BS/yellowfin-sole/production/
+/species_specific_code/BS/yellowfin_sole/production
+/dev/
