@@ -24,7 +24,7 @@ model <- c("poisson_delta","delta")[1]
 obs <- c("gamma","lognormal")[2]
 
 # Load the data for VAST
-Data_Geostat <- readRDS(file = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/Data_Geostat_",species_name,".rds"))
+Data_Geostat <- readRDS(file = paste0(getwd(),"/species_specific_code/GOA/",species_name,"/data/Data_Geostat_",species_name,".rds"))
 #Data_Geostat <- readRDS(file = paste0(getwd(),"/data/Data_Geostat_",species_name,".rds"))
 Data_Geostat$Catch_KG[which(is.na(Data_Geostat$Catch_KG))] <- 0
 
@@ -52,7 +52,7 @@ settings = make_settings( Version = "VAST_v14_0_1",
                           )
 
 # Import extrapolation grid, these will be available on Jason's Google drive: VASTGAP\Extrapolation Grids
-GOAgrid <- read.csv(file= paste0(getwd(),"/GOA_extrapolation_grids/GOAThorsonGrid_Less700m.csv"))
+GOAgrid <- read.csv(file= paste0(getwd(),"/extrapolation_grids/GOAThorsonGrid_Less700m.csv"))
 
 input_grid=cbind(Lat=GOAgrid$Lat,Lon=GOAgrid$Lon,Area_km2=GOAgrid$Shape_Area/1000000)  # Extrapolation grid area is in m^2 and is converted to km^2
 gc()
