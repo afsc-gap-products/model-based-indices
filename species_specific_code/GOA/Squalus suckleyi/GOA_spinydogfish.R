@@ -51,7 +51,7 @@ settings = make_settings( Version = "VAST_v14_0_1",
                           max_cells = 2000)
 
 # Import extrapolation grid, these will be available on Jason's Google drive: VASTGAP\Extrapolation Grids
-GOAgrid <- read.csv(file= paste0(getwd(),"/GOA_extrapolation_grids/GOAThorsonGrid_Less700m.csv"))
+GOAgrid <- read.csv(file= paste0(getwd(),"/extrapolation_grids/GOAThorsonGrid_Less700m.csv"))
 
 input_grid=cbind(Lat=GOAgrid$Lat,Lon=GOAgrid$Lon,Area_km2=GOAgrid$Shape_Area/1000000)  # Extrapolation grid area is in m^2 and is converted to km^2
 gc()
