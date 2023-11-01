@@ -17,9 +17,16 @@ this_year <- 2023
 ### VAST index ----------------------------------------------------------------
 index <- read.csv("Index.csv")
 
+# Calculate 2023 difference for both areas
+diff_23 <- ((index[42, 5] - index[41, 5]) / index[41, 5]) * 100
+mean_23 <- (index[42, 5] / mean((index %>% filter(Stratum == "EBS"))[, 5])) * 100
+
 # Calculate 2023 difference for EBS
 ebs_23_diff <- ((index[84, 5] - index[83, 5]) / index[83, 5]) * 100
 ebs_23_mean <- (index[84, 5] / mean((index %>% filter(Stratum == "EBS"))[, 5])) * 100
+
+# Caclulate percent NBS for 2023
+nbs_23 <- (index[126, 5] / index[42, 5]) * 100
 
 colnames(index)[6] <- "error"  # easier column name for plotting
 
