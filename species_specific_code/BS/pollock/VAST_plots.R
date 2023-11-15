@@ -115,14 +115,33 @@ ggsave(all_props, filename = here("VAST_results", "2023_age_comp_compare.png"),
 ### Cold pool extent covariate ------------------------------------------------
 # Cold pool covariabe
 cold_pool <- read.csv(here("output", "cold_pool_scaled_formatted.csv")) %>%
-  ggplot(., aes(x = Year, y = area_lte2_km2)) +
-  geom_bar(stat = "identity") +
+  mutate(extent = case_when(area_lte2_km2 >= 0 ~ "greater",
+                            area_lte2_km2 < 0 ~ "less"))
+
+cold_pool_plot <- ggplot() +
+  geom_bar(data = cold_pool, aes(x = Year, y = area_lte2_km2, fill = extent), stat = "identity") +
+  scale_fill_manual(values = c("cornflowerblue", "darkred")) +
   ylab("Cold pool covariate")
-cold_pool
+cold_pool_plot
 
 ggsave(cold_pool, filename = here("output", "cold_pool_covariate.png"),
        width = 120, height = 100, unit = "mm", dpi = 300)
 
+
+# Cold pool vs. index value ---------------------------------------------------
+cold_pollock_cor <- cor(index[index$Stratum == "EBS", ]$Estimate, cold_pool$area_lte2_km2)
+
+# Index relative to mean
+mean_index <- mean(index[index$Stratum == "EBS", ]$Estimate)
+relative_index <- cbind.data.frame(Year = index[index$Stratum == "EBS", ]$Time, 
+                                   Index = (index[index$Stratum == "EBS", ]$Estimate - mean_index) /
+                                     mean_index)
+relative_index[relative_index$Year == 2020, ]$Index <- 0
+
+cold_pollock_plot <- cold_pool_plot +
+  geom_point(data = relative_index, aes(x = Year, y = Index), size = 2) +
+  geom_line(data = relative_index, aes(x = Year, y = Index), size = 1)
+cold_pollock_plot
 
 ### ESP plots -----------------------------------------------------------------
 # Center of gravity -----------------------------------------------------------
