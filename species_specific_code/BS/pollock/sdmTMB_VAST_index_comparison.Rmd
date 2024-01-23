@@ -153,6 +153,8 @@ fit_sdmTMB <- sdmTMB(
   mesh = mesh,
   family = delta_poisson_link_gamma(),
   time = "year", 
+  spatial = "on",
+  spatiotemporal = "ar1",
   silent = FALSE,
   control = sdmTMBcontrol(newton_loops = 1)
 )
