@@ -148,7 +148,7 @@ dat$Y <- dat$Y / 1000
 
 # make mesh and fit model
 mesh <- make_mesh(dat, xy_cols = c("X", "Y"),
-                  type = "kmeans", n_knots = 150) # or for exact mesh as VAST mesh = fit$spatial_list$MeshList$isotropic_mesh
+                  type = "kmeans", n_knots = 750) # or for exact mesh as VAST mesh = fit$spatial_list$MeshList$isotropic_mesh
 
 tictoc::tic()
 fit_sdmTMB <- sdmTMB( 
@@ -245,33 +245,58 @@ if (file.exists(here("doc", "appendix-VAST-pg", "Index.png"))) {
 We can compare the index we would get using sdmTMB. 
 
 ```{r sdmTMB-index, cache=TRUE, echo=TRUE}
-# prep prediction grid and transform to UTM projection
+# prep prediction grids (all, EBS, NBS) and transform to UTM projection
 load(here("extrapolation_grids", "eastern_bering_sea_grid.rda"))
 load(here("extrapolation_grids", "northern_bering_sea_grid.rda"))
-grid_ll <- as.data.frame(rbind(eastern_bering_sea_grid, northern_bering_sea_grid))
-names(grid_ll) <- tolower(names(grid_ll))
-grid_ll <- grid_ll %>% 
-  rename(X = lon, Y = lat)
 
-# with sp:
-coordinates(grid_ll) <- ~ X + Y
-proj4string(grid_ll) <- CRS("+proj=longlat +datum=WGS84")
-grid <- as.data.frame(spTransform(grid_ll, CRS("+proj=utm +zone=3")))
+# EBS grid
+grid_ll_ebs <- as.data.frame(eastern_bering_sea_grid)
+names(grid_ll_ebs) <- tolower(names(grid_ll_ebs))
+grid_ll_ebs <- grid_ll_ebs %>% 
+  rename(X = lon, Y = lat)
+coordinates(grid_ll_ebs) <- ~ X + Y
+proj4string(grid_ll_ebs) <- CRS("+proj=longlat +datum=WGS84")
+grid_ebs <- as.data.frame(spTransform(grid_ll_ebs, CRS("+proj=utm +zone=3")))
 # or with sf:
 # grid_ll <- sf::st_as_sf(
-#   x = grid_ll,
+#   x = grid_ll_ebs,
 #   coords = c("lon", "lat"),
 #   crs = "+proj=longlat +datum=WGS84"
 # )
-# grid_ll <- sf::st_transform(grid_ll, crs = "+proj=utm +zone=3")
+# grid_ll_ebs <- sf::st_transform(grid_ll_ebs, crs = "+proj=utm +zone=3")
+grid_ebs$X <- grid_ebs$X / 1000 # scale to km to work with smaller numbers
+grid_ebs$Y <- grid_ebs$Y / 1000 
 
-# replicate extrapolation grid for each year in data
+# NBS grid
+grid_ll_nbs <- as.data.frame(northern_bering_sea_grid)
+names(grid_ll_nbs) <- tolower(names(grid_ll_nbs))
+grid_ll_nbs <- grid_ll_nbs %>% 
+  rename(X = lon, Y = lat)
+coordinates(grid_ll_nbs) <- ~ X + Y
+proj4string(grid_ll_nbs) <- CRS("+proj=longlat +datum=WGS84")
+grid_nbs <- as.data.frame(spTransform(grid_ll_nbs, CRS("+proj=utm +zone=3")))
+grid_nbs$X <- grid_nbs$X / 1000 # scale to km to work with smaller numbers
+grid_nbs$Y <- grid_nbs$Y / 1000 
+
+# combined grid
+grid <- rbind(grid_ebs, grid_nbs)
+
+# replicate extrapolation grids for each year in data
+pred_grid_ebs <- replicate(grid_ebs, "year", unique(dat$year))
+pred_grid_nbs <- replicate(grid_nbs, "year", unique(dat$year))
 pred_grid <- replicate(grid, "year", unique(dat$year))
 
+# get index for total area, and the two subareas of interest (EBS, NBS)
 tictoc::tic()
 p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
-ind <- get_index(p, bias_correct = FALSE, area = grid$Area_in_survey_km2)
+ind <- get_index(p, bias_correct = TRUE, area = grid$Area_in_survey_km2)
 tictoc::toc()
+
+p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
+ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = grid_ebs$Area_in_survey_km2)
+
+p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
+ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = grid_nbs$Area_in_survey_km2)
 ```
 
 Now, we can compare the indices. 
