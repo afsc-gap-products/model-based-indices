@@ -1,4 +1,3 @@
-
 ---
 title: "Comparing VAST and sdmTMB pollock indices"
 output:
@@ -161,7 +160,7 @@ fit_sdmTMB <- sdmTMB(
   time = "year", 
   spatial = "on",
   spatiotemporal = "ar1",
-  extra_time = c(2020),
+  extra_time = 2020L,
   silent = FALSE,
   control = sdmTMBcontrol(newton_loops = 1)
 )
