@@ -20,11 +20,11 @@ knitr::opts_chunk$set(
 ```
 
 ```{r packages, message=FALSE, warning=FALSE, cache=FALSE}
+#remotes::install_github("afsc-gap-products/coldpool")
 library(TMB)
 library(VAST)
 library(sp)
 library(sdmTMB)
-library(coldpool)
 library(here)
 ```
 
@@ -143,7 +143,7 @@ dat$X <- dat$coords.x1 / 1000
 dat$Y <- dat$coords.x2 / 1000
 
 # make mesh and fit model
-mesh <- fit$spatial_list$MeshList$anisotropic_mesh # make_mesh(dat, xy_cols = c("X", "Y"), type = "kmeans", n_knots = 750)
+mesh <-  make_mesh(dat, mesh = fit$spatial_list$MeshList$anisotropic_mesh) # (or xy_cols = c("X", "Y"), type = "kmeans", n_knots = 750)
 
 tictoc::tic()
 fit_sdmTMB <- sdmTMB( 
