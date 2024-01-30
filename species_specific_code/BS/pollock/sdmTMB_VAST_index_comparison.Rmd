@@ -42,10 +42,6 @@ dat_ll <-  dplyr::transmute(dat_ll,
                          lon = start_longitude,
                          pass = 0) %>% 
                 as.data.frame() # ensure not a tibble
-
-# create output directory for VAST results
-# workDir <- 
-# dir.create(workDir, showWarnings = FALSE)
 ```
 
 We also need to pull in the cold pool extent, as that is used as a spatially varying covariate in AFSC GAP Bering Sea shelf indices. The cold pool is defined here as the areal extent (in km^2^) of seawater equal to or colder than 2 degrees Celsius near the seafloor, calculated from observations from the AFSC GAP EBS/NBS bottom trawl survey. We center and scale this for inclusion as a covariate.
@@ -98,9 +94,9 @@ Next we will fit a GLMM (generalized linear mixed effects model).
 
 ```{r fit, echo = TRUE, results = 'hide'}
  # create folder for saved output:
-dir.create(paste0(here("doc", "appendix-VAST-pg")), showWarnings = FALSE)
+dir.create(paste0(here("species_specific_code", "BS", "pollock", "index_comparison")), showWarnings = FALSE)
 
-f <- here("doc", "appendix-VAST-pg", "vast-cache.rds")
+f <- here("species_specific_code", "BS", "pollock", "index_comparison", "VASTfit.rds")
 if (!file.exists(f)) {
   tictoc::tic()
   fit <- fit_model(
@@ -118,7 +114,7 @@ if (!file.exists(f)) {
     X1config_cp = as.matrix(2),
     X2config_cp = as.matrix(2),
     covariate_data = covariate_data,
-    working_dir = paste0(here("doc", "appendix-VAST-pg"), "/")
+    working_dir = paste0(here("species_specific_code", "BS", "pollock", "index_comparison"), "/")
   )
   tictoc::toc()
   saveRDS(fit, file = f)
@@ -215,30 +211,30 @@ While making custom plots of individual elements would require considerable addi
 plot(
   fit,
   check_residuals = FALSE,
-  working_dir = paste0(here("doc", "appendix-VAST-pg"), "/")
+  working_dir = paste0(here("species_specific_code", "BS", "pollock", "index_comparison"), "/")
 )
 ```
 
 Here we will read in some key plots. We can start by looking at the location of samples and knots.
 
 ```{r plot-knots, echo = TRUE, out.width="6in"}
-knitr::include_graphics(here("doc", "appendix-VAST-pg", "Data_and_knots.png"))
+knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "Data_and_knots.png"))
 ```
 
 Then we can look at maps of the predicted population densities (here on the log scale).
 
 ```{r plot-density, echo = TRUE, out.width="6in"}
-knitr::include_graphics(here("doc", "appendix-VAST-pg", "ln_density-predicted.png"))
+knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "ln_density-predicted.png"))
 ```
 
 And finally the biomass index.
 
 ```{r plot-index, echo = TRUE, out.width="3in"}
-if (file.exists(here("doc", "appendix-VAST-pg", "Index-Biomass.png"))) {
-  knitr::include_graphics(here("doc", "appendix-VAST-pg", "Index-Biomass.png"))
+if (file.exists(here("species_specific_code", "BS", "pollock", "index_comparison", "Index-Biomass.png"))) {
+  knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "Index-Biomass.png"))
 }
-if (file.exists(here("doc", "appendix-VAST-pg", "Index.png"))) {
-  knitr::include_graphics(here("doc", "appendix-VAST-pg", "Index.png"))
+if (file.exists(here("species_specific_code", "BS", "pollock", "index_comparison", "Index.png"))) {
+  knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "Index.png"))
 }
 ```
 
@@ -305,7 +301,7 @@ Now, we can compare the indices.
 ```{r index-compare, message=FALSE, warning=FALSE}
 library(dplyr)
 library(ggplot2)
-vast_i <- read.csv(here("doc/appendix-VAST-pg/Index.csv")) %>%
+vast_i <- read.csv(here("species_specific_code", "BS", "pollock", "index_comparison", "Index.csv")) %>%
   mutate(index = "VAST", year = as.numeric(Time), est = Estimate, 
     se = Std..Error.for.ln.Estimate.) %>% 
   select(index, year, est, se) %>% 
