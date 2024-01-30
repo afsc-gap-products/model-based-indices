@@ -96,7 +96,7 @@ Next we will fit a GLMM (generalized linear mixed effects model).
  # create folder for saved output:
 dir.create(paste0(here("species_specific_code", "BS", "pollock", "index_comparison")), showWarnings = FALSE)
 
-f <- here("species_specific_code", "BS", "pollock", "index_comparison", "VASTfit.rds")
+f <- here("species_specific_code", "BS", "pollock", "index_comparison", "VASTfit.RDS")
 if (!file.exists(f)) {
   tictoc::tic()
   fit <- fit_model(
@@ -123,10 +123,10 @@ if (!file.exists(f)) {
 }
 ```
 
-We can look at parameter estimates and their standard errors. First we see estimates from the binomial component and second we see estimates from the positive Gamma component.
+We can look at parameter estimates. First we see estimates from the binomial component and second we see estimates from the positive Gamma component.
 
 ```{r check-parameters, echo = TRUE}
-fit$parameter_estimates$SD
+fit$parameter_estimates$diagnostics
 ```
 
 Now we fit the same model in sdmTMB:
@@ -139,8 +139,8 @@ coordinates(dat) <- ~ X + Y
 proj4string(dat) <- CRS("+proj=longlat +datum=WGS84")
 dat <- as.data.frame(spTransform(dat, CRS("+proj=utm +zone=2")))
 # scale to km so values don't get too large
-dat$X <- dat$X / 1000 
-dat$Y <- dat$Y / 1000
+dat$X <- dat$coords.x1 / 1000 
+dat$Y <- dat$coords.x2 / 1000
 
 # make mesh and fit model
 mesh <- fit$spatial_list$MeshList$anisotropic_mesh # make_mesh(dat, xy_cols = c("X", "Y"), type = "kmeans", n_knots = 750)
@@ -151,7 +151,7 @@ fit_sdmTMB <- sdmTMB(
   spatial_varying = ~ 0 + cpe,
   data = dat, 
   mesh = mesh,
-  family = delta_poisson_link_gamma(),
+  family = delta_gamma(type = "poisson-link"),
   time = "year", 
   spatial = "on",
   spatiotemporal = "ar1",
