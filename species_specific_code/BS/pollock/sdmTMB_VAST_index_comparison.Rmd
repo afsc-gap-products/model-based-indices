@@ -25,6 +25,7 @@ library(TMB)
 library(VAST)
 library(sp)
 library(sdmTMB)
+library(dplyr)
 library(here)
 ```
 
@@ -35,7 +36,7 @@ dat_ll <- read.csv(here("species_specific_code", "BS", "pollock", "VAST_ddc_all_
 
 dat_ll <-  dplyr::transmute(dat_ll,
                          cpue_kg_km2 = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
-                         year = year,
+                         year = as.integer(year),
                          vessel = "missing",
                          effort = 1, # area swept is 1 when using CPUE instead of observed weight
                          lat = start_latitude,
@@ -49,7 +50,7 @@ We also need to pull in the cold pool extent, as that is used as a spatially var
 ```{r coldpool, echo = TRUE}
 cpe <- scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)
 
-covariate_data <- data.frame(year = c(coldpool:::cold_pool_index$YEAR, 2020),
+covariate_data <- data.frame(year = as.integer(c(coldpool:::cold_pool_index$YEAR, 2020)),
                              lat = mean(dat_ll$lat),
                              lon = mean(dat_ll$lon), 
                              cpe = c(cpe, 0))
