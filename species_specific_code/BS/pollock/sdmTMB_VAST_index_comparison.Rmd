@@ -143,7 +143,7 @@ dat$X <- dat$coords.x1 / 1000
 dat$Y <- dat$coords.x2 / 1000
 
 # make mesh and fit model
-mesh <-  make_mesh(dat, mesh = fit$spatial_list$MeshList$anisotropic_mesh) # (or xy_cols = c("X", "Y"), type = "kmeans", n_knots = 750)
+mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$anisotropic_mesh)
 
 tictoc::tic()
 fit_sdmTMB <- sdmTMB( 
