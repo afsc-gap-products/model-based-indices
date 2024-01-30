@@ -75,7 +75,7 @@ settings <- make_settings(
   Region = c("Eastern_Bering_Sea", "Northern_Bering_Sea"),
   purpose = "index2", # index of abundance with Gamma for positive catches
   fine_scale = TRUE, # use bilinear interpolation from the INLA 'A' matrix
-  zone = 3,
+  zone = 2,
   FieldConfig = FieldConfig,
   RhoConfig = RhoConfig,
   OverdispersionConfig = c("Eta1" = 0, "Eta2" = 0),
@@ -137,14 +137,13 @@ dat <- dat_ll %>%
   
 coordinates(dat) <- ~ X + Y
 proj4string(dat) <- CRS("+proj=longlat +datum=WGS84")
-dat <- as.data.frame(spTransform(dat, CRS("+proj=utm +zone=3")))
+dat <- as.data.frame(spTransform(dat, CRS("+proj=utm +zone=2")))
 # scale to km so values don't get too large
 dat$X <- dat$X / 1000 
 dat$Y <- dat$Y / 1000
 
 # make mesh and fit model
-mesh <- make_mesh(dat, xy_cols = c("X", "Y"),
-                  type = "kmeans", n_knots = 750) # or for exact mesh as VAST mesh = fit$spatial_list$MeshList$isotropic_mesh
+mesh <- fit$spatial_list$MeshList$anisotropic_mesh # make_mesh(dat, xy_cols = c("X", "Y"), type = "kmeans", n_knots = 750)
 
 tictoc::tic()
 fit_sdmTMB <- sdmTMB( 
@@ -252,14 +251,14 @@ grid_ll_ebs <- grid_ll_ebs %>%
   rename(X = lon, Y = lat)
 coordinates(grid_ll_ebs) <- ~ X + Y
 proj4string(grid_ll_ebs) <- CRS("+proj=longlat +datum=WGS84")
-grid_ebs <- as.data.frame(spTransform(grid_ll_ebs, CRS("+proj=utm +zone=3")))
+grid_ebs <- as.data.frame(spTransform(grid_ll_ebs, CRS("+proj=utm +zone=2")))
 # or with sf:
 # grid_ll <- sf::st_as_sf(
 #   x = grid_ll_ebs,
 #   coords = c("lon", "lat"),
 #   crs = "+proj=longlat +datum=WGS84"
 # )
-# grid_ll_ebs <- sf::st_transform(grid_ll_ebs, crs = "+proj=utm +zone=3")
+# grid_ll_ebs <- sf::st_transform(grid_ll_ebs, crs = "+proj=utm +zone=2")
 grid_ebs$X <- grid_ebs$X / 1000 # scale to km to work with smaller numbers
 grid_ebs$Y <- grid_ebs$Y / 1000 
 
@@ -270,7 +269,7 @@ grid_ll_nbs <- grid_ll_nbs %>%
   rename(X = lon, Y = lat)
 coordinates(grid_ll_nbs) <- ~ X + Y
 proj4string(grid_ll_nbs) <- CRS("+proj=longlat +datum=WGS84")
-grid_nbs <- as.data.frame(spTransform(grid_ll_nbs, CRS("+proj=utm +zone=3")))
+grid_nbs <- as.data.frame(spTransform(grid_ll_nbs, CRS("+proj=utm +zone=2")))
 grid_nbs$X <- grid_nbs$X / 1000 # scale to km to work with smaller numbers
 grid_nbs$Y <- grid_nbs$Y / 1000 
 
