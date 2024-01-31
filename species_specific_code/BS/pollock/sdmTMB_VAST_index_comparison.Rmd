@@ -140,7 +140,7 @@ coordinates(dat) <- ~ X + Y
 proj4string(dat) <- CRS("+proj=longlat +datum=WGS84")
 dat <- as.data.frame(spTransform(dat, CRS("+proj=utm +zone=2")))
 # scale to km so values don't get too large
-dat$X <- dat$coords.x1 / 1000 
+dat$X <- dat$coords.x1 / 1000
 dat$Y <- dat$coords.x2 / 1000
 
 # make mesh and fit model
@@ -148,7 +148,7 @@ mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$
 
 tictoc::tic()
 fit_sdmTMB <- sdmTMB( 
-  cpue_kg_km2 ~ 0 + as.factor(year) + cpe,
+  cpue_kg_km2 ~ 0 + as.factor(year),
   spatial_varying = ~ 0 + cpe,
   data = dat, 
   mesh = mesh,
@@ -156,7 +156,7 @@ fit_sdmTMB <- sdmTMB(
   time = "year", 
   spatial = "on",
   spatiotemporal = "ar1",
-  extra_time = 2020L,
+  #extra_time = 2020L,
   silent = FALSE,
   control = sdmTMBcontrol(newton_loops = 1)
 )
