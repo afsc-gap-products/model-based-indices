@@ -148,15 +148,15 @@ mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$
 
 tictoc::tic()
 fit_sdmTMB <- sdmTMB( 
-  cpue_kg_km2 ~ 0 + as.factor(year),
-  spatial_varying = ~ 0 + cpe,
+  cpue_kg_km2 ~ 0 + as.factor(year) + cpe,
+  spatial_varying = ~ cpe,
   data = dat, 
   mesh = mesh,
   family = delta_gamma(type = "poisson-link"),
   time = "year", 
   spatial = "on",
   spatiotemporal = "ar1",
-  #extra_time = 2020L,
+  extra_time = 2020L,
   silent = FALSE,
   control = sdmTMBcontrol(newton_loops = 1)
 )
@@ -278,9 +278,9 @@ grid_nbs$Y <- grid_nbs$Y / 1000
 grid <- rbind(grid_ebs, grid_nbs)
 
 # replicate extrapolation grids for each year in data
-pred_grid_ebs <- replicate(grid_ebs, "year", unique(dat$year))
-pred_grid_nbs <- replicate(grid_nbs, "year", unique(dat$year))
-pred_grid <- replicate(grid, "year", unique(dat$year))
+pred_grid_ebs <- replicate_df(grid_ebs, "year", unique(dat$year))
+pred_grid_nbs <- replicate_df(grid_nbs, "year", unique(dat$year))
+pred_grid <- replicate_df(grid, "year", unique(dat$year))
 
 # get index for total area, and the two subareas of interest (EBS, NBS)
 tictoc::tic()
