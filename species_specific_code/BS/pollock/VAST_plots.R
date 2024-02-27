@@ -8,6 +8,7 @@ library(tidyverse)
 library(ggplot2)
 library(dplyr)
 library(reshape2)
+library(gapindex)
 library(ggsidekick)
 # Set ggplot theme
 theme_set(theme_sleek())
@@ -44,7 +45,9 @@ ggsave(index_all_areas, filename = here("species_specific_code", "BS", "pollock"
        width=130, height=160, units="mm", dpi=300)
 
 # Plot just EBS
-index_ebs <- ggplot(index %>% filter(Stratum == "EBS" & Time != 2020), aes(x = Time, y = (Estimate / 1000000000))) +
+ebs <- index %>% filter(Stratum == "EBS" & Time != 2020)
+colnames(ebs)[6] <- "error"
+index_ebs <- ggplot(ebs, aes(x = Time, y = (Estimate / 1000000000))) +
   geom_line(alpha = 0.4) +
   geom_pointrange(aes(ymin = (Estimate / 1000000000) - (error / 1000000000),
                       ymax = (Estimate / 1000000000) + (error / 1000000000)), alpha = 0.8) +
@@ -52,6 +55,70 @@ index_ebs <- ggplot(index %>% filter(Stratum == "EBS" & Time != 2020), aes(x = T
   xlab("Year") + ylab("Index (Mt)") 
 index_ebs
 
+# Compare to design-based index from gapindex ---------------------------------
+sql_channel <- gapindex::get_connected()  # connect to Oracle
+
+# Pull data
+gapindex_data <- gapindex::get_data(
+  year_set = c(1982:this_year),
+  survey_set = "EBS",
+  spp_codes = c(21740),   
+  haul_type = 3,
+  abundance_haul = "Y",
+  pull_lengths = F,
+  sql_channel = sql_channel)
+
+# Fill zeros and calculate CPUE
+cpue <- gapindex::calc_cpue(racebase_tables = gapindex_data)
+# warning: no catch records found for species code 21741
+
+# Calculate stratum-level biomass, abundance, mean CPUE, and variances
+biomass_stratum <- gapindex::calc_biomass_stratum(
+  racebase_tables = gapindex_data,
+  cpue = cpue)
+# Warning: EBS + NW output only includes years 1987-present
+
+# Calculate aggregated biomass and abundance 
+biomass_subareas <- gapindex::calc_biomass_subarea(
+  racebase_tables = gapindex_data,
+  biomass_strata = biomass_stratum)
+# Warning: EBS + NW output only includes years 1987-present
+
+# Plot design-based index
+# Filter index to standard EBS & NW area 
+db_index <- biomass_subareas %>%
+  filter(AREA_ID == 99900)
+
+ggplot(db_index, aes(x = YEAR, y = (BIOMASS_MT))) +
+  geom_line(alpha = 0.4) +
+  geom_point() +
+  # geom_pointrange(aes(ymin = (BIOMASS_MT) - (BIOMASS_VAR),
+  #                     ymax = (BIOMASS_MT) + (BIOMASS_VAR)), alpha = 0.8) +
+  ylim(0, NA) +
+  xlab("Year") + ylab("Index (Mt)") 
+
+# Combine indices together and plot
+db_mb <- rbind.data.frame(cbind.data.frame(Year = db_index$YEAR,
+                                           Biomass = db_index$BIOMASS_MT / 1000000,  
+                                           # Error = db_index$BIOMASS_VAR / 1000000,  # what's going on here???
+                                           Error = 0, 
+                                           Source = "gapindex"),
+                          cbind.data.frame(Year = ebs$Time,
+                                           Biomass = ebs$Estimate / 1000000000,  # to Mt
+                                           Error = ebs$error / 1000000000,  # to Mt
+                                           Source = "VAST")) %>%
+  mutate(Source = factor(Source, levels = c("VAST", "gapindex"))) %>%
+  ggplot(., aes(x = Year, y = Biomass, color = Source, shape = Source)) +
+  geom_line(alpha = 0.4) +
+  geom_pointrange(aes(ymin = (Biomass) - (Error),
+                      ymax = (Biomass) + (Error))) +
+  scale_color_manual(values = c("black", "darkslateblue")) +
+  ylim(0, NA) +
+  xlab("Year") + ylab("EBS Index (Mt)")
+db_mb
+
+ggsave(db_mb, filename = here("VAST_results", "2023_db_vast.png"),
+       width=170, height=90, units="mm", dpi=300)
 
 ### Compare VAST comps to hindcast --------------------------------------------
 # Plot Difference between hindcast and production run -------------------------
