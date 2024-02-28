@@ -2,13 +2,14 @@ library(TMB)
 library(devtools)
 library(dplyr)
 
-current_end_year <- 2021
+current_end_year <- 2023
 requested_start_year <- 1990
 species_code <- c(21720,30152,30150,310)[2:3]#[4]#[1]#[2:3] #c(P.cod, dusky rockfish, dusky and dark rockfishes unid.)
 #310 Squalus suckleyi spiny dogfish
 #species_code <- c(30420,30060,21740,10110,10261,10262,10130)[2] #c(northern rockfish, POP, pollock, arrowtooth, northern rock sole, southern rock sole, flathead sole)
-
 #species_code <- 10260 ## rock sole unidentified.
+#species_code <- 23041 # capelin
+
 PKG <- c("RODBC")
 for (p in PKG) {
   if(!require(p,character.only = TRUE)) {  
@@ -84,6 +85,9 @@ if(species_code == 10130){
 if(species_code == 10260){
   species_name <- "Lepidopsetta_sp." #rock sole unid.
 }
+if(species_code == 23041){
+  species_name <- "capelin" 
+}
 
 # Set up folder to store species specific results
 folder <- paste0(getwd(),"/species_specific_code/GOA/",species_name)
@@ -111,7 +115,7 @@ if(species_code == 10260){
 
 
 ##for everything that isn't duskies/dark rockfish
-if(species_code == 310 | species_code == 21720 | species_code == 30420 | species_code == 30060 | species_code == 21740 | species_code == 10110| species_code == 10261 | species_code == 10262| species_code == 10130 )
+if(species_code == 23041 | species_code == 310 | species_code == 21720 | species_code == 30420 | species_code == 30060 | species_code == 21740 | species_code == 10110| species_code == 10261 | species_code == 10262| species_code == 10130 )
 {
   catch_by_species <- subset(catch, catch$SPECIES_CODE==species_code)
   catch_by_species <- data.frame(HAULJOIN = catch_by_species$HAULJOIN,

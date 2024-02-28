@@ -8,7 +8,7 @@
 ## Description:   VAST estimates of age composition for EBS+NBS yellowfin sole
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 rm(list = ls())
-which_model <- c("hindcast", "production")[1]
+which_model <- c("hindcast", "production")[2]
 species_name <- "yellowfin_sole"
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -94,7 +94,7 @@ strata_names <- c("Both", "EBS", "NBS")
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Run VAST model ----
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 fit <- FishStatsUtils::fit_model(
   
   ## Input settings
@@ -114,8 +114,12 @@ fit <- FishStatsUtils::fit_model(
   ## Model tuning
   "Npool" = 100,
   "refine" = TRUE,
-  "newtonsteps" = 2, 
-  "test_fit" = FALSE)
+  "newtonsteps" = 1, 
+  "test_fit" = FALSE#, 
+  # "startpar" = parameter_estimates$par,
+  # "use_new_epsilon"  = FALSE,
+  # "bias.correct.control" = list(nsplit = 20)
+  )
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Save results locally ----
@@ -156,6 +160,7 @@ if(!dir.exists(paste0(folder, "results_age/predicted_density/"))){
 FishStatsUtils::plot_maps( 
   fit = fit, 
   plot_set = 3,
+  n_cells = 200,
   category_names = c(paste0("Age ", 1:(n_ages-1)), 
                      paste0("Age ", n_ages, "+")),
   Obj = fit$tmb_list$Obj, 
@@ -170,6 +175,7 @@ if(!dir.exists(paste0(folder, "results_age/spatial_effects/"))){
 FishStatsUtils::plot_maps( 
   fit = fit, 
   plot_set = 16:17,
+  n_cells = 200,
   category_names = c(paste0("Age ", 1:(n_ages-1)), 
                      paste0("Age ", n_ages, "+")),
   year_labels = Year_Set,
@@ -184,6 +190,7 @@ if(!dir.exists(paste0(folder, "results_age/spatiotemporal_effects/"))){
 FishStatsUtils::plot_maps( 
   fit = fit, 
   plot_set = 6:7,
+  n_cells = 200,
   category_names = c(paste0("Age ", 1:(n_ages-1)), 
                      paste0("Age ", n_ages, "+")),
   year_labels = Year_Set,

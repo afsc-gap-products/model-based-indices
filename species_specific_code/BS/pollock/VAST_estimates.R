@@ -77,6 +77,7 @@ if(data_choice  == 'a') {
 
 species <- 21740
 this_year <- lubridate::year(today())
+# this_year <- 2022  # set a different year for debugging
 speciesName <- paste0("Walleye_Pollock_index_",this_year,"_",region_select)
 workDir <- here::here("VAST_results", speciesName)
 dir.create(workDir, showWarnings = FALSE)
@@ -127,7 +128,7 @@ table(Data_Geostat$Year)
 
 # Cold pool covariate -----------------------------------------------------
 
-devtools::install_github("afsc-gap-products/coldpool",  force = TRUE, R_REMOTES_NO_ERRORS_FROM_WARNINGS= TRUE)#, lib = .libPaths()[2])
+# devtools::install_github("afsc-gap-products/coldpool",  force = TRUE, R_REMOTES_NO_ERRORS_FROM_WARNINGS= TRUE)#, lib = .libPaths()[2])
 coldpool:::cold_pool_index
 
 cold_pool <- coldpool:::cold_pool_index %>%
@@ -168,8 +169,9 @@ write.csv(covariate_data, here("output", "cold_pool_scaled_formatted.csv"))
 covariate_data <- read.csv(here("output", "cold_pool_scaled_formatted.csv"))
 
 # VAST Settings -----------------------------------------------------------
-# Version <- get_latest_version( package="VAST" )
-Version <- "VAST_v13_1_0" #2022
+Version <- get_latest_version( package="VAST" )
+# Version <- "VAST_v14_0_1"  #2023 not recognized?
+# Version <- "VAST_v13_1_0" #2022
 # Version <- "VAST_v12_0_0" #2021
 Region <- use_region
 strata_names <- use_strata_names
@@ -224,8 +226,8 @@ X2config_cp <- as.matrix(2)
 # quick fit:
 
 settings_quick <- settings
-settings_quick$n_x <- 100
-settings_quick$bias.correct <- FALSE
+settings_quick$n_x <- 100  # 100 knots for testing
+settings_quick$bias.correct <- TRUE
 
 options(max.print = .Machine$integer.max)
 
@@ -269,7 +271,7 @@ full_fit <- fit_model( "settings"=settings,
                   "b_i"=Data_Geostat[,'Catch_KG_km2'],
                   "a_i"=Data_Geostat[,'AreaSwept_km2'], 
                   "v_i"=Data_Geostat[,'Vessel'],
-                  parameters=fit_check$ParHat,   #use params from quick run as starting point
+                  #parameters=fit_check$ParHat,   #use params from quick run as starting point
                   "create_strata_per_region"=TRUE,
                   "getJointPrecision"=getJointPrecision, # turn on for full run
                   "getReportCovariance"=getReportCovariance,  # turn on for full run
@@ -283,7 +285,7 @@ full_fit <- fit_model( "settings"=settings,
                   # "run_model" = FALSE,    #for testing -- if an issue, try uncommenting this one
                   # "build_model" = FALSE,  #for testing
                   # test_fit = FALSE,       #for testing
-                  # newtonsteps=0,          #for testing
+                  newtonsteps=1,          #for testing
                   # CheckForBugs = FALSE,   #for testing
                   "working_dir" = workDir
 )

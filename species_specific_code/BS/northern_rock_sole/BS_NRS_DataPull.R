@@ -34,10 +34,10 @@ sumfish::getSQL()
 species_name <- "northern_rock_sole"
 species_code <- 10261
 start_year <- 1982
-current_year <- 2022
+current_year <- 2023
 min_year <- start_year
 
-which_model <- c("hindcast", "production")[1] # specify by changing index
+which_model <- c("hindcast", "production")[2] # specify by changing index
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Create directory to store data products
