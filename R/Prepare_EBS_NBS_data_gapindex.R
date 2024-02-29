@@ -7,6 +7,7 @@
 ##   Import gapindex package, connect to Oracle. Make sure you are connected
 ##   to the internal network or VPN. 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+remotes::install_github("afsc-gap-products/gapindex")
 library(gapindex)
 sql_channel <- gapindex::get_connected()
 
