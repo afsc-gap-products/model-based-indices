@@ -164,7 +164,7 @@ fit_sdmTMB <- sdmTMB(
 )
 tictoc::toc()
 fit_sdmTMB
-#saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB.RDS"))
+#saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB_full.RDS"))
 ```
 
 ```{r compare-vast-sdmTMB1, echo = FALSE}
