@@ -97,7 +97,7 @@ Next we will fit a GLMM (generalized linear mixed effects model).
  # create folder for saved output:
 dir.create(paste0(here("species_specific_code", "BS", "pollock", "index_comparison")), showWarnings = FALSE)
 
-f <- here("species_specific_code", "BS", "pollock", "index_comparison", "VASTfit.RDS")
+f <- here("species_specific_code", "BS", "pollock", "index_comparison", "VASTfit_full.RDS")
 if (!file.exists(f)) {
   tictoc::tic()
   fit <- fit_model(
@@ -144,7 +144,8 @@ dat$X <- dat$coords.x1 / 1000
 dat$Y <- dat$coords.x2 / 1000
 
 # make mesh and fit model
-mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$anisotropic_mesh)
+mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$anisotropic_mesh) #pass same mesh as VAST model
+#mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 50, type = "kmeans") #coarser mesh for experimentation
 
 tictoc::tic()
 fit_sdmTMB <- sdmTMB( 
@@ -152,16 +153,18 @@ fit_sdmTMB <- sdmTMB(
   spatial_varying = ~ cpe,
   data = dat, 
   mesh = mesh,
-  family = delta_gamma(type = "poisson-link"),
+  family = delta_gamma(type = "poisson-link"), 
   time = "year", 
   spatial = "on",
   spatiotemporal = "ar1",
-  extra_time = 2020L,
+  #extra_time = 2020L, #adding this makes the Hessian non-positive definite, unclear why
   silent = FALSE,
-  control = sdmTMBcontrol(newton_loops = 1)
+  anisotropy = TRUE,
+  control = sdmTMBcontrol(newton_loops = 0) # more than 0 newton steps cause error: Error in solve.default(h, g) : system is computationally singular: reciprocal condition number = 4.21034e-17
 )
 tictoc::toc()
 fit_sdmTMB
+#saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB.RDS"))
 ```
 
 ```{r compare-vast-sdmTMB1, echo = FALSE}
