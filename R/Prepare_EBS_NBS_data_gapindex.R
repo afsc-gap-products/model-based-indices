@@ -373,14 +373,14 @@ ebs_nbs_alk$AGE_CPUE_NOKM2 <-
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 age_cpue <- rbind(
   ## Aggregate ages younger than the `plus_group`
-  stats::aggregate(formula = AGE_CPUE_NOKM2 ~ AGE + HAULJOIN + SPECIES_CODE,
+  stats::aggregate(AGE_CPUE_NOKM2 ~ AGE + HAULJOIN + SPECIES_CODE,
                    data = ebs_nbs_alk,
                    FUN = sum,
                    drop = F,
                    subset = AGE < plus_group),
   ## Aggregate ages at or older than the `plus_group` as one age
   cbind(AGE = plus_group,
-        stats::aggregate(formula = AGE_CPUE_NOKM2 ~ HAULJOIN + SPECIES_CODE,
+        stats::aggregate(AGE_CPUE_NOKM2 ~ HAULJOIN + SPECIES_CODE,
                          data = ebs_nbs_alk,
                          FUN = sum,
                          drop = F,
