@@ -149,7 +149,7 @@ mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$
 
 tictoc::tic()
 fit_sdmTMB <- sdmTMB( 
-  cpue_kg_km2 ~ 0 + as.factor(year) + cpe,
+  cpue_kg_km2 ~ 0 + as.factor(year),
   spatial_varying = ~ cpe,
   data = dat, 
   mesh = mesh,
@@ -157,14 +157,25 @@ fit_sdmTMB <- sdmTMB(
   time = "year", 
   spatial = "on",
   spatiotemporal = "ar1",
-  #extra_time = 2020L, #adding this makes the Hessian non-positive definite, unclear why
+  extra_time = 2020L, #adding this makes the Hessian non-positive definite?
   silent = FALSE,
   anisotropy = TRUE,
-  control = sdmTMBcontrol(newton_loops = 0) # more than 0 newton steps cause error: Error in solve.default(h, g) : system is computationally singular: reciprocal condition number = 4.21034e-17
+  do_fit = TRUE,
+  control = sdmTMBcontrol(newton_loops = 0) # Can't calculate SEs, argh. More than 0 newton steps cause error: Error in solve.default(h, g) : system is computationally singular: reciprocal condition number = 4.21034e-17 OR when do not include cpe in formula: Error in solve.default(h, g) : Lapack routine dgesv: system is exactly singular: U[41,41] = 0
 )
 tictoc::toc()
 fit_sdmTMB
-#saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB_full.RDS"))
+saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB_noformula.RDS"))
+
+# diagnose estimation issues due to model structure♦
+TMBhelper::check_estimability(fit_sdmTMB$tmb_obj)
+# iter: 1  Error in .Call("TMBconfig", e, as.integer(1), PACKAGE = DLL) : 
+#   "TMBconfig" not available for .Call() for package "sdmTMB"
+# Error in ff(x, order = 1) : 
+#   inner newton optimization failed during gradient calculation
+# outer mgc:  NaN 
+# Error in if (any(Gr > 0.01)) stop("Some gradients are high, please improve optimization and only then use `Check_Identifiable`") : 
+#   missing value where TRUE/FALSE needed
 ```
 
 ```{r compare-vast-sdmTMB1, echo = FALSE}
