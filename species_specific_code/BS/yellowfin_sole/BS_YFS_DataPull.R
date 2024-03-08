@@ -22,6 +22,7 @@ species_info <- data.frame(species_name = c("yellowfin_sole", "Pacific_cod"),
                            start_year_age = c(1982, 1994))[1, ]
 
 ## Set constants
+which_model <- c("hindcast", "production")[1]
 start_year <- species_info$start_year
 current_year <- species_info$current_year
 species_code <- species_info$species_code
@@ -474,7 +475,8 @@ if (start_year != start_year_age) {
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Save output. Set dir_out to the appropriate directory. 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dir_out <- paste0("species_specific_code/BS/", species_name, "/data/")
+dir_out <- 
+  paste0("species_specific_code/BS/", species_name, "/", which_model, "/data/")
 if (!dir.exists(paths = dir_out)) dir.create(path = dir_out, recursive = T)
 for (ifile in c("data_geostat_biomass_index", 
                 "data_geostat_numerical_index",
