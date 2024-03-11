@@ -33,7 +33,7 @@ library(getPass)
 # yrange_diff <- diff(x = range(grid_locs$N_km))
 
 MBE <- read.csv(file = paste0("species_specific_code/GOA/Gadus_macrocephalus/",
-                              "hindcast/results/Index.csv"))
+                              "results/Index.csv"))
 MBE <- subset(x = MBE, Estimate > 0)
 names(MBE) <- c("Category", "Time", "Stratum", "Units",
                 "Estimate", "SE", "CV")
@@ -49,6 +49,24 @@ DBE <- RODBC::sqlQuery(
 DBE <- DBE[order(DBE$YEAR), ]
 DBE$BIOMASS_SD <- sqrt(DBE$BIOMASS_VAR)
 DBE$BIOMASS_CV <- DBE$BIOMASS_SD / DBE$TOTAL_BIOMASS
+
+# Using gapindex instead of GOA schema:
+dat <- gapindex::get_data(year_set = unique(DBE$YEAR),
+                          survey_set = "GOA",
+                          spp_codes = 21720,
+                          abundance_haul = "Y",
+                          pull_lengths = TRUE)
+cpue <- gapindex::calc_cpue(racebase_tables = dat)
+biomass_stratum <- gapindex::calc_biomass_stratum(racebase_tables = dat,cpue = cpue)
+biomass_subareas <- gapindex::calc_biomass_subarea(racebase_tables = dat,
+                                                   biomass_strata = biomass_stratum)
+DBE <- subset(biomass_subareas, AREA_ID==99903)
+DBE <- DBE[,c('YEAR', 'SPECIES_CODE', 'BIOMASS_MT', 'BIOMASS_VAR')]
+names(DBE)[names(DBE) == "BIOMASS_MT"] <- "TOTAL_BIOMASS"
+DBE <- DBE[order(DBE$YEAR),]
+DBE$BIOMASS_SD <- sqrt(DBE$BIOMASS_VAR)
+DBE$BIOMASS_CV <- DBE$BIOMASS_SD / DBE$TOTAL_BIOMASS
+
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Compare MBEs vs DBE of Index and CV

@@ -39,10 +39,8 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 # VAST Resources 
 - VASTGAP/ModSquad folder [here](https://drive.google.com/drive/folders/1yxn02yF0V1PNVw0_HpqeSK_XxgOy_LAT)
 - ModSquad training materials [here](https://drive.google.com/drive/folders/1TZRrEwka7OEICC6D81LiuGtYJMSxdaFe?usp=sharing)
-- VAST example from Cecilia [here](https://drive.google.com/file/d/1eNUXhVuezqWYQx0GHoKcKuHyqTssY_BC/view)
 - VAST common troubleshooting [here](https://docs.google.com/document/d/1j3Li2aacvy7d4FJxLlGDctHlDJWQgZzI5HzyMujwf8Y/edit?usp=sharing)
 - Identification of valid hauls for Bering Sea VAST indices, from Jason [here](https://docs.google.com/spreadsheets/d/1-z7AFYoTM0-RApsW9APfXX4CoA5mbk6k/edit#gid=1419989689)
-- Slack VAST support group (ask Cecilia for an invite)
 
 # Minimum standard of versions of software and key dependencies (i.e., using these versions or later)
 - **2023**: 
@@ -74,18 +72,7 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 - [TOR 2022](https://drive.google.com/file/d/1t13fVai8HOo3xtwxn_vazo9NDT8MrVar/view?usp=sharing)
 - [TOR 2021](https://docs.google.com/document/d/19gFkuNcJ_ezXzKqqOS1k5YnXyj3Tm_LyTMWGWyhy8ec/edit?usp=sharing)
 
-# Data Reminders
-- fill in zeros for tows where none of that species was observed
-- For catch input you can either: (a) input as raw weight (‘Catch_KG’) with ‘AreaSwept_km2’ remaining as area swept values OR (b) Input as wCPUE (‘Catch_KG’ divided by   effort) with ‘AreaSwept_km2’ set to 1 
-- For GOA: exclude areas > 700 m from the extrapolation grid area (but leave observations at this depth in the data used to fit the model) 
-  to do this, follow the template code that Cecilia sent out by setting Region = "User" in make_settings(), load your extrapolation grid  'GOAThorsonGrid_Less700m'       file as a csv named ‘input_grid’ with ‘Lat’, ‘Lon’, and ‘Area_km2’ column headers, and include "input_grid"=input_grid in fit_model()
-
 ### **Note**: if a request to only include fish west of 140 degrees, just note that there are two components to this request:  (1) excluding data from east of 170 longitude and (2) specifying this as a "strata" boundary in the model settings in the VAST code
-
-# GOA specific links & files
-- Link to GOA notes document for 2022 [here](https://docs.google.com/document/d/1TOMz9zaRaRd2xLsaE8J9KLn1wPYqtAwgAprJrhsLtSE/edit?usp=sharing)
-- Link to GOA notes document for 2021 [here](https://docs.google.com/document/d/1fWEA8jftM7IRRwnCMtSjKqGRhM2Vzq7DgCCebPDc3ic/edit?usp=sharing)
-- Link to GOA notes document for 2020 [here](https://docs.google.com/document/d/1M6SnI6bN16kZCuFu0Crl2BqpGB8D_CZshlqvW9TFCGY/edit?usp=sharing)
 
 # Bering specific links & files
 
