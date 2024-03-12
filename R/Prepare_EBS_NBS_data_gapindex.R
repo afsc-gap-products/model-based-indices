@@ -12,12 +12,12 @@ library(gapindex)
 sql_channel <- gapindex::get_connected()
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Species-Specific Constants. Toogle species row
+##   Species-Specific Constants. Toggle species row
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 species_info <- data.frame(species_name = c("yellowfin_sole", "Pacific_cod"),
                            species_code = c(10210, 21720),
                            start_year = 1982,
-                           current_year = 2022,
+                           current_year = 2023,
                            plus_group = c(20, 12), 
                            start_year_age = c(1982, 1994))[1, ]
 
