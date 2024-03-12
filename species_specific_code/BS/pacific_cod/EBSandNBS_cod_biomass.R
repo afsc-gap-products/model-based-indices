@@ -9,7 +9,7 @@ library(akgfmaps)
 
 # Set species, model -------------------------------------------------------
 
-which_model <- c("hindcast", "production")[2]
+which_model <- c("hindcast", "production")[1]
 species <- 21720
 species_name <- "pacific_cod"
 
@@ -93,30 +93,15 @@ settings <- make_settings(
     bias.correct = BiasCorr
     )
 
-# Format catch data -------------------------------------------------------
+# Read catch data ---------------------------------------------------------
 
-dat <- read_rds(paste0(workDir, "data/EBS_NBS_Index.RDS"))
-
-# Format the data for VAST
-Data_Geostat <-  dplyr::transmute(dat,
-                               Catch_KG = wCPUE*100, # sumfish calculates CPUE in kg/ha this converts it to kg/km^2
-                               Year = YEAR,
-                               Vessel = "missing",
-                               AreaSwept_km2 = 1, # area swept is 1 when using CPUE instead of observed weight
-                               Lat = START_LATITUDE,
-                               Lon = START_LONGITUDE,
-                               Pass = 0
-) %>%
-    data.frame()
-
-saveRDS(Data_Geostat, file = paste0(workDir,"data/Data_Geostat_",species_name,".RDS"))
-
+dat <- read_rds(paste0(workDir, "data/data_geostat_biomass_index.RDS"))
 
 # Cold Pool covariate -----------------------------------------------------
 cpe <- scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)
 covariate_data <- data.frame(Year = c(coldpool:::cold_pool_index$YEAR, 2020),
-                             Lat = mean(Data_Geostat$Lat),
-                             Lon = mean(Data_Geostat$Lon), 
+                             Lat = mean(dat$Lat),
+                             Lon = mean(dat$Lon), 
                              cpe = c(cpe, 0))
 
     # Load covariates
@@ -128,13 +113,13 @@ covariate_data <- data.frame(Year = c(coldpool:::cold_pool_index$YEAR, 2020),
     
 # Build the model ---------------------------------------------------------
 fit <- fit_model( "settings"=settings, 
-                  "Lat_i"=Data_Geostat[,'Lat'], 
-                  "Lon_i"=Data_Geostat[,'Lon'], 
-                  "t_i"=Data_Geostat[,'Year'], 
-                  "c_i"=rep(0,nrow(Data_Geostat)), 
-                  "b_i"=Data_Geostat[,'Catch_KG'], 
-                  "a_i"=Data_Geostat[,'AreaSwept_km2'], 
-                  "v_i"=Data_Geostat[,'Vessel'],
+                  "Lat_i"=dat[,'Lat'], 
+                  "Lon_i"=dat[,'Lon'], 
+                  "t_i"=dat[,'Year'], 
+                  "c_i"=rep(0,nrow(dat)), 
+                  "b_i"=dat[,'Catch_KG'], 
+                  "a_i"=dat[,'AreaSwept_km2'], 
+                  "v_i"=dat[,'Vessel'],
                   "create_strata_per_region"=TRUE,
                   "getJointPrecision"=getJointPrecision, 
                   "getReportCovariance"=getReportCovariance,
@@ -150,7 +135,7 @@ fit <- fit_model( "settings"=settings,
 
 # Save results
 
-saveRDS(fit, file = "VASTfit.RDS")
+saveRDS(fit, file = paste0(workDir, "VASTfit.RDS"))
 
 
 # Plots -------------------------------------------------------------------
@@ -195,8 +180,8 @@ saveRDS(fit, file = "VASTfit.RDS")
     total_area <- sum(EBS_strata$survey.strata$F_AREA)
     EBS_strata <- mutate(EBS_strata$survey.strata, area_ratio = F_AREA/total_area)
     
-    # Convert Data_Geostat to sf and transform projection
-    sf_geostat <- st_as_sf(Data_Geostat, coords = c("Lon", "Lat"), remove = FALSE, 
+    # Convert dat to sf and transform projection
+    sf_geostat <- st_as_sf(dat, coords = c("Lon", "Lat"), remove = FALSE, 
                            crs = "+proj=longlat +datum=NAD83" ) %>%
         st_transform(crs = st_crs(EBS_strata))
     
