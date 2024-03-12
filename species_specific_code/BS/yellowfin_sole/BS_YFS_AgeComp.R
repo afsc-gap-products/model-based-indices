@@ -131,7 +131,7 @@ saveRDS(object = fit,
 
 ## Parameter estimates
 saveRDS(object = fit$ParHat, 
-        file = paste0(workDir, "results_age/starting_parameters.RDS"))
+        file = paste0(folder, "results_age/starting_parameters.RDS"))
 
 ## General output plots, DHARMa residuals
 results <- FishStatsUtils::plot_results( 
@@ -140,6 +140,7 @@ results <- FishStatsUtils::plot_results(
   plot_set = NULL,
   strata_names = strata_names, 
   check_residuals = TRUE)
+
 saveRDS(object = results, 
         file = paste0(folder, "results_age/output_plots/diagnostics.RDS"))
 
