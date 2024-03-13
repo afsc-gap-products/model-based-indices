@@ -257,8 +257,8 @@ fit <- fit_model( "settings"=settings_quick,
                   "working_dir" = workDir
 )
 
-saveRDS(fit, file = paste0(workDir,"/VASTfit.RDS"))
-fit_check <- readRDS(file = paste0(workDir,"/VASTfit.RDS"))
+saveRDS(fit, file = paste0(workDir,"/VASTfit_quick.RDS"))
+fit_check <- readRDS(file = paste0(workDir,"/VASTfit_quick.RDS"))
 fit_check$ParHat
 
 # full model fit:
