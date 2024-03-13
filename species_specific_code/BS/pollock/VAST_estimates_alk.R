@@ -1,8 +1,9 @@
 # This code produces VAST agecomp estimates for the Bering Sea Pollock assessment
 # By: Caitlin I. Allen Akselrud; modified from O'Leary base code 2022 and Thorson 2019 code
-# Contact: caitlin.allen_akselrud@noaa.gov
+# Maintained by: Sophia N. Wassermann
+# Contact: sophia.wassermann@noaa.gov
 # Date created: 2021.04.23
-# Date updated: 2022.04.19
+# Date updated: 2024.03.13
 
 # Notes -------------------------------------------------------------------
 
@@ -105,7 +106,7 @@ fit = fit_model( "settings"=settings,
                  "Lon_i"=Data_Geostat[,'Lon'], 
                  "t_i"=Data_Geostat[,'Year'],  # "t_i"=rep(2019,nrow(Data_Geostat)),
                  "c_iz"=Data_Geostat[,'Age'] - 1,  # need to change this so index starts at 0
-                 "b_i"=Data_Geostat[,'Catch_KG'],  # This is actually CPUE
+                 "b_i"=Data_Geostat[,'CPUE_num'],  # SNW: updated column name in 2024 - actually numbers, not kg
                  # "b_i"=as_units(Data_Geostat[,'Catch_KG'], "count"), #new for 2023 changes
                  "a_i"=Data_Geostat[,'AreaSwept_km2'], 
                  # "v_i"=Data_Geostat[,'Vessel'],  # not using vessel data
