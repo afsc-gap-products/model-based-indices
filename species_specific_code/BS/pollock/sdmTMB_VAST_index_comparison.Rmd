@@ -21,7 +21,6 @@ knitr::opts_chunk$set(
 
 ```{r packages, message=FALSE, warning=FALSE, cache=FALSE}
 #remotes::install_github("afsc-gap-products/coldpool")
-library(TMB)
 library(VAST)
 library(sp)
 library(sdmTMB)
@@ -136,6 +135,8 @@ Now we fit the same model in sdmTMB:
 dat <- dat_ll %>% 
   rename(X = lon, Y = lat)
   
+dat$year_f <- as.factor(dat$year)
+
 coordinates(dat) <- ~ X + Y
 proj4string(dat) <- CRS("+proj=longlat +datum=WGS84")
 dat <- as.data.frame(spTransform(dat, CRS("+proj=utm +zone=2")))
@@ -144,12 +145,12 @@ dat$X <- dat$coords.x1 / 1000
 dat$Y <- dat$coords.x2 / 1000
 
 # make mesh and fit model
-mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$anisotropic_mesh) #pass same mesh as VAST model
-#mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 50, type = "kmeans") #coarser mesh for experimentation
+#mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$anisotropic_mesh) #pass same mesh as VAST model
+mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 50, type = "kmeans") #coarser mesh for experimentation
 
 tictoc::tic()
 fit_sdmTMB <- sdmTMB( 
-  cpue_kg_km2 ~ 0 + as.factor(year),
+  cpue_kg_km2 ~ 0 + year_f,
   spatial_varying = ~ cpe,
   data = dat, 
   mesh = mesh,
@@ -157,15 +158,14 @@ fit_sdmTMB <- sdmTMB(
   time = "year", 
   spatial = "on",
   spatiotemporal = "ar1",
-  extra_time = 2020L, #adding this makes the Hessian non-positive definite?
+  extra_time = 2020L,
   silent = FALSE,
   anisotropy = TRUE,
-  do_fit = TRUE,
-  control = sdmTMBcontrol(newton_loops = 0) # Can't calculate SEs, argh. More than 0 newton steps cause error: Error in solve.default(h, g) : system is computationally singular: reciprocal condition number = 4.21034e-17 OR when do not include cpe in formula: Error in solve.default(h, g) : Lapack routine dgesv: system is exactly singular: U[41,41] = 0
+  do_fit = TRUE
 )
 tictoc::toc()
 fit_sdmTMB
-saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB_noformula.RDS"))
+saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB.RDS"))
 
 # diagnose estimation issues due to model structure♦
 TMBhelper::check_estimability(fit_sdmTMB$tmb_obj)
