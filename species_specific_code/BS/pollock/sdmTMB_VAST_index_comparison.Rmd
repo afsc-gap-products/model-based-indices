@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r packages, message=FALSE, warning=FALSE, cache=FALSE}
-#remotes::install_github("afsc-gap-products/coldpool")
+remotes::install_github("afsc-gap-products/coldpool")
 library(VAST)
 library(sp)
 library(sdmTMB)
@@ -145,8 +145,8 @@ dat$X <- dat$coords.x1 / 1000
 dat$Y <- dat$coords.x2 / 1000
 
 # make mesh and fit model
-#mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$anisotropic_mesh) #pass same mesh as VAST model
-mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 50, type = "kmeans") #coarser mesh for experimentation
+mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$anisotropic_mesh) #pass same mesh as VAST model
+#mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 50, type = "kmeans") #coarser mesh for experimentation
 
 tictoc::tic()
 fit_sdmTMB <- sdmTMB( 
@@ -168,14 +168,7 @@ fit_sdmTMB
 saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB.RDS"))
 
 # diagnose estimation issues due to model structure♦
-TMBhelper::check_estimability(fit_sdmTMB$tmb_obj)
-# iter: 1  Error in .Call("TMBconfig", e, as.integer(1), PACKAGE = DLL) : 
-#   "TMBconfig" not available for .Call() for package "sdmTMB"
-# Error in ff(x, order = 1) : 
-#   inner newton optimization failed during gradient calculation
-# outer mgc:  NaN 
-# Error in if (any(Gr > 0.01)) stop("Some gradients are high, please improve optimization and only then use `Check_Identifiable`") : 
-#   missing value where TRUE/FALSE needed
+#TMBhelper::check_estimability(fit_sdmTMB$tmb_obj)
 ```
 
 ```{r compare-vast-sdmTMB1, echo = FALSE}
