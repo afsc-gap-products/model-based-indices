@@ -100,7 +100,7 @@ dir.create(RunDir, recursive = TRUE)
 setwd(RunDir)
 
 # Run model
-start.time <- Sys.time() #"2023-10-12 06:14:31 PDT"
+start.time <- Sys.time() #"2024-03-13 12:51:08 PDT"
 fit = fit_model( "settings"=settings, 
                  "Lat_i"=Data_Geostat[,'Lat'], 
                  "Lon_i"=Data_Geostat[,'Lon'], 
