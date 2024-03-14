@@ -5,7 +5,6 @@
 # Date updated: 2024.03.14
 
 library(here)
-library(tidyverse)
 library(ggplot2)
 library(dplyr)
 library(reshape2)
@@ -44,8 +43,8 @@ index_all_areas <- ggplot(index %>% filter(Time != 2020),
   facet_wrap(~ Stratum, ncol = 1)
 index_all_areas
 
-ggsave(index_all_areas, filename = here("species_specific_code", "BS", "pollock", "plots", "index_all_areas.png"),
-       width=130, height=160, units="mm", dpi=300)
+# ggsave(index_all_areas, filename = here("species_specific_code", "BS", "pollock", "plots", "index_all_areas.png"),
+#        width=130, height=160, units="mm", dpi=300)
 
 # Plot just EBS
 index_ebs <- ggplot(index %>% filter(Stratum == "EBS" & Time != 2020), aes(x = Time, y = (Estimate / 1000000000))) +
@@ -56,9 +55,7 @@ index_ebs <- ggplot(index %>% filter(Stratum == "EBS" & Time != 2020), aes(x = T
   xlab("Year") + ylab("Index (Mt)") 
 index_ebs
 
-
-### Cold pool extent covariate ------------------------------------------------
-# Cold pool covariabe
+# Cold pool extent covariate --------------------------------------------------
 cold_pool <- read.csv(here("output", "cold_pool_scaled_formatted.csv")) %>%
   mutate(extent = case_when(area_lte2_km2 >= 0 ~ "greater",
                             area_lte2_km2 < 0 ~ "less"))
@@ -69,9 +66,8 @@ cold_pool_plot <- ggplot() +
   ylab("Cold pool covariate")
 cold_pool_plot
 
-ggsave(cold_pool, filename = here("output", "cold_pool_covariate.png"),
-       width = 120, height = 100, unit = "mm", dpi = 300)
-
+# ggsave(cold_pool, filename = here("output", "cold_pool_covariate.png"),
+#        width = 120, height = 100, unit = "mm", dpi = 300)
 
 # Cold pool vs. index value ---------------------------------------------------
 cold_pollock_cor <- cor(index[index$Stratum == "EBS", ]$Estimate, cold_pool$area_lte2_km2)

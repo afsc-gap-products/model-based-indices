@@ -7,6 +7,7 @@
 library(here)
 library(ggplot2)
 library(dplyr)
+library(viridis)
 
 # Set ggplot theme
 devtools::install_github("seananderson/ggsidekick")
@@ -48,7 +49,7 @@ area_plot <- ggplot(area, aes(x = Year, y = Estimate, color = Region, shape = Re
 area_plot
 
 # Save plots ------------------------------------------------------------------
-ggsave(cog_plot, filename = here("VAST_results", "2023_pollock_COG.png"),
-       width = 150, height = 180, unit = "mm", dpi = 300)
-ggsave(area_plot, filename = here("VAST_results", "2023_pollock_area.png"),
-       width = 150, height = 100, unit = "mm", dpi = 300)
+# ggsave(cog_plot, filename = here("VAST_results", "2023_pollock_COG.png"),
+#        width = 150, height = 180, unit = "mm", dpi = 300)
+# ggsave(area_plot, filename = here("VAST_results", "2023_pollock_area.png"),
+#        width = 150, height = 100, unit = "mm", dpi = 300)

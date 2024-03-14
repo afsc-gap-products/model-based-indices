@@ -5,9 +5,9 @@
 # Date created: 2024.03.14
 
 library(here)
-library(tidyverse)
 library(ggplot2)
 library(dplyr)
+library(reshape2)
 library(viridis)
 
 # Set ggplot theme
@@ -45,9 +45,8 @@ compare_index <- function(indices, names){
   return(plot)
 }
 
-compare_index(indices = list(index1, index2), 
-              names = c("2023 production", "2022 production"))
-
+comp_index <- compare_index(indices = list(index1, index2), 
+                            names = c("2023 production", "2022 production"))
 
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
@@ -121,8 +120,9 @@ comp_diff <- comp_difference(new = new_props, old = old_props,
 comp_diff
 
 # Save plots ------------------------------------------------------------------
-ggsave(all_props, filename = here("VAST_results", "2023_age_comp_compare.png"),
-       width=200, height=130, units="mm", dpi=300)
-ggsave(comp_diff, filename = here("VAST_results", "2023_age_comp_diff.png"),
-       width=200, height=130, units="mm", dpi=300)
-
+# ggsave(comp_index, filename = here("species_specific_code", "BS", "pollock", "plots", "index_comparison.png"),
+#        width=130, height=160, units="mm", dpi=300)
+# ggsave(all_props, filename = here("VAST_results", "2023_age_comp_compare.png"),
+#        width=200, height=130, units="mm", dpi=300)
+# ggsave(comp_diff, filename = here("VAST_results", "2023_age_comp_diff.png"),
+#        width=200, height=130, units="mm", dpi=300)
