@@ -147,7 +147,9 @@ saveRDS(fit, file = paste0(workDir, "results/VASTfit.RDS"))
                              n_cells = 600, 
                              strata_names = strata_names, 
                              check_residuals=TRUE,
-                             n_samples=0 )
+                             n_samples=0,
+                             working_dir = paste0(workDir, "results/")
+                             )
     
     saveRDS(results, file = paste0(workDir, "results/VASTresults.RDS"))
     
