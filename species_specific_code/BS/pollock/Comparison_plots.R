@@ -15,11 +15,15 @@ library(viridis)
 library(ggsidekick)
 theme_set(theme_sleek())
 
+# Directories
+results_dir <- here("species_specific_code", "BS", "pollock", "results")
+save_dir <- "2024 hindcast"
+
 # Compare Indices of Abundance ------------------------------------------------
 # Read in indices & make sure columns for year = Time, Estimate, Error are named correctly
 index1 <- read.csv("Index.csv")
 colnames(index1)[6] <- "error"
-index2 <- read.csv("Index_2022.csv")
+index2 <- read.csv(here(results_dir, "Index_2023.csv"))
 colnames(index2)[6] <- "error"
 
 # Function combining & plotting any number of indices. 
@@ -50,8 +54,8 @@ comp_index <- compare_index(indices = list(index1, index2),
 
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
-new_props <- read.csv("proportions.csv")[, -1]
-old_props <- read.csv("proportions_2022.csv")[, -1]
+new_props <- read.csv(here(results_dir, "Comps 20240314", "proportions.csv"))[, -1]
+old_props <- read.csv(here(results_dir, "proportions_2023.csv"))[, -1]
 
 ## Combine age comp models into one plot --------------------------------------
 compare_props <- function(props, names, last_year) {
@@ -76,11 +80,12 @@ compare_props <- function(props, names, last_year) {
 }
 
 all_props <- compare_props(props = list(new_props, old_props),
-                           names = c("2023 production", "2023 hindcast"))
+                           names = c("2024 hindcast", "2023 production"))
 all_props
 
 # Plot difference between two models ------------------------------------------
-new_props <- subset(new_props, new_props$Year < 2023)
+this_year <- 2024
+new_props <- subset(new_props, new_props$Year < this_year)
 
 comp_difference <- function(new, old, names, save_results = FALSE) {
   # Get difference between new and old props
@@ -91,8 +96,8 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
   
   if(save_results == TRUE) {  # save to drive, if you want. Check file paths.
     options(scipen=999)
-    write.csv(check_props_tab, here("VAST_results", "bridge_props_2023.csv"))
-    write.csv(check_props_abs_tab, here("VAST_results", "bridge_props_abs_2023.csv"))
+    write.csv(check_props_tab, here(results_dir, save_dir, "bridge_props.csv"))
+    write.csv(check_props_abs_tab, here(results_dir, save_dir, "bridge_props_abs.csv"))
   }
   
   colnames(check_props_tab)[1:15] <- 1:15
@@ -116,13 +121,14 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
 }
 
 comp_diff <- comp_difference(new = new_props, old = old_props,
-                             names = c("2023 production", "2023 hindcast"))
+                             names = c("2024 hindcast", "2023 production"),
+                             save_results = FALSE)
 comp_diff
 
 # Save plots ------------------------------------------------------------------
-# ggsave(comp_index, filename = here("species_specific_code", "BS", "pollock", "plots", "index_comparison.png"),
+# ggsave(comp_index, filename = here(results_dir, save_dir, "index_comparison.png"),
 #        width=130, height=160, units="mm", dpi=300)
-# ggsave(all_props, filename = here("VAST_results", "2023_age_comp_compare.png"),
+# ggsave(all_props, filename = here(results_dir, save_dir, "age_comp_compare.png"),
 #        width=200, height=130, units="mm", dpi=300)
-# ggsave(comp_diff, filename = here("VAST_results", "2023_age_comp_diff.png"),
+# ggsave(comp_diff, filename = here(results_dir, save_dir, "age_comp_diff.png"),
 #        width=200, height=130, units="mm", dpi=300)
