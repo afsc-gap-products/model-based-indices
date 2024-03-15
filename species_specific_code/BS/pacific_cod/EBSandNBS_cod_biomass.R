@@ -134,7 +134,7 @@ fit <- fit_model( "settings"=settings,
 
 # Save results
 
-saveRDS(fit, file = paste0(workDir, "VASTfit.RDS"))
+saveRDS(fit, file = paste0(workDir, "results/VASTfit.RDS"))
 
 
 # Plots -------------------------------------------------------------------
