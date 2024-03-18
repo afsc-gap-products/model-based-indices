@@ -258,7 +258,7 @@ options(max.print = .Machine$integer.max)
 # )
 # 
 # saveRDS(fit, file = here(workDir, "VAST Index" ,"VASTfit_quick.RDS"))
-# fit_check <- readRDS(file = here(workDir, "VAST Index", "VASTfit_quick.RDS"))
+# fit_check <- readRDS(file = here(workDir, "results", "VAST Index", "VASTfit_quick.RDS"))
 # fit_check$ParHat
 
 # full model fit:
