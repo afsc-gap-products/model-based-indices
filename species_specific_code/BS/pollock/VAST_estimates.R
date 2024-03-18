@@ -294,36 +294,11 @@ full_fit <- fit_model( "settings"=settings,
 stop.time <- Sys.time()
 
 # Save results
-
 saveRDS(full_fit, file = here(workDir, "results", "VAST Index", "VASTfit_full.RDS"))
 # full_fit <- readRDS(file = paste0(workDir,"/VASTfit_full.RDS"))
 
-
-
-# Plots -------------------------------------------------------------------
-# 
-# plot( full_fit)
-# 
-# plot( full_fit, zrange = c(-3,3), n_cells = 600, strata_names = strata_names )
-# 
-# 
-# ## Save COG (center of gravity) for ESP request
-# results = plot( full_fit, n_cells=200^2 )
-# write.csv( results$Range$COG_Table, file=paste0(workDir, "/COG.csv"), row.names=FALSE )
-# 
-# ##save effective area occupied for ESP request
-# report = TMB::summary.sdreport(full_fit$parameter_estimates$SD)
-# ln_km2 = report[which(rownames(report)=="log_effective_area_ctl"),c('Estimate','Std. Error')]
-# Year <- sort(unique(full_fit$year_labels))
-# ln_km2 <- as.data.frame(cbind(ln_km2, Year))
-# ln_km2 <- ln_km2[which(ln_km2$Year %in% unique(fit$data_frame$t_i)),]
-# write.csv( ln_km2, file=paste0(workDir,"/ln_effective_area.csv"), row.names=FALSE )
-
-
-# Plots 2022 ---------------------------------------------------------------
-
 # If you need to load a fit in a new session:
-dyn.load(dynlib("VAST_v12_0_0"))
+# dyn.load(dynlib("VAST_v12_0_0"))
 
 # Record package versions
 sink("session_info.txt", type = "output")
@@ -347,9 +322,13 @@ results <- plot_results( full_fit,
 
 saveRDS(results, file = here(workDir, "results", "VAST Index", "VASTresults.RDS"))
 
-map_list = make_map_info( "Region"=settings$Region, "spatial_list"=full_fit$spatial_list, "Extrapolation_List"=full_fit$extrapolation_list )
-plot_maps(fit = full_fit, Obj=full_fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
+# Isolate index of abundance and save 
+Index <- VASTresults$Index$Table
+write.csv(Index, file = here(workDir, "results", "VAST Index", "Index.csv"), 
+          row.names = FALSE)
 
+# map_list = make_map_info( "Region"=settings$Region, "spatial_list"=full_fit$spatial_list, "Extrapolation_List"=full_fit$extrapolation_list )
+# plot_maps(fit = full_fit, Obj=full_fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
 
 # ESP products
 write.csv( results$Range$COG_Table, file="COG.csv", row.names=FALSE )

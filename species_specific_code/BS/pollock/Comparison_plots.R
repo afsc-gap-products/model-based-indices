@@ -16,14 +16,14 @@ library(ggsidekick)
 theme_set(theme_sleek())
 
 # Directories
-results_dir <- here("species_specific_code", "BS", "pollock", "results")
+workDir <- here("species_specific_code", "BS", "pollock")
 save_dir <- "2024 hindcast"
 
 # Compare Indices of Abundance ------------------------------------------------
 # Read in indices & make sure columns for year = Time, Estimate, Error are named correctly
-index1 <- read.csv("Index.csv")
+index1 <- read.csv(here(workDir, "results", "VAST Index", "Index.csv"), row.names = )
 colnames(index1)[6] <- "error"
-index2 <- read.csv(here(results_dir, "Index_2023.csv"))
+index2 <- read.csv(here(workDir, "results", "Index_2023.csv"))
 colnames(index2)[6] <- "error"
 
 # Function combining & plotting any number of indices. 
@@ -50,12 +50,13 @@ compare_index <- function(indices, names){
 }
 
 comp_index <- compare_index(indices = list(index1, index2), 
-                            names = c("2023 production", "2022 production"))
+                            names = c("2024 hindcast", "2023 production"))
+comp_index
 
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
-new_props <- read.csv(here(results_dir, "Comps 20240314", "proportions.csv"))[, -1]
-old_props <- read.csv(here(results_dir, "proportions_2023.csv"))[, -1]
+new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))[, -1]
+old_props <- read.csv(here(workDir, "results", "proportions_2023.csv"))[, -1]
 
 ## Combine age comp models into one plot --------------------------------------
 compare_props <- function(props, names, last_year) {
@@ -126,9 +127,9 @@ comp_diff <- comp_difference(new = new_props, old = old_props,
 comp_diff
 
 # Save plots ------------------------------------------------------------------
-# ggsave(comp_index, filename = here(results_dir, save_dir, "index_comparison.png"),
-#        width=130, height=160, units="mm", dpi=300)
-# ggsave(all_props, filename = here(results_dir, save_dir, "age_comp_compare.png"),
-#        width=200, height=130, units="mm", dpi=300)
-# ggsave(comp_diff, filename = here(results_dir, save_dir, "age_comp_diff.png"),
-#        width=200, height=130, units="mm", dpi=300)
+ggsave(comp_index, filename = here(workDir, "results", save_dir, "index_comparison.png"),
+       width=130, height=160, units="mm", dpi=300)
+ggsave(all_props, filename = here(workDir, "results", save_dir, "age_comp_compare.png"),
+       width=200, height=130, units="mm", dpi=300)
+ggsave(comp_diff, filename = here(workDir, "results", save_dir, "age_comp_diff.png"),
+       width=200, height=130, units="mm", dpi=300)
