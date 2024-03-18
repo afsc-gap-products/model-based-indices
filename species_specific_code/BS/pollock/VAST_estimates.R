@@ -295,7 +295,7 @@ stop.time <- Sys.time()
 
 # Save results
 
-saveRDS(full_fit, file = here(workDir, "VAST Index", "/VASTfit_full.RDS"))
+saveRDS(full_fit, file = here(workDir, "results", "VAST Index", "VASTfit_full.RDS"))
 # full_fit <- readRDS(file = paste0(workDir,"/VASTfit_full.RDS"))
 
 
@@ -345,7 +345,7 @@ results <- plot_results( full_fit,
 # check_residuals=TRUE,
 # n_samples=0)
 
-saveRDS(results, file = "VASTresults.RDS")
+saveRDS(results, file = here(workDir, "results", "VAST Index", "VASTresults.RDS"))
 
 map_list = make_map_info( "Region"=settings$Region, "spatial_list"=full_fit$spatial_list, "Extrapolation_List"=full_fit$extrapolation_list )
 plot_maps(fit = full_fit, Obj=full_fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
