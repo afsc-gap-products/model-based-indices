@@ -224,30 +224,30 @@ While making custom plots of individual elements would require considerable addi
 plot(
   fit,
   check_residuals = FALSE,
-  working_dir = paste0(here("species_specific_code", "BS", "pollock", "index_comparison"), "/")
+  working_dir = paste0(here("species_specific_code", "BS", "pollock", "index_comparison", "plots"), "/")
 )
 ```
 
 Here we will read in some key plots. We can start by looking at the location of samples and knots.
 
 ```{r plot-knots, echo = TRUE, out.width="6in"}
-knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "Data_and_knots.png"))
+knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "Data_and_knots.png"))
 ```
 
 Then we can look at maps of the predicted population densities (here on the log scale).
 
 ```{r plot-density, echo = TRUE, out.width="6in"}
-knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "ln_density-predicted.png"))
+knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "ln_density-predicted.png"))
 ```
 
 And finally the biomass index.
 
 ```{r plot-index, echo = TRUE, out.width="3in"}
-if (file.exists(here("species_specific_code", "BS", "pollock", "index_comparison", "Index-Biomass.png"))) {
-  knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "Index-Biomass.png"))
+if (file.exists(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "Index-Biomass.png"))) {
+  knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "Index-Biomass.png"))
 }
-if (file.exists(here("species_specific_code", "BS", "pollock", "index_comparison", "Index.png"))) {
-  knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "Index.png"))
+if (file.exists(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "Index.png"))) {
+  knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "Index.png"))
 }
 ```
 
