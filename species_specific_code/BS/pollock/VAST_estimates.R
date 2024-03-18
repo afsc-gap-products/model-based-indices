@@ -329,14 +329,3 @@ write.csv(Index, file = here(workDir, "results", "VAST Index", "Index.csv"),
 
 # map_list = make_map_info( "Region"=settings$Region, "spatial_list"=full_fit$spatial_list, "Extrapolation_List"=full_fit$extrapolation_list )
 # plot_maps(fit = full_fit, Obj=full_fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
-
-# ESP products
-write.csv( results$Range$COG_Table, file="COG.csv", row.names=FALSE )
-
-##save effective area occupied for ESP request
-report = TMB::summary.sdreport(full_fit$parameter_estimates$SD)
-ln_km2 = report[which(rownames(report)=="log_effective_area_ctl"),c('Estimate','Std. Error')]
-Year <- sort(unique(full_fit$year_labels))
-ln_km2 <- as.data.frame(cbind(ln_km2, Year))
-ln_km2 <- ln_km2[which(ln_km2$Year %in% unique(full_fit$data_frame$t_i)),]
-write.csv( ln_km2, file="ln_effective_area.csv", row.names=FALSE )

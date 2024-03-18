@@ -19,11 +19,21 @@ theme_set(theme_sleek())
 
 this_year <- 2023
 
+# Read in VAST results --------------------------------------------------------
+workDir <- here("species_specific_code", "BS", "pollock")
+results <- readRDS(here(workDir, "results", "VAST Index", "VASTresults.RDS"))  # for COG
+full_fit <- readRDS(here(workDir, "results", "VAST Index", "VASTfit_full.RDS"))  # for EAO
+
 # Center of gravity -----------------------------------------------------------
+cog <- data.frame(results$Range$COG_Table)
+cog$Year <- as.numeric(cog$Year)
+cog$COG_hat <- as.numeric(cog$COG_hat)
+cog$SE <- as.numeric(cog$SE)
+# write.csv(cog, file = here(workDir, "results", "COG.csv"), row.names = FALSE)
+
 # Original plot - UTM
-cog <- read.csv(here("VAST_results", "COG.csv")) 
-cog$m[cog$m == 1] <- "Eastings"
-cog$m[cog$m == 2] <- "Northings"
+cog$m[cog$m == 1] <- "Easting"
+cog$m[cog$m == 2] <- "Northing"
 
 cog_plot <- ggplot(cog %>% filter(Year != 2020), aes(x = Year, y = COG_hat)) +
   geom_line(alpha = 0.4) +
@@ -33,18 +43,18 @@ cog_plot <- ggplot(cog %>% filter(Year != 2020), aes(x = Year, y = COG_hat)) +
 cog_plot
 
 # Convert to lat/long and plot
-cog_east <- cog %>% filter(m == "Eastings")
+cog_east <- cog %>% filter(m == "Easting")
 cog_east <- cog_east[, 2:3]  # get rid of ID column and not sure what to do with SE!
-colnames(cog_east)[2] <- "Eastings"
+colnames(cog_east)[2] <- "Easting"
 
-cog_north <- cog %>% filter(m == "Northings")
+cog_north <- cog %>% filter(m == "Northing")
 cog_north <- cog_north[, 2:3]
-colnames(cog_north)[2] <- "Northings"
+colnames(cog_north)[2] <- "Northing"
 
 # Convert to lat & lon with sf
 # TODO: figure out correct CRS
-cog_latlon <- cbind.data.frame(cog_east, Northings = cog_north[, 2]) %>%
-  st_as_sf(coords = c("Eastings", "Northings"), crs = 4326) %>%  # convert to an sf object
+cog_latlon <- cbind.data.frame(cog_east, Northing = cog_north[, 2]) %>%
+  st_as_sf(coords = c("Easting", "Northing"), crs = 4326) %>%  # convert to an sf object
   st_transform(4326) %>%  # transform or convert coordinates of sf
   st_coordinates() %>%  # retrieve coordinates in matrix form
   as_tibble() 
@@ -61,13 +71,26 @@ ggplot(data = world) +
   scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
   xlab(" ") + ylab(" ")
 
-# Area occupied ---------------------------------------------------------------
+# Effective area occupied -----------------------------------------------------
 options(scipen = 999)
-area <- read.csv(here("VAST_results", "ln_effective_area.csv")) 
+
+# Get EAO estimate from VAST fit object
+report <- TMB::summary.sdreport(full_fit$parameter_estimates$SD)
+area <- report[which(rownames(report) == "log_effective_area_ctl"), c('Estimate', 'Std. Error')]
+Year <- sort(unique(full_fit$year_labels))
+area <- as.data.frame(cbind(area, Year))
+area <- ln_km2[which(ln_km2$Year %in% unique(full_fit$data_frame$t_i)), ]
+# write.csv(ln_km2, file = here(workDir, "results", "ln_effective_area.csv"), 
+#           row.names = FALSE)
+
 area$Region <- c(rep("Both", length(1982:this_year) - 1), 
                  rep("EBS", length(1982:this_year) - 1),
                  rep("NBS", length(1982:this_year) - 1))
 colnames(area)[2] <- "error"
+area$Estimate <- as.numeric(area$Estimate)
+area$error <- as.numeric(area$error)
+area$Year <- as.numeric(area$Year)
+
 area$Estimate <- exp(area$Estimate)
 area$error <- area$error
 
