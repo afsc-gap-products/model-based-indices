@@ -13,7 +13,7 @@ knitr::opts_chunk$set(
   comment = "#>",
   fig.width = 7,
   fig.asp = 0.618,
-  cache = TRUE,
+  cache = FALSE,
   autodep = TRUE,
   cache.comments = FALSE
 )
@@ -25,6 +25,7 @@ library(VAST)
 library(sp)
 library(sdmTMB)
 library(dplyr)
+library(ggplot2)
 library(here)
 ```
 
@@ -92,13 +93,12 @@ settings <- make_settings(
 
 Next we will fit a GLMM (generalized linear mixed effects model).
 
-```{r fit, echo = TRUE, results = 'hide'}
- # create folder for saved output:
+```{r fit, echo = TRUE, results = 'hide', cache = FALSE}
+# create folder for saved output:
 dir.create(paste0(here("species_specific_code", "BS", "pollock", "index_comparison")), showWarnings = FALSE)
 
 f <- here("species_specific_code", "BS", "pollock", "index_comparison", "VASTfit_full.RDS")
 if (!file.exists(f)) {
-  tictoc::tic()
   fit <- fit_model(
     settings = settings,
     Lat_i = dat_ll[, "lat"],
@@ -116,7 +116,6 @@ if (!file.exists(f)) {
     covariate_data = covariate_data,
     working_dir = paste0(here("species_specific_code", "BS", "pollock", "index_comparison"), "/")
   )
-  tictoc::toc()
   saveRDS(fit, file = f)
 } else {
   fit <- readRDS(f)
@@ -132,9 +131,6 @@ fit$parameter_estimates$diagnostics
 Now we fit the same model in sdmTMB:
 
 ```{r sdmTMB-example, echo = TRUE, cache=TRUE}
-f1 <- here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB.RDS")
-if (!file.exists(f1)) {
-
 dat <- dat_ll %>% 
   rename(X = lon, Y = lat)
   
@@ -147,11 +143,12 @@ dat <- as.data.frame(spTransform(dat, CRS("+proj=utm +zone=2")))
 dat$X <- dat$coords.x1 / 1000
 dat$Y <- dat$coords.x2 / 1000
 
+f1 <- here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB.RDS")
+if (!file.exists(f1)) {
 # make mesh and fit model
 mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$anisotropic_mesh) #pass same mesh as VAST model
 #mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 50, type = "kmeans") #coarser mesh for experimentation
 
-tictoc::tic()
 fit_sdmTMB <- sdmTMB( 
   cpue_kg_km2 ~ 0 + year_f,
   spatial_varying = ~ cpe,
@@ -166,11 +163,10 @@ fit_sdmTMB <- sdmTMB(
   anisotropy = TRUE,
   do_fit = TRUE
 )
-tictoc::toc()
 fit_sdmTMB
 saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB.RDS"))
 } else {
-fit_sdmTBM <- readRDS(f1)
+fit_sdmTMB <- readRDS(f1)
 }
 
 # diagnose estimation issues due to model structure♦
@@ -221,11 +217,13 @@ plot_betas(fit, fit_sdmTMB, "beta2_ft", sdmTMB_pars = 2)
 While making custom plots of individual elements would require considerable additional code to extract and reformat the necessary components of each output, VAST has a wrapper function that generates the typical plots one may want. Here we stick with the default set of plots (`plot_set = 3`); however, one can specify different standard plots to make by changing the setting of this argument (see `?FishStatsUtils::plot_maps` and `?FishStatsUtils::plot_results`).
 
 ```{r save-plots, echo = TRUE, warning = FALSE, cache=TRUE}
-plot(
-  fit,
-  check_residuals = FALSE,
-  working_dir = paste0(here("species_specific_code", "BS", "pollock", "index_comparison", "plots"), "/")
-)
+if(!file.exists(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "Data_and_knots.png"))) {
+  plot(
+    fit,
+    check_residuals = FALSE,
+    working_dir = paste0(here("species_specific_code", "BS", "pollock", "index_comparison", "plots"), "/")
+  )
+}
 ```
 
 Here we will read in some key plots. We can start by looking at the location of samples and knots.
@@ -243,9 +241,6 @@ knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_co
 And finally the biomass index.
 
 ```{r plot-index, echo = TRUE, out.width="3in"}
-if (file.exists(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "Index-Biomass.png"))) {
-  knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "Index-Biomass.png"))
-}
 if (file.exists(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "Index.png"))) {
   knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "Index.png"))
 }
@@ -273,8 +268,8 @@ grid_ebs <- as.data.frame(spTransform(grid_ll_ebs, CRS("+proj=utm +zone=2")))
 #   crs = "+proj=longlat +datum=WGS84"
 # )
 # grid_ll_ebs <- sf::st_transform(grid_ll_ebs, crs = "+proj=utm +zone=2")
-grid_ebs$X <- grid_ebs$X / 1000 # scale to km to work with smaller numbers
-grid_ebs$Y <- grid_ebs$Y / 1000 
+grid_ebs$X <- grid_ebs$coords.x1 / 1000 # scale to km to work with smaller numbers
+grid_ebs$Y <- grid_ebs$coords.x2 / 1000 
 
 # NBS grid
 grid_ll_nbs <- as.data.frame(northern_bering_sea_grid)
@@ -284,36 +279,46 @@ grid_ll_nbs <- grid_ll_nbs %>%
 coordinates(grid_ll_nbs) <- ~ X + Y
 proj4string(grid_ll_nbs) <- CRS("+proj=longlat +datum=WGS84")
 grid_nbs <- as.data.frame(spTransform(grid_ll_nbs, CRS("+proj=utm +zone=2")))
-grid_nbs$X <- grid_nbs$X / 1000 # scale to km to work with smaller numbers
-grid_nbs$Y <- grid_nbs$Y / 1000 
+grid_nbs$X <- grid_nbs$coords.x1 / 1000 # scale to km to work with smaller numbers
+grid_nbs$Y <- grid_nbs$coords.x2 / 1000 
 
 # combined grid
 grid <- rbind(grid_ebs, grid_nbs)
 
 # replicate extrapolation grids for each year in data
-pred_grid_ebs <- replicate_df(grid_ebs, "year", unique(dat$year))
-pred_grid_nbs <- replicate_df(grid_nbs, "year", unique(dat$year))
-pred_grid <- replicate_df(grid, "year", unique(dat$year))
+pred_grid_ebs <- replicate_df(grid_ebs, "year_f", unique(dat$year_f))
+pred_grid_nbs <- replicate_df(grid_nbs, "year_f", unique(dat$year_f))
+pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
+pred_grid_ebs$year <- as.integer(as.character(factor(pred_grid_ebs$year_f)))
+pred_grid_nbs$year <- as.integer(as.character(factor(pred_grid_nbs$year_f)))
+pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
+# pred_grid_ebs <- bind_rows(pred_grid_ebs, replicate_df(grid_ebs, "year", 2020L))
+# pred_grid_nbs <- bind_rows(pred_grid_nbs, replicate_df(grid_nbs, "year", 2020L))
+# pred_grid <- bind_rows(pred_grid, replicate_df(grid, "year", 2020L))
+
+# join in cold pool covariate
+pred_grid_ebs <- left_join(pred_grid_ebs, select(covariate_data, year, cpe), by = "year")
+pred_grid_nbs <- left_join(pred_grid_nbs, select(covariate_data, year, cpe), by = "year")
+pred_grid <- left_join(pred_grid, select(covariate_data, year, cpe), by = "year")
 
 # get index for total area, and the two subareas of interest (EBS, NBS)
-tictoc::tic()
+area <- pred_grid$area_in_survey_km2
+area_ebs <- pred_grid_ebs$area_in_survey_km2
+area_nbs  <- pred_grid_nbs$area_in_survey_km2
+
 p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
-ind <- get_index(p, bias_correct = TRUE, area = grid$Area_in_survey_km2)
-tictoc::toc()
+ind <- get_index(p, bias_correct = TRUE, area = area)
 
 p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
-ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = grid_ebs$Area_in_survey_km2)
+ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = area_ebs)
 
 p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
-ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = grid_nbs$Area_in_survey_km2)
+ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = area_nbs)
 ```
 
 Now, we can compare the indices. 
-<!-- We will read in the VAST index from the `Index.csv` file created by the `plot.fit_model()` method above. -->
 
 ```{r index-compare, message=FALSE, warning=FALSE}
-library(dplyr)
-library(ggplot2)
 vast_i <- read.csv(here("species_specific_code", "BS", "pollock", "index_comparison", "Index.csv")) %>%
   mutate(index = "VAST", year = as.numeric(Time), est = Estimate, 
     se = Std..Error.for.ln.Estimate.) %>% 
