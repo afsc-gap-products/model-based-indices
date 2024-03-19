@@ -17,17 +17,19 @@ theme_set(theme_sleek())
 
 # Directories
 workDir <- here("species_specific_code", "BS", "pollock")
-save_dir <- "2024 hindcast"
+this_year <- 2024
+
+save_dir <- paste0(this_year, " hindcast")
 
 # Compare Indices of Abundance ------------------------------------------------
 # Read in indices & make sure columns for year = Time, Estimate, Error are named correctly
-index1 <- read.csv(here(workDir, "results", "VAST Index", "Index.csv"), row.names = )
+index1 <- read.csv(here(workDir, "results", "VAST Index", "Index.csv"))
 colnames(index1)[6] <- "error"
 index2 <- read.csv(here(workDir, "results", "Index_2023.csv"))
 colnames(index2)[6] <- "error"
 
-# Function combining & plotting any number of indices. 
-compare_index <- function(indices, names){
+# Combine & plot any number of indices. 
+compare_index <- function(indices, names) {
   df <- data.frame()
   for(i in 1:length(indices)) {
     index <- indices[[i]]
@@ -49,9 +51,39 @@ compare_index <- function(indices, names){
   return(plot)
 }
 
-comp_index <- compare_index(indices = list(index1, index2), 
+index_comp <- compare_index(indices = list(index1, index2), 
                             names = c("2024 hindcast", "2023 production"))
-comp_index
+index_comp
+
+# Difference between two indices
+index_difference <- function(new, old, names, save_results = FALSE) {
+  new <- new <- subset(new, new$Time < this_year)  # make sure new dataset is the same length as the old
+  df <- cbind.data.frame(Year = new$Time,
+                         Stratum = new$Stratum,
+                         Difference = (new$Estimate - old$Estimate) / old$Estimate)
+
+  if(save_results == TRUE) {  # save to drive, if you want. Check file paths.
+    write.csv(df, here(results_dir, save_dir, "index_difference.csv"))
+  }
+  
+  df <- df %>% 
+    filter(Stratum == "EBS") %>% # only Eastern Bering Sea for simplicity
+    # add column for coloring the bars in the plot based on positive/negative
+    mutate(sign = case_when(Difference >= 0 ~ "Positive",
+                            Difference < 0 ~ "Negative"))
+  
+  label <- paste0("Relative change between ", names[1], " and ", names[2])
+  plot <- ggplot(df, aes(x = Year, y = Difference, fill = sign)) +
+    geom_bar(stat = "identity", show.legend = FALSE) +
+    scale_fill_manual(values = c("cornflowerblue", "darkred")) +
+    ylab(label) + labs(color = "Difference")
+  
+  return(plot)
+}
+
+index_diff <- index_difference(new = index1, old = index2,
+                               names = c("2024 hindcast", "2023 production"))
+index_diff
 
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
@@ -85,10 +117,9 @@ all_props <- compare_props(props = list(new_props, old_props),
 all_props
 
 # Plot difference between two models ------------------------------------------
-this_year <- 2024
-new_props <- subset(new_props, new_props$Year < this_year)
-
 comp_difference <- function(new, old, names, save_results = FALSE) {
+  new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
+  
   # Get difference between new and old props
   check_props <- round(new[,1:15] - old[,1:15], 4)
   check_props_tab <- cbind(check_props, new[,16:17])
@@ -109,7 +140,7 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
                             Proportion < 0 ~ "negative"))
   
   # Plot both regions together and without 2020
-  label = paste0("Difference between ", names[1], " and ", names[2])
+  label <- paste0("Difference between ", names[1], " and ", names[2])
   plot <- ggplot(props_plot %>% filter(Region == "EBS" & Year != 2020), 
                       aes(x = Age, y = Proportion, fill = sign)) +
     geom_bar(stat = "identity", show.legend = FALSE) +
@@ -129,6 +160,8 @@ comp_diff
 # Save plots ------------------------------------------------------------------
 ggsave(comp_index, filename = here(workDir, "results", save_dir, "index_comparison.png"),
        width=130, height=160, units="mm", dpi=300)
+ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_difference.png"),
+       width=130, height=180, units="mm", dpi=300)
 ggsave(all_props, filename = here(workDir, "results", save_dir, "age_comp_compare.png"),
        width=200, height=130, units="mm", dpi=300)
 ggsave(comp_diff, filename = here(workDir, "results", save_dir, "age_comp_diff.png"),
