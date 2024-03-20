@@ -32,47 +32,81 @@ cog$COG_hat <- as.numeric(cog$COG_hat)
 cog$SE <- as.numeric(cog$SE)
 # write.csv(cog, file = here(workDir, "results", "ESR products", "COG.csv"), row.names = FALSE)
 
-# Original plot - UTM
 cog$m[cog$m == 1] <- "Easting"
 cog$m[cog$m == 2] <- "Northing"
 
-cog_plot <- ggplot(cog %>% filter(Year != 2020), aes(x = Year, y = COG_hat)) +
+# Original plot - UTM
+cog_utm <- ggplot(cog %>% filter(Year != 2020), aes(x = Year, y = COG_hat)) +
   geom_line(alpha = 0.4) +
   geom_pointrange(aes(ymin = (COG_hat - SE), ymax = (COG_hat + SE))) +
   ylab("Center of Gravity") +
-  ylim(0, NA) +
   facet_wrap(~ m, ncol = 1, scales = "free_y")
-cog_plot
+cog_utm
 
-# Convert to lat/long and plot
-cog_east <- cog %>% filter(m == "Easting")
-cog_east <- cog_east[, 2:3]  # get rid of ID column and not sure what to do with SE!
+# Convert to lat/long using akgfmaps package and plot
+cog_east <- cog %>% filter(m == "Easting" & Year != 2020)
+cog_east <- cog_east[, 2:4]  # get rid of ID column and not sure what to do with SE!
 colnames(cog_east)[2] <- "Easting"
 
-cog_north <- cog %>% filter(m == "Northing")
-cog_north <- cog_north[, 2:3]
+cog_north <- cog %>% filter(m == "Northing" & Year != 2020)
+cog_north <- cog_north[, 2:4]
 colnames(cog_north)[2] <- "Northing"
 
-# Do conversion using akgfmaps package
-cog2 <- cbind.data.frame(X = cog_east[, 2], Y = cog_north[, 2])
+cog_latlon <- cbind.data.frame(X = cog_east[, 2], Y = cog_north[, 2])
 # CRS information for VAST outputs here: 
 # https://github.com/James-Thorson-NOAA/FishStatsUtils/blob/main/R/project_coordinates.R
-cog_latlon <- transform_data_frame_crs(cog2, 
+cog_latlon <- transform_data_frame_crs(cog_latlon, 
                                        coords = c("X", "Y"), 
                                        in.crs = "+proj=utm +datum=WGS84 +units=km +zone=2",
                                        out.crs = "+proj=longlat +datum=WGS84")
 cog_latlon$Year <- cog_east$Year
 
+# Include error in COG estimate before transformation to get min & max values
+cog_min <- cbind.data.frame(X = cog_east[, 2] - cog_east[, 3], 
+                            Y = cog_north[, 2] - cog_north[, 3])
+cog_min <- transform_data_frame_crs(cog_min, 
+                                    coords = c("X", "Y"), 
+                                    in.crs = "+proj=utm +datum=WGS84 +units=km +zone=2",
+                                    out.crs = "+proj=longlat +datum=WGS84")
+
+cog_max <- cbind.data.frame(X = cog_east[, 2] + cog_east[, 3], 
+                            Y = cog_north[, 2] + cog_north[, 3])
+cog_max <- transform_data_frame_crs(cog_max, 
+                                    coords = c("X", "Y"), 
+                                    in.crs = "+proj=utm +datum=WGS84 +units=km +zone=2",
+                                    out.crs = "+proj=longlat +datum=WGS84")
+cog_error <- cbind.data.frame(cog_latlon, 
+                              xmin = cog_min$X, xmax = cog_max$X,
+                              ymin = cog_min$Y, ymax = cog_max$Y)
+
+# Plot on a map
 world <- ne_countries(scale = "medium", returnclass = "sf")
 sf_use_s2(FALSE)  # turn off spherical geometry
 cog_map <- ggplot(data = world) +
   geom_sf() +
   geom_point(data = cog_latlon,
              aes(x = X, y = Y, color = Year)) +
+  # geom_errorbar(data = cog_error,
+  #               aes(x = X, y = Y, ymin = ymin,ymax = ymax, color = Year), alpha = 0.8) +
+  # geom_errorbarh(data = cog_error,
+  #                aes(x = X, y = Y, xmin = xmin,xmax = xmax, color = Year), alpha = 0.8) +
   coord_sf(xlim = c(-179, -157), ylim = c(54, 65), expand = FALSE) +
   scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
   xlab(" ") + ylab(" ")
 cog_map
+
+# Plot as scatter
+cog_scatter <- ggplot(cog_error, aes(x = X, y = Y, color = Year)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = ymin,ymax = ymax, color = Year), alpha = 0.7) +
+  geom_errorbarh(aes(xmin = xmin,xmax = xmax, color = Year), alpha = 0.7) +
+  scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
+  xlab("Longitude (°W)") + ylab("Latitude (°N)")
+cog_scatter
+
+# stick them both together for funsies
+cog_both <- cowplot::plot_grid(cog_map, cog_scatter)
+cog_both
 
 # Effective area occupied -----------------------------------------------------
 options(scipen = 999)
@@ -108,9 +142,11 @@ area_plot <- ggplot(area %>% filter(Year != 2020), aes(x = Year, y = Estimate, c
 area_plot
 
 # Save plots ------------------------------------------------------------------
-ggsave(cog_plot, filename = here(workDir, "results", "ESR products", "2023_pollock_COG.png"),
+ggsave(cog_utm, filename = here(workDir, "results", "ESR products", "2023_pollock_COG_utm.png"),
        width = 150, height = 180, unit = "mm", dpi = 300)
 ggsave(cog_map, filename = here(workDir, "results", "ESR products", "2023_pollock_COG_map.png"),
        width = 110, height = 90, unit = "mm", dpi = 300)
+ggsave(cog_scatter, filename = here(workDir, "results", "ESR products", "2023_pollock_COG_scatter.png"),
+       width = 130, height = 100, unit = "mm", dpi = 300)
 ggsave(area_plot, filename = here(workDir, "results", "ESR products", "2023_pollock_area.png"),
        width = 150, height = 100, unit = "mm", dpi = 300)
