@@ -314,6 +314,8 @@ ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = area_ebs)
 
 p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
 ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = area_nbs)
+save(ind, ind_ebs, ind_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "indices.RData"))
+save(p, p_ebs, p_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "predictions.RData"))
 ```
 
 Now, we can compare the indices. 
