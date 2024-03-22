@@ -301,19 +301,14 @@ pred_grid_ebs <- left_join(pred_grid_ebs, select(covariate_data, year, cpe), by 
 pred_grid_nbs <- left_join(pred_grid_nbs, select(covariate_data, year, cpe), by = "year")
 pred_grid <- left_join(pred_grid, select(covariate_data, year, cpe), by = "year")
 
-# get index for total area, and the two subareas of interest (EBS, NBS)
-area <- pred_grid$area_in_survey_km2
-area_ebs <- pred_grid_ebs$area_in_survey_km2
-area_nbs  <- pred_grid_nbs$area_in_survey_km2
-
 p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
-ind <- get_index(p, bias_correct = TRUE, area = area)
+ind <- get_index(p, bias_correct = TRUE, area = p$fake_nd$area_in_survey_km2)
 
 p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
-ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = area_ebs)
+ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = p_ebs$fake_nd$area_in_survey_km2)
 
 p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
-ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = area_nbs)
+ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = p_nbs$fake_nd$area_in_survey_km2)
 save(ind, ind_ebs, ind_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "indices.RData"))
 save(p, p_ebs, p_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "predictions.RData"))
 ```
