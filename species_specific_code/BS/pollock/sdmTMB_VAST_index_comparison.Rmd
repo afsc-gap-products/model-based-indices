@@ -302,13 +302,17 @@ pred_grid_nbs <- left_join(pred_grid_nbs, select(covariate_data, year, cpe), by 
 pred_grid <- left_join(pred_grid, select(covariate_data, year, cpe), by = "year")
 
 p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
-ind <- get_index(p, bias_correct = TRUE, area = p$fake_nd$area_in_survey_km2)
+ind <- get_index(p, bias_correct = TRUE, area = c(p$area_in_survey_km2, p$fake_nd$area_in_survey_km2))
+ind$stratum <- "Both"
 
 p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
-ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = p_ebs$fake_nd$area_in_survey_km2)
+ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = c(p_ebs$area_in_survey_km2, p_ebs$fake_nd$area_in_survey_km2))
+ind_ebs$stratum <- "EBS"
 
 p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
-ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = p_nbs$fake_nd$area_in_survey_km2)
+ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = c(p_nbs$area_in_survey_km2, p_nbs$fake_nd$area_in_survey_km2))
+ind_nbs$stratum <- "NBS"
+
 save(ind, ind_ebs, ind_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "indices.RData"))
 save(p, p_ebs, p_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "predictions.RData"))
 ```
@@ -319,12 +323,25 @@ Now, we can compare the indices.
 vast_i <- read.csv(here("species_specific_code", "BS", "pollock", "index_comparison", "Index.csv")) %>%
   mutate(index = "VAST", year = as.numeric(Time), est = Estimate, 
     se = Std..Error.for.ln.Estimate.) %>% 
-  select(index, year, est, se) %>% 
+  select(index, year, est, se, stratum = Stratum) %>% 
   mutate(lwr = exp(log(est) + qnorm(0.025) * se)) %>% 
   mutate(upr = exp(log(est) + qnorm(0.975) * se))
-sdm_i <- ind %>% mutate(index = "sdmTMB")
+sdm_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "sdmTMB")
 both_i <- bind_rows(sdm_i, vast_i) %>% filter(est > 0)
-ggplot(both_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
+
+ggplot(filter(both_i, stratum == "Both"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
+  geom_ribbon(alpha = 0.1) +
+  geom_line(alpha = 0.8) + 
+  ylim(0, max(both_i$upr)) +
+  coord_cartesian(expand = FALSE)
+
+ggplot(filter(both_i, stratum == "EBS"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
+  geom_ribbon(alpha = 0.1) +
+  geom_line(alpha = 0.8) + 
+  ylim(0, max(both_i$upr)) +
+  coord_cartesian(expand = FALSE)
+
+ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
   geom_ribbon(alpha = 0.1) +
   geom_line(alpha = 0.8) + 
   ylim(0, max(both_i$upr)) +
