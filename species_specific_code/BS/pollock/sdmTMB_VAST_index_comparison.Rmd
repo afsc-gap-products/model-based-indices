@@ -282,21 +282,21 @@ grid_nbs <- as.data.frame(spTransform(grid_ll_nbs, CRS("+proj=utm +zone=2")))
 grid_nbs$X <- grid_nbs$coords.x1 / 1000 # scale to km to work with smaller numbers
 grid_nbs$Y <- grid_nbs$coords.x2 / 1000 
 
+# combined grid
+grid <- rbind(grid_ebs, grid_nbs)
+
 # replicate extrapolation grids for each year in data
 pred_grid_ebs <- replicate_df(grid_ebs, "year_f", unique(dat$year_f))
 pred_grid_nbs <- replicate_df(grid_nbs, "year_f", unique(dat$year_f))
+pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
 pred_grid_ebs$year <- as.integer(as.character(factor(pred_grid_ebs$year_f)))
 pred_grid_nbs$year <- as.integer(as.character(factor(pred_grid_nbs$year_f)))
-# pred_grid_ebs <- bind_rows(pred_grid_ebs, replicate_df(grid_ebs, "year", 2020L))
-# pred_grid_nbs <- bind_rows(pred_grid_nbs, replicate_df(grid_nbs, "year", 2020L))
-# pred_grid <- bind_rows(pred_grid, replicate_df(grid, "year", 2020L))
+pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
 
 # join in cold pool covariate
 pred_grid_ebs <- left_join(pred_grid_ebs, select(covariate_data, year, cpe), by = "year")
 pred_grid_nbs <- left_join(pred_grid_nbs, select(covariate_data, year, cpe), by = "year")
-
-# combine grids for whole area index
-pred_grid <- rbind(pred_grid_ebs, pred_grid_nbs)
+pred_grid <- left_join(pred_grid, select(covariate_data, year, cpe), by = "year")
 
 p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
 p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
