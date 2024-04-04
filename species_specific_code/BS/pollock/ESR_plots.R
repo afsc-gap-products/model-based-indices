@@ -12,6 +12,7 @@ library(viridis)
 library(sf)
 library(rnaturalearth)
 library(akgfmaps)
+library(cowplot)
 
 # Set ggplot theme
 devtools::install_github("seananderson/ggsidekick")
@@ -38,8 +39,8 @@ cog$m[cog$m == 2] <- "Northing"
 # Original plot - UTM
 cog_utm <- ggplot(cog %>% filter(Year != 2020), aes(x = Year, y = COG_hat)) +
   geom_line(alpha = 0.4) +
-  geom_pointrange(aes(ymin = (COG_hat - SE), ymax = (COG_hat + SE))) +
-  ylab("Center of Gravity") +
+  geom_pointrange(aes(ymin = (COG_hat - SE), ymax = (COG_hat + SE)), size = 0.3) +
+  ylab(" ") +
   facet_wrap(~ m, ncol = 1, scales = "free_y")
 cog_utm
 
@@ -85,17 +86,17 @@ sf_use_s2(FALSE)  # turn off spherical geometry
 cog_map <- ggplot(data = world) +
   geom_sf() +
   geom_point(data = cog_latlon,
-             aes(x = X, y = Y, color = Year)) +
+             aes(x = X, y = Y, color = Year), size = 1) +
   # geom_errorbar(data = cog_error,
   #               aes(x = X, y = Y, ymin = ymin,ymax = ymax, color = Year), alpha = 0.8) +
   # geom_errorbarh(data = cog_error,
   #                aes(x = X, y = Y, xmin = xmin,xmax = xmax, color = Year), alpha = 0.8) +
   coord_sf(xlim = c(-179, -157), ylim = c(54, 65), expand = FALSE) +
   scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
-  xlab(" ") + ylab(" ")
+  xlab(" ") + ylab(" ") 
 cog_map
 
-# Plot as scatter
+# Plot as scatter (sparkleplot)
 cog_scatter <- ggplot(cog_error, aes(x = X, y = Y, color = Year)) +
   geom_point() +
   geom_errorbar(aes(ymin = ymin,ymax = ymax, color = Year), alpha = 0.7) +
@@ -104,9 +105,19 @@ cog_scatter <- ggplot(cog_error, aes(x = X, y = Y, color = Year)) +
   xlab("Longitude (°W)") + ylab("Latitude (°N)")
 cog_scatter
 
-# stick them both together for funsies
-cog_both <- cowplot::plot_grid(cog_map, cog_scatter)
-cog_both
+# Add map as insert to sparkleplot
+cog_inset <- ggdraw() +
+  draw_plot(cog_scatter) +
+  draw_plot(cog_map + 
+              theme(legend.position = "none") +
+              guides(x = "none", y = "none") +
+              theme(plot.background = element_rect(fill = "transparent")), 
+            x = 0.77, y = 0.7, width = 0.25, height = 0.25)
+cog_inset
+
+# Combine sparkleplot and time-series plot
+cog_all <- plot_grid(cog_inset, cog_utm)
+cog_all
 
 # Effective area occupied -----------------------------------------------------
 options(scipen = 999)
@@ -148,5 +159,9 @@ ggsave(cog_map, filename = here(workDir, "results", "ESR products", "2023_polloc
        width = 110, height = 90, unit = "mm", dpi = 300)
 ggsave(cog_scatter, filename = here(workDir, "results", "ESR products", "2023_pollock_COG_scatter.png"),
        width = 130, height = 100, unit = "mm", dpi = 300)
+ggsave(cog_inset, filename = here(workDir, "results", "ESR products", "2023_pollock_COG_inset.png"),
+       width = 130, height = 100, unit = "mm", dpi = 300)
+ggsave(cog_all, filename = here(workDir, "results", "ESR products", "2023_pollock_COG_all.png"),
+       width = 240, height = 100, unit = "mm", dpi = 300)
 ggsave(area_plot, filename = here(workDir, "results", "ESR products", "2023_pollock_area.png"),
        width = 150, height = 100, unit = "mm", dpi = 300)
