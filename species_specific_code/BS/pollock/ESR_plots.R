@@ -142,14 +142,16 @@ area$Year <- as.numeric(area$Year)
 area$Estimate <- exp(area$Estimate)
 area$error <- area$error
 
-area_plot <- ggplot(area %>% filter(Year != 2020), aes(x = Year, y = Estimate, color = Region, shape = Region)) +
+area_plot <- ggplot(area %>% filter(Year != 2020), 
+                    aes(x = Year, y = Estimate, 
+                        color = Region, shape = Region)) +
   geom_line(alpha = 0.4) +
   geom_pointrange(aes(ymin = (Estimate - (Estimate * error)), 
                       ymax = (Estimate + (Estimate * error))),
                   alpha = 0.8) +
   scale_y_continuous(labels = scales::comma, limits = c(0, NA)) +
-  scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
-  ylab("Effective area occupied (km^2)")
+  scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.7) +
+  ylab(expression(paste("Effective Area Occupied (", km^2, ")")))
 area_plot
 
 # Save plots ------------------------------------------------------------------
