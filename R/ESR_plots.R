@@ -19,16 +19,21 @@ devtools::install_github("seananderson/ggsidekick")
 library(ggsidekick)
 theme_set(theme_sleek())
 
+# SET-UP ----------------------------------------------------------------------
 this_year <- 2023
 
-# Read in VAST results --------------------------------------------------------
+# Read in VAST results - update for each species
 workDir <- here("species_specific_code", "BS", "pollock", "results")
 VAST_results <- readRDS(here(workDir, "VAST Index", "VASTresults.RDS"))  # for COG
 VAST_fit <- readRDS(here(workDir, "VAST Index", "VASTfit_full.RDS"))  # for EAO
 
+# Create directory for saving output 
+saveDir <- here(workDir, paste0("ESR products ", this_year))
+dir.create(saveDir, showWarnings = FALSE)
+
 
 # Center of gravity -----------------------------------------------------------
-cog <- function(results = VAST_results, dir = here(workDir, "ESR products"), save_data = TRUE, save_plots = TRUE) {
+cog <- function(results = VAST_results, dir = saveDir, save_data = TRUE, save_plots = TRUE) {
   cog <- data.frame(results$Range$COG_Table)
   cog$Year <- as.numeric(cog$Year)
   cog$COG_hat <- as.numeric(cog$COG_hat)
@@ -147,7 +152,7 @@ cog_plots$all
 # Effective area occupied -----------------------------------------------------
 options(scipen = 999)
 
-eao <- function(fit = VAST_fit, dir = here(workDir, "ESR products"), save_data = TRUE, save_plot = TRUE) {
+eao <- function(fit = VAST_fit, dir = saveDir, save_data = TRUE, save_plot = TRUE) {
   # Get EAO estimate from VAST fit object
   report <- TMB::summary.sdreport(fit$parameter_estimates$SD)
   area <- report[which(rownames(report) == "log_effective_area_ctl"), c('Estimate', 'Std. Error')]
