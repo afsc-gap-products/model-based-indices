@@ -89,7 +89,7 @@ family = list(
 #Data$Year = factor(Data$Year)
 myfit = tinyVAST(
   data = Data,
-  formula = Catch_KG ~ 0 + Year_Age,
+  formula = Abundance_per_hectare ~ 0 + Year_Age,  # SNW: needed to change column name
   sem = sem,
   dsem = dsem,
   family = family,
@@ -100,6 +100,13 @@ myfit = tinyVAST(
   spatial_graph = mesh,
   control = control
 )
+
+# TODO: (SNW) figure out why this isn't working.
+# Error in nlminb(start = opt$par, objective = obj$fn, gradient = obj$gr,  : 
+# NA/NaN gradient evaluation
+# In addition: Warning message:
+#   In nlminb(start = opt$par, objective = obj$fn, gradient = obj$gr,  :
+#               NA/NaN function evaluation
 
 #' After the model is fitted, we then apply area-expansion and the epsilon 
 #' bias-correction method to predict abundance-at-age, and convert that to a proportion:
