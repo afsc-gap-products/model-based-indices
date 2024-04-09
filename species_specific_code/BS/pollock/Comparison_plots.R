@@ -87,8 +87,12 @@ index_diff
 
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
-new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))[, -1]
-old_props <- read.csv(here(workDir, "results", "proportions_2023.csv"))[, -1]
+old_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))[, -1]
+new_props <- read.csv(here(workDir, "results", "tinyVAST_props.csv"))
+
+# Update old_props to match tinyVAST test output
+tiny_years <- c(2010:2019, 2021:2023)
+old_props <- old_props %>% filter(Year %in% tiny_years & Region == "EBS")
 
 ## Combine age comp models into one plot --------------------------------------
 compare_props <- function(props, names, last_year) {
@@ -102,18 +106,17 @@ compare_props <- function(props, names, last_year) {
     df <- rbind.data.frame(df, prop)
   }
   
-  plot <- ggplot(df %>% filter(Year != 2020 & Region == "EBS"),
-                 aes(x = Age, y = Proportion, fill = version)) +
+  plot <- ggplot(df, aes(x = Age, y = Proportion, fill = version)) +
     geom_bar(stat = "identity", position = "dodge") +
     scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
     scale_x_discrete(breaks = c(1, 5, 10, 15)) +
     ylab("Proportion-at-age") +
-    facet_wrap(~ Year, ncol = 8) 
+    facet_wrap(~ Year, ncol = 3) 
   return(plot)
 }
 
 all_props <- compare_props(props = list(new_props, old_props),
-                           names = c("2024 hindcast", "2023 production"))
+                           names = c("tinyVAST", "2023 production"))
 all_props
 
 # Plot difference between two models ------------------------------------------
@@ -141,19 +144,18 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
   
   # Plot both regions together and without 2020
   label <- paste0("Difference between ", names[1], " and ", names[2])
-  plot <- ggplot(props_plot %>% filter(Region == "EBS" & Year != 2020), 
-                      aes(x = Age, y = Proportion, fill = sign)) +
+  plot <- ggplot(props_plot, aes(x = Age, y = Proportion, fill = sign)) +
     geom_bar(stat = "identity", show.legend = FALSE) +
     scale_fill_manual(values = c("cornflowerblue", "darkred")) +
     scale_x_discrete(breaks = c(1, 5, 10, 15)) +
     ylab(label) +
-    facet_wrap(~ Year, ncol = 8) 
+    facet_wrap(~ Year, ncol = 3) 
   
   return(plot)
 }
 
 comp_diff <- comp_difference(new = new_props, old = old_props,
-                             names = c("2024 hindcast", "2023 production"),
+                             names = c("tinyVAST", "2023 production"),
                              save_results = FALSE)
 comp_diff
 
@@ -162,7 +164,7 @@ ggsave(comp_index, filename = here(workDir, "results", save_dir, "index_comparis
        width=130, height=160, units="mm", dpi=300)
 ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_difference.png"),
        width=130, height=180, units="mm", dpi=300)
-ggsave(all_props, filename = here(workDir, "results", save_dir, "age_comp_compare.png"),
-       width=200, height=130, units="mm", dpi=300)
-ggsave(comp_diff, filename = here(workDir, "results", save_dir, "age_comp_diff.png"),
-       width=200, height=130, units="mm", dpi=300)
+ggsave(all_props, filename = here(workDir, "results", "age_comp_compare_tinyVAST.png"),
+       width=130, height=130, units="mm", dpi=300)
+ggsave(comp_diff, filename = here(workDir, "results", "age_comp_diff_tinyVAST.png"),
+       width=100, height=130, units="mm", dpi=300)
