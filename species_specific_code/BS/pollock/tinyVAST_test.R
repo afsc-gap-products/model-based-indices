@@ -101,15 +101,6 @@ myfit = tinyVAST(
   control = control
 )
 
-# TODO: (SNW) figure out why this isn't working.
-# Error in nlminb(start = opt$par, objective = obj$fn, gradient = obj$gr,  : 
-# NA/NaN gradient evaluation
-# In addition: Warning message:
-#   In nlminb(start = opt$par, objective = obj$fn, gradient = obj$gr,  :
-#               NA/NaN function evaluation
-
-#' After the model is fitted, we then apply area-expansion and the epsilon 
-#' bias-correction method to predict abundance-at-age, and convert that to a proportion:
 #' ----------------------------------------------------------------------------
 # Get shapefile for survey extent
 data( bering_sea )
@@ -163,7 +154,6 @@ rownames(myvast) = 1:15
 mytiny = N_ct
 rownames(mytiny) = 1:15
 
-#
 longvast = cbind( expand.grid(dimnames(myvast)), "p"=as.numeric(myvast), "method"="VAST" )
 longtiny = cbind( expand.grid(dimnames(mytiny)), "p"=as.numeric(mytiny), "method"="tinyVAST" )
 long = rbind( longvast, longtiny )
@@ -173,3 +163,12 @@ ggplot( data=long, aes(x=Var2, y=p, col=method) ) +
   facet_grid( rows=vars(Var1), scales="free" ) +
   geom_point( ) +
   scale_y_log10()
+
+# SNW: Reformat and save a version for comparison plots -----------------------
+tiny_out <- tibble::rownames_to_column(data.frame(t(mytiny)), "VALUE")
+tiny_out <- tiny_out[, c(2:16, 1)]
+colnames(tiny_out) <- c("age_1", "age_2", "age_3", "age_4", "age_5", "age_6",
+                        "age_7", "age_8", "age_9", "age_10", "age_11", "age_12",
+                        "age_13", "age_14", "age_15", "Year")
+tiny_out$Region <- "EBS"
+write.csv(tiny_out, "species_specific_code/BS/pollock/results/tinyVAST_props.csv", row.names = FALSE)
