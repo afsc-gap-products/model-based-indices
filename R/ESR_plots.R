@@ -24,6 +24,8 @@ this_year <- 2023
 
 # Read in VAST results - update for each species
 workDir <- here("species_specific_code", "BS", "pollock", "results")
+# workDir <- here("VAST_results", "BS", "nrs")
+
 VAST_results <- readRDS(here(workDir, "VAST Index", "VASTresults.RDS"))  # for COG
 VAST_fit <- readRDS(here(workDir, "VAST Index", "VASTfit_full.RDS"))  # for EAO
 
@@ -33,7 +35,7 @@ dir.create(saveDir, showWarnings = FALSE)
 
 
 # Center of gravity -----------------------------------------------------------
-cog <- function(results = VAST_results, dir = saveDir, save_data = TRUE, save_plots = TRUE) {
+cog <- function(results = VAST_results, dir = saveDir, save_data = FALSE, save_plots = FALSE) {
   cog <- data.frame(results$Range$COG_Table)
   cog$Year <- as.numeric(cog$Year)
   cog$COG_hat <- as.numeric(cog$COG_hat)
@@ -142,7 +144,7 @@ cog <- function(results = VAST_results, dir = saveDir, save_data = TRUE, save_pl
            width = 240, height = 100, unit = "mm", dpi = 300)
   }
   
-  return(list(ts = ts, map = map, sparkle = sparkle, all = all))
+  return(list(table = cog_latlon, table_error = cog_error, ts = ts, map = map, sparkle = sparkle, all = all))
 }
 
 cog_plots <- cog()
@@ -198,3 +200,47 @@ eao <- function(fit = VAST_fit, dir = saveDir, save_data = TRUE, save_plot = TRU
 
 eao_plot <- eao()
 eao_plot
+
+
+# Combine regional COG into one map -------------------------------------------
+# Read in each species in the region and combine into a list
+bs_pol <- readRDS(here("species_specific_code", "BS", "pollock", "results", "VAST Index", "VASTresults.RDS"))
+bs_cod <- readRDS(here("VAST_results", "BS", "pcod", "VASTresults.RDS"))
+
+bs <- list(bs_pol, bs_cod) 
+species <- c("Walleye pollock", "Pacific cod")
+
+# Run the COG function for each species and combine together
+cog_bs <- data.frame()
+cog_bs_error <- data.frame()
+for(i in 1:length(bs)) {
+  out <- cog(results = bs[[i]], dir = saveDir, save_data = FALSE, save_plots = FALSE)
+  df <- out$table
+  df$Species <- species[i]
+  cog_bs <- rbind.data.frame(cog_bs, df)
+  
+  df_error <- out$table_error
+  df_error$Species <- species[i]
+  cog_bs_error <- rbind.data.frame(cog_bs_error, df_error)
+}
+
+# Plot all species on one plot
+world <- ne_countries(scale = "medium", returnclass = "sf")
+sf_use_s2(FALSE)  # turn off spherical geometry
+cog_bs_map <- ggplot(data = world) +
+  geom_sf() +
+  geom_point(data = cog_bs %>% filter(Year == this_year),
+             aes(x = X, y = Y, color = Species, shape = Species)) +
+  geom_errorbar(data = cog_bs_error %>% filter(Year == this_year),
+                aes(x = X, y = Y, ymin = ymin,ymax = ymax, color = Species), 
+                alpha = 0.8, width = 0) +
+  geom_errorbarh(data = cog_bs_error %>% filter(Year == this_year),
+                 aes(x = X, y = Y, xmin = xmin,xmax = xmax, color = Species), 
+                 alpha = 0.8, height = 0) +
+  coord_sf(xlim = c(-179, -157), ylim = c(54, 65), expand = FALSE) +
+  scale_color_viridis(option = "plasma", discrete = TRUE, end = 0.9) +
+  xlab(" ") + ylab(" ") 
+cog_bs_map
+
+ggsave(cog_bs_map, filename = here("VAST_results", "BS", "COG_bs_map.png"), 
+       width = 110, height = 90, unit = "mm", dpi = 300)
