@@ -122,12 +122,13 @@ cog <- function(results = VAST_results, dir = saveDir, save_data = FALSE, save_p
   
   # Inset map into sparkleplot
   inset <- ggdraw() +
-    draw_plot(sparkle) +
     draw_plot(map + 
                 theme(legend.position = "none") +
                 guides(x = "none", y = "none") +
                 theme(plot.background = element_rect(fill = "transparent")), 
-              x = 0.77, y = 0.7, width = 0.25, height = 0.25)
+              x = 0.77, y = 0.7, width = 0.25, height = 0.25) +
+    draw_plot(sparkle +
+                theme(plot.background = element_rect(fill = "transparent"))) +
   
   # Combine sparkleplot and time-series plot
   all <- plot_grid(inset, ts)
@@ -190,7 +191,6 @@ eao <- function(fit = VAST_fit, dir = saveDir, save_data = TRUE, save_plot = TRU
                     ymax = (Estimate + (Estimate * error)),
                     fill = Region),
                     alpha = 0.3) +
-                    alpha = 0.8) +
     scale_y_continuous(labels = scales::comma, limits = c(0, NA)) +
     scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.7) +
     scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.7) +
@@ -227,7 +227,7 @@ species <- c("Walleye pollock", "Pacific cod", "Yellowfin sole", "Northern rock 
 cog_bs <- data.frame()
 cog_bs_error <- data.frame()
 for(i in 1:length(bs)) {
-  out <- cog(results = bs[[i]], dir = saveDir, save_data = FALSE, save_plots = FALSE)
+  out <- cog(results = bs[[i]], save_data = FALSE, save_plots = FALSE)
   df <- out$table
   df$Species <- species[i]
   cog_bs <- rbind.data.frame(cog_bs, df)
@@ -259,3 +259,18 @@ cog_bs_map
 
 ggsave(cog_bs_map, filename = here("VAST_results", "BS", "COG_bs_map.png"), 
        width = 110, height = 70, unit = "mm", dpi = 300)
+
+# Combine all COG plots together ----------------------------------------------
+cog_bs_plots <- list()
+for(i in 1:length(bs)) {
+  out <- cog(results = bs[[i]], save_data = FALSE, save_plots = FALSE)
+  cog_bs_plots[[i]] <- out$all
+}
+
+cog_combined <- plot_grid(plotlist = cog_bs_plots, labels = species,
+                          ncol = 1, 
+                          label_size = 10, label_x = 0.5, hjust = 0.5)
+cog_combined
+
+ggsave(cog_combined, filename = here("VAST_results", "BS", "COG_bs_all.png"), 
+       width = 240, height = 300, unit = "mm", dpi = 300)
