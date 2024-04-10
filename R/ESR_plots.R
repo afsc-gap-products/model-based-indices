@@ -56,8 +56,8 @@ cog <- function(results = VAST_results, dir = saveDir, save_data = FALSE, save_p
   
   # Original plot - UTM
   ts <- ggplot(cog %>% filter(Year != 2020), aes(x = Year, y = COG_hat)) +
-    geom_line(alpha = 0.4) +
-    geom_pointrange(aes(ymin = (COG_hat - SE), ymax = (COG_hat + SE)), size = 0.3) +
+    geom_line() +
+    geom_ribbon(aes(ymin = (COG_hat - SE), ymax = (COG_hat + SE)), alpha = 0.2) +
     ylab(" ") +
     facet_wrap(~ m, ncol = 1, scales = "free_y")
   
@@ -184,15 +184,16 @@ eao <- function(fit = VAST_fit, dir = saveDir, save_data = TRUE, save_plot = TRU
   area$Estimate <- exp(area$Estimate)
   area$error <- area$error
   
-  plot <- ggplot(area %>% filter(Year != 2020), 
-                      aes(x = Year, y = Estimate, 
-                          color = Region, shape = Region)) +
-    geom_line(alpha = 0.4) +
-    geom_pointrange(aes(ymin = (Estimate - (Estimate * error)), 
-                        ymax = (Estimate + (Estimate * error))),
+  plot <- ggplot(area %>% filter(Year != 2020), aes(x = Year, y = Estimate)) +
+    geom_line(alpha = 0.8, aes(color = Region, linetype = Region)) +
+    geom_ribbon(aes(ymin = (Estimate - (Estimate * error)), 
+                    ymax = (Estimate + (Estimate * error)),
+                    fill = Region),
+                    alpha = 0.3) +
                     alpha = 0.8) +
     scale_y_continuous(labels = scales::comma, limits = c(0, NA)) +
     scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.7) +
+    scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.7) +
     ylab(expression(paste("Effective Area Occupied (", km^2, ")")))
   
   if(save_data == TRUE) {
