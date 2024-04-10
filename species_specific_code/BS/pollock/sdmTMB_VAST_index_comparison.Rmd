@@ -282,17 +282,21 @@ grid_nbs <- as.data.frame(spTransform(grid_ll_nbs, CRS("+proj=utm +zone=2")))
 grid_nbs$X <- grid_nbs$coords.x1 / 1000 # scale to km to work with smaller numbers
 grid_nbs$Y <- grid_nbs$coords.x2 / 1000 
 
-# combine grid and aggregate to reduce cells
-grid_sf <- sf::st_as_sf(rbind(grid_ebs, grid_nbs), 
-                        coords = c("coords.x1", "coords.x2"), 
-                        crs = sf::st_crs(3338))
-grid_ras <- stars::st_rasterize(grid_sf %>% select(area_in_survey_km2, geometry))
-grid <- terra::as.data.frame(terra::aggregate(terra::rast(grid_ras), 
-                                              fact = 2, 
-                                              fun = "sum", 
-                                              na.rm = TRUE), 
-                             xy = TRUE) %>%
-  mutate(X = x / 1000, Y = y / 1000) # scale to km to work with smaller numbers
+# Combined grid
+grid <- bind_rows(grid_nbs, grid_ebs)
+
+# combine grid and aggregate to reduce cells if have computational issues
+# However, this example is not replicating the scale of the combined index
+# grid_sf <- sf::st_as_sf(rbind(grid_ebs, grid_nbs), 
+#                         coords = c("coords.x1", "coords.x2"), 
+#                         crs = sf::st_crs(3338))
+# grid_ras <- stars::st_rasterize(grid_sf %>% select(area_in_survey_km2, geometry))
+# grid <- terra::as.data.frame(terra::aggregate(terra::rast(grid_ras), 
+#                                               fact = 2, 
+#                                               fun = "sum", 
+#                                               na.rm = TRUE), 
+#                              xy = TRUE) %>%
+#   mutate(X = x / 1000, Y = y / 1000) # scale to km to work with smaller numbers
 
 # replicate extrapolation grids for each year in data
 pred_grid_ebs <- replicate_df(grid_ebs, "year_f", unique(dat$year_f))
