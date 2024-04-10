@@ -136,13 +136,13 @@ saveRDS(object = fit$ParHat,
 ## General output plots, DHARMa residuals
 results <- FishStatsUtils::plot_results( 
   fit = fit, 
-  working_dir = paste0(folder, "results_age/output_plots/"),
+  working_dir = paste0(folder, "results_age/"),
   plot_set = NULL,
   strata_names = strata_names, 
   check_residuals = TRUE)
 
 saveRDS(object = results, 
-        file = paste0(folder, "results_age/output_plots/diagnostics.RDS"))
+        file = paste0(folder, "results_age/VASTresults.RDS"))
 
 ## Mapping information
 map_list = FishStatsUtils::make_map_info( 
