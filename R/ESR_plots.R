@@ -13,11 +13,12 @@ library(sf)
 library(rnaturalearth)
 library(akgfmaps)
 library(cowplot)
+library(VAST)
 
 # Set ggplot theme
-devtools::install_github("seananderson/ggsidekick")
-library(ggsidekick)
-theme_set(theme_sleek())
+# devtools::install_github("seananderson/ggsidekick")
+# library(ggsidekick)
+# theme_set(theme_sleek())
 
 # SET-UP ----------------------------------------------------------------------
 this_year <- 2023
@@ -26,7 +27,7 @@ this_year <- 2023
 # workDir <- here("species_specific_code", "BS", "pollock", "results")
 workDir <- here("VAST_results", "BS", "yellowfin")
 
-VAST_results <- readRDS(here(workDir, "VAST Index", "VASTresults.RDS"))  # for COG
+# VAST_results <- readRDS(here(workDir, "VAST Index", "VASTresults.RDS"))  # for COG
 VAST_fit <- readRDS(here(workDir, "yellowfin_sole_VASTfit.RDS"))  # for EAO
 
 # Make a results object
