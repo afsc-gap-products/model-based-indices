@@ -216,9 +216,11 @@ eao_plot
 # Read in each species in the region and combine into a list
 bs_pol <- readRDS(here("species_specific_code", "BS", "pollock", "results", "VAST Index", "VASTresults.RDS"))
 bs_cod <- readRDS(here("VAST_results", "BS", "pcod", "VASTresults.RDS"))
+bs_yel <- readRDS(here("VAST_results", "BS", "yellowfin", "diagnostics.RDS"))
+bs_nrs <- readRDS(here("VAST_results", "BS", "nrs", "diagnostics.RDS"))
 
-bs <- list(bs_pol, bs_cod) 
-species <- c("Walleye pollock", "Pacific cod")
+bs <- list(bs_pol, bs_cod, bs_yel, bs_nrs) 
+species <- c("Walleye pollock", "Pacific cod", "Yellowfin sole", "Northern rock sole")
 
 # Run the COG function for each species and combine together
 cog_bs <- data.frame()
@@ -249,8 +251,10 @@ cog_bs_map <- ggplot(data = world) +
                  alpha = 0.8, height = 0) +
   coord_sf(xlim = c(-179, -157), ylim = c(54, 65), expand = FALSE) +
   scale_color_viridis(option = "plasma", discrete = TRUE, end = 0.9) +
-  xlab(" ") + ylab(" ") 
+  xlab(" ") + ylab(" ") + 
+  ggtitle("Center of Gravity for 2023") +
+  theme(legend.title=element_blank())
 cog_bs_map
 
 ggsave(cog_bs_map, filename = here("VAST_results", "BS", "COG_bs_map.png"), 
-       width = 110, height = 90, unit = "mm", dpi = 300)
+       width = 110, height = 70, unit = "mm", dpi = 300)
