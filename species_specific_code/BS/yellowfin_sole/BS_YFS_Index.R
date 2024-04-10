@@ -161,7 +161,7 @@ saveRDS(object = fit,
 ## Save diagnostics and other outputs
 results <- FishStatsUtils::plot_results( 
   fit = fit, 
-  working_dir = paste0(folder, "results_index/output_plots/"),
+  working_dir = paste0(folder, "results_index/"),
   zrange = c(-3, 3), 
   n_cells = 600, 
   strata_names = c("Both", "EBS", "NBS"), 
@@ -169,7 +169,7 @@ results <- FishStatsUtils::plot_results(
   n_samples = 0)
 
 saveRDS(object = results, 
-        file = paste0(folder, "results_index/output_plots/diagnostics.RDS"))
+        file = paste0(folder, "results_index/VASTresults.RDS"))
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Compare to Design-Based Estiamtes ----
