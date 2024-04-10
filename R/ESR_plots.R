@@ -23,11 +23,19 @@ theme_set(theme_sleek())
 this_year <- 2023
 
 # Read in VAST results - update for each species
-workDir <- here("species_specific_code", "BS", "pollock", "results")
-# workDir <- here("VAST_results", "BS", "nrs")
+# workDir <- here("species_specific_code", "BS", "pollock", "results")
+workDir <- here("VAST_results", "BS", "yellowfin")
 
 VAST_results <- readRDS(here(workDir, "VAST Index", "VASTresults.RDS"))  # for COG
-VAST_fit <- readRDS(here(workDir, "VAST Index", "VASTfit_full.RDS"))  # for EAO
+VAST_fit <- readRDS(here(workDir, "yellowfin_sole_VASTfit.RDS"))  # for EAO
+
+# Make a results object
+VAST_results <- plot_results(VAST_fit, 
+                             zrange = c(-3,3),
+                             n_cells = 600, 
+                             strata_names = c("Both", "EBS", "NBS"), 
+                             check_residuals=TRUE,
+                             n_samples=0)
 
 # Create directory for saving output 
 saveDir <- here(workDir, paste0("ESR products ", this_year))
