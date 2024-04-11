@@ -215,25 +215,25 @@ eao_plot
 
 # Combine regional COG into one map -------------------------------------------
 # Read in each species in the region and combine into a list
-bs_pol <- readRDS(here("species_specific_code", "BS", "pollock", "results", "VAST Index", "VASTresults.RDS"))
-bs_cod <- readRDS(here("VAST_results", "BS", "pcod", "VASTresults.RDS"))
-bs_yel <- readRDS(here("VAST_results", "BS", "yellowfin", "diagnostics.RDS"))
-bs_nrs <- readRDS(here("VAST_results", "BS", "nrs", "diagnostics.RDS"))
+bs_pol_res <- readRDS(here("species_specific_code", "BS", "pollock", "results", "VAST Index", "VASTresults.RDS"))
+bs_cod_res <- readRDS(here("VAST_results", "BS", "pcod", "VASTresults.RDS"))
+bs_yel_res <- readRDS(here("VAST_results", "BS", "yellowfin", "diagnostics.RDS"))
+bs_nrs_res <- readRDS(here("VAST_results", "BS", "nrs", "diagnostics.RDS"))
 
-bs <- list(bs_pol, bs_cod, bs_yel, bs_nrs) 
-species <- c("Walleye pollock", "Pacific cod", "Yellowfin sole", "Northern rock sole")
+bs_res <- list(bs_pol_res, bs_cod_res, bs_yel_res, bs_nrs_res) 
+species_bs <- c("Walleye pollock", "Pacific cod", "Yellowfin sole", "Northern rock sole")
 
 # Run the COG function for each species and combine together
 cog_bs <- data.frame()
 cog_bs_error <- data.frame()
-for(i in 1:length(bs)) {
-  out <- cog(results = bs[[i]], save_data = FALSE, save_plots = FALSE)
+for(i in 1:length(bs_res)) {
+  out <- cog(results = bs_res[[i]], save_data = FALSE, save_plots = FALSE)
   df <- out$table
-  df$Species <- species[i]
+  df$Species <- species_bs[i]
   cog_bs <- rbind.data.frame(cog_bs, df)
   
   df_error <- out$table_error
-  df_error$Species <- species[i]
+  df_error$Species <- species_bs[i]
   cog_bs_error <- rbind.data.frame(cog_bs_error, df_error)
 }
 
@@ -262,15 +262,38 @@ ggsave(cog_bs_map, filename = here("VAST_results", "BS", "COG_bs_map.png"),
 
 # Combine all COG plots together ----------------------------------------------
 cog_bs_plots <- list()
-for(i in 1:length(bs)) {
-  out <- cog(results = bs[[i]], save_data = FALSE, save_plots = FALSE)
+for(i in 1:length(bs_res)) {
+  out <- cog(results = bs_res[[i]], save_data = FALSE, save_plots = FALSE)
   cog_bs_plots[[i]] <- out$all
 }
 
-cog_combined <- plot_grid(plotlist = cog_bs_plots, labels = species,
+cog_combined <- plot_grid(plotlist = cog_bs_plots, labels = species_bs,
                           ncol = 1, 
                           label_size = 10, label_x = 0.5, hjust = 0.5)
 cog_combined
 
 ggsave(cog_combined, filename = here("VAST_results", "BS", "COG_bs_all.png"), 
        width = 240, height = 300, unit = "mm", dpi = 300)
+
+# Combine all EAO plots together ----------------------------------------------
+# Read in each species in the region and combine into a list
+bs_pol_fit <- readRDS(here("species_specific_code", "BS", "pollock", "results", "VAST Index", "VASTfit_full.RDS"))
+# bs_cod_fit <- readRDS(here("VAST_results", "BS", "pcod", "VASTfit.RDS"))
+bs_yel_fit <- readRDS(here("VAST_results", "BS", "yellowfin", "yellowfin_sole_VASTfit.RDS"))
+bs_nrs_fit <- readRDS(here("VAST_results", "BS", "nrs", "northern_rock_sole_VASTfit.RDS"))
+
+sp <- c("Walleye pollock", "Yellowfin sole", "Northern rock sole")
+
+bs_fit <- list(bs_pol_fit, bs_yel_fit, bs_nrs_fit) 
+eao_bs_plots <- list()
+for(i in 1:length(bs_fit)) {
+  out <- eao(fit = bs_fit[[i]], save_data = FALSE, save_plot = FALSE)
+  plot <- out + ggtitle(sp[i])
+  eao_bs_plots[[i]] <- plot
+}
+
+eao_combined <- plot_grid(plotlist = eao_bs_plots)
+eao_combined
+
+ggsave(eao_combined, filename = here("VAST_results", "BS", "EAO_bs.png"), 
+       width = 220, height = 130, unit = "mm", dpi = 300)
