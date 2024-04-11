@@ -13,7 +13,6 @@ library(sf)
 library(rnaturalearth)
 library(akgfmaps)
 library(cowplot)
-library(VAST)
 
 # Set ggplot theme
 devtools::install_github("seananderson/ggsidekick")
@@ -25,10 +24,10 @@ this_year <- 2023
 
 # Read in VAST results - update for each species
 # workDir <- here("species_specific_code", "BS", "pollock", "results")
-workDir <- here("VAST_results", "BS", "nrs")  
+workDir <- here("VAST_results", "BS", "pcod")
 
-VAST_results <- readRDS(here(workDir, "diagnostics.RDS"))  # for COG
-VAST_fit <- readRDS(here(workDir, "VASTfit_full.RDS"))  # for EAO
+VAST_results <- readRDS(here(workDir, "VASTresults.RDS"))  # for COG
+VAST_fit <- readRDS(here(workDir, "VASTfit.RDS"))  # for EAO
 
 # Make a results object 
 # TODO: test this a couple more times. Doesn't seem to work consistently
@@ -110,7 +109,7 @@ cog <- function(results = VAST_results, dir = saveDir, save_data = FALSE, save_p
     #                aes(x = X, y = Y, xmin = xmin,xmax = xmax, color = Year), alpha = 0.8) +
     coord_sf(xlim = c(-179, -157), ylim = c(54, 65), expand = FALSE) +
     scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
-    xlab(" ") + ylab(" ") 
+    labs(x = NULL, y = NULL)
   
   # Plot as scatter (sparkleplot)
   sparkle <- ggplot(cog_error, aes(x = X, y = Y, color = Year)) +
@@ -122,13 +121,12 @@ cog <- function(results = VAST_results, dir = saveDir, save_data = FALSE, save_p
   
   # Inset map into sparkleplot
   inset <- ggdraw() +
-    draw_plot(map + 
+    draw_plot(plot = sparkle) +
+    draw_plot(plot = map +
                 theme(legend.position = "none") +
                 guides(x = "none", y = "none") +
                 theme(plot.background = element_rect(fill = "transparent")), 
-              x = 0.77, y = 0.7, width = 0.25, height = 0.25) +
-    draw_plot(sparkle +
-                theme(plot.background = element_rect(fill = "transparent"))) +
+              x = 0.79, y = 0.75, width = 0.21, height = 0.21) 
   
   # Combine sparkleplot and time-series plot
   all <- plot_grid(inset, ts)
@@ -271,7 +269,7 @@ for(i in 1:length(bs_res)) {
 
 cog_combined <- plot_grid(plotlist = cog_bs_plots, labels = species_bs,
                           ncol = 1, 
-                          label_size = 10, label_x = 0.5, hjust = 0.5)
+                          label_size = 10, label_x = 0.5, hjust = 0.5, label_fontface = "plain")
 cog_combined
 
 ggsave(cog_combined, filename = here("VAST_results", "BS", "COG_bs_all.png"), 
