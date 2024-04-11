@@ -165,7 +165,7 @@ cog_plots$all
 # Effective area occupied -----------------------------------------------------
 options(scipen = 999)
 
-eao <- function(fit = VAST_fit, dir = saveDir, save_data = TRUE, save_plot = TRUE) {
+eao <- function(fit = VAST_fit, dir = saveDir, save_data = FALSE, save_plot = FALSE) {
   # Get EAO estimate from VAST fit object
   report <- TMB::summary.sdreport(fit$parameter_estimates$SD)
   area <- report[which(rownames(report) == "log_effective_area_ctl"), c('Estimate', 'Std. Error')]
@@ -185,12 +185,14 @@ eao <- function(fit = VAST_fit, dir = saveDir, save_data = TRUE, save_plot = TRU
   area$Estimate <- exp(area$Estimate)
   area$error <- area$error
   
+  area <- area %>%
+    mutate(ymin = Estimate - (Estimate * error),
+           ymax = Estimate + (Estimate * error))
+  area$ymin[area$ymin <= 0] <- 0  # some error is so large, it leads to a negative ymin & that breaks the plot
+  
   plot <- ggplot(area %>% filter(Year != 2020), aes(x = Year, y = Estimate)) +
     geom_line(alpha = 0.8, aes(color = Region, linetype = Region)) +
-    geom_ribbon(aes(ymin = (Estimate - (Estimate * error)), 
-                    ymax = (Estimate + (Estimate * error)),
-                    fill = Region),
-                    alpha = 0.3) +
+    geom_ribbon(aes(ymin = ymin, ymax = ymax, fill = Region), alpha = 0.3) +
     scale_y_continuous(labels = scales::comma, limits = c(0, NA)) +
     scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.7) +
     scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.7) +
@@ -278,17 +280,15 @@ ggsave(cog_combined, filename = here("VAST_results", "BS", "COG_bs_all.png"),
 # Combine all EAO plots together ----------------------------------------------
 # Read in each species in the region and combine into a list
 bs_pol_fit <- readRDS(here("species_specific_code", "BS", "pollock", "results", "VAST Index", "VASTfit_full.RDS"))
-# bs_cod_fit <- readRDS(here("VAST_results", "BS", "pcod", "VASTfit.RDS"))
+bs_cod_fit <- readRDS(here("VAST_results", "BS", "pcod", "VASTfit.RDS"))
 bs_yel_fit <- readRDS(here("VAST_results", "BS", "yellowfin", "yellowfin_sole_VASTfit.RDS"))
 bs_nrs_fit <- readRDS(here("VAST_results", "BS", "nrs", "northern_rock_sole_VASTfit.RDS"))
 
-sp <- c("Walleye pollock", "Yellowfin sole", "Northern rock sole")
-
-bs_fit <- list(bs_pol_fit, bs_yel_fit, bs_nrs_fit) 
+bs_fit <- list(bs_pol_fit, bs_cod_fit, bs_yel_fit, bs_nrs_fit) 
 eao_bs_plots <- list()
 for(i in 1:length(bs_fit)) {
   out <- eao(fit = bs_fit[[i]], save_data = FALSE, save_plot = FALSE)
-  plot <- out + ggtitle(sp[i])
+  plot <- out + ggtitle(species_bs[i])
   eao_bs_plots[[i]] <- plot
 }
 
