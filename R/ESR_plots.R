@@ -24,7 +24,7 @@ this_year <- 2023
 
 # Read in VAST results - update for each species
 # workDir <- here("species_specific_code", "BS", "pollock", "results")
-workDir <- here("VAST_results", "BS", "pcod")
+workDir <- here("VAST_results", "BS", "nrs")
 
 VAST_results <- readRDS(here(workDir, "VASTresults.RDS"))  # for COG
 VAST_fit <- readRDS(here(workDir, "VASTfit.RDS"))  # for EAO
@@ -44,30 +44,35 @@ dir.create(saveDir, showWarnings = FALSE)
 
 
 # Center of gravity -----------------------------------------------------------
-cog <- function(results = VAST_results, dir = saveDir, save_data = FALSE, save_plots = FALSE) {
+cog <- function(results = VAST_results, dir = saveDir, save_data = FALSE, save_plots = TRUE) {
   cog <- data.frame(results$Range$COG_Table)
   cog$Year <- as.numeric(cog$Year)
   cog$COG_hat <- as.numeric(cog$COG_hat)
   cog$SE <- as.numeric(cog$SE)
   
-  cog$m[cog$m == 1] <- "Easting"
-  cog$m[cog$m == 2] <- "Northing"
+  if(grepl("nrs", dir) == TRUE) {
+    # Remove years before 1996 if stock is Northern rock sole (due to change in IDs)
+    cog <- cog %>% filter(Year >= 1996)
+  }
+  
+  cog$m[cog$m == 1] <- "Easting (km)"
+  cog$m[cog$m == 2] <- "Northing (km)"
   
   # Original plot - UTM
   ts <- ggplot(cog %>% filter(Year != 2020), aes(x = Year, y = COG_hat)) +
     geom_line() +
     geom_ribbon(aes(ymin = (COG_hat - SE), ymax = (COG_hat + SE)), alpha = 0.2) +
-    ylab(" ") +
+    xlab("") + ylab("") +
     facet_wrap(~ m, ncol = 1, scales = "free_y")
   
   # Convert to lat/long using akgfmaps package and plot
-  cog_east <- cog %>% filter(m == "Easting" & Year != 2020)
+  cog_east <- cog %>% filter(m == "Easting (km)" & Year != 2020)
   cog_east <- cog_east[, 2:4]  # get rid of ID column and not sure what to do with SE!
-  colnames(cog_east)[2] <- "Easting"
+  colnames(cog_east)[2] <- "Easting (km)"
   
-  cog_north <- cog %>% filter(m == "Northing" & Year != 2020)
+  cog_north <- cog %>% filter(m == "Northing (km)" & Year != 2020)
   cog_north <- cog_north[, 2:4]
-  colnames(cog_north)[2] <- "Northing"
+  colnames(cog_north)[2] <- "Northing (km)"
   
   cog_latlon <- cbind.data.frame(X = cog_east[, 2], Y = cog_north[, 2])
   # CRS information for VAST outputs here: 
@@ -111,11 +116,19 @@ cog <- function(results = VAST_results, dir = saveDir, save_data = FALSE, save_p
     scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
     labs(x = NULL, y = NULL)
   
+  cog_error2 <- cog_error[-1, c(1:2)]
+  cog_error2[nrow(cog_error2) + 1, ] <- NA
+  colnames(cog_error2) <- c("X2", "Y2")
+  cog_error2 <- cbind.data.frame(cog_error, cog_error2) 
+  
   # Plot as scatter (sparkleplot)
-  sparkle <- ggplot(cog_error, aes(x = X, y = Y, color = Year)) +
+  sparkle <- ggplot(data = cog_error, aes(x = X, y = Y, color = Year)) +
     geom_point() +
-    geom_errorbar(aes(ymin = ymin,ymax = ymax, color = Year), alpha = 0.7) +
-    geom_errorbarh(aes(xmin = xmin,xmax = xmax, color = Year), alpha = 0.7) +
+    geom_segment(data = cog_error2 %>% filter(Year >= this_year - 10), 
+                 aes(x = X, y = Y, xend = X2, yend = Y2), 
+                 alpha = 0.8, arrow = arrow(length = unit(0.03, "npc"))) +
+    geom_errorbar(aes(ymin = ymin, ymax = ymax, color = Year), alpha = 0.4) +
+    geom_errorbarh(aes(xmin = xmin, xmax = xmax, color = Year), alpha = 0.4) +
     scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
     xlab("Longitude (°W)") + ylab("Latitude (°N)")
   
@@ -186,7 +199,11 @@ eao <- function(fit = VAST_fit, dir = saveDir, save_data = FALSE, save_plot = FA
   area <- area %>%
     mutate(ymin = Estimate - (Estimate * error),
            ymax = Estimate + (Estimate * error))
-  area$ymin[area$ymin <= 0] <- 0  # some error is so large, it leads to a negative ymin & that breaks the plot
+  
+  if(grepl("nrs", dir) == TRUE) {
+    # Remove years before 1996 if stock is Northern rock sole (due to change in IDs)
+    area <- area %>% filter(Year >= 1996)
+  }
   
   plot <- ggplot(area %>% filter(Year != 2020), aes(x = Year, y = Estimate)) +
     geom_line(alpha = 0.8, aes(color = Region, linetype = Region)) +
