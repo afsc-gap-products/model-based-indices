@@ -234,11 +234,12 @@ eao_plot
 # Read in each species in the region and combine into a list
 bs_pol_res <- readRDS(here("species_specific_code", "BS", "pollock", "results", "VAST Index", "VASTresults.RDS"))
 bs_cod_res <- readRDS(here("VAST_results", "BS", "pcod", "VASTresults.RDS"))
-bs_yel_res <- readRDS(here("VAST_results", "BS", "yellowfin", "diagnostics.RDS"))
-bs_nrs_res <- readRDS(here("VAST_results", "BS", "nrs", "diagnostics.RDS"))
+bs_yel_res <- readRDS(here("VAST_results", "BS", "yfs", "VASTresults.RDS"))
+bs_nrs_res <- readRDS(here("VAST_results", "BS", "nrs", "VASTresults.RDS"))
 
 bs_res <- list(bs_pol_res, bs_cod_res, bs_yel_res, bs_nrs_res) 
 species_bs <- c("Walleye pollock", "Pacific cod", "Yellowfin sole", "Northern rock sole")
+sp2 <- c("Walleye pollock", "Pacific cod", "Yellowfin sole", "nrs")  # hack to get NRS filtering to work
 
 # Run the COG function for each species and combine together
 cog_bs <- data.frame()
@@ -280,7 +281,7 @@ ggsave(cog_bs_map, filename = here("VAST_results", "BS", "COG_bs_map.png"),
 # Combine all COG plots together ----------------------------------------------
 cog_bs_plots <- list()
 for(i in 1:length(bs_res)) {
-  out <- cog(results = bs_res[[i]], save_data = FALSE, save_plots = FALSE)
+  out <- cog(results = bs_res[[i]], dir = sp2[i], save_data = FALSE, save_plots = FALSE)
   cog_bs_plots[[i]] <- out$all
 }
 
@@ -296,13 +297,14 @@ ggsave(cog_combined, filename = here("VAST_results", "BS", "COG_bs_all.png"),
 # Read in each species in the region and combine into a list
 bs_pol_fit <- readRDS(here("species_specific_code", "BS", "pollock", "results", "VAST Index", "VASTfit_full.RDS"))
 bs_cod_fit <- readRDS(here("VAST_results", "BS", "pcod", "VASTfit.RDS"))
-bs_yel_fit <- readRDS(here("VAST_results", "BS", "yellowfin", "yellowfin_sole_VASTfit.RDS"))
-bs_nrs_fit <- readRDS(here("VAST_results", "BS", "nrs", "northern_rock_sole_VASTfit.RDS"))
+bs_yel_fit <- readRDS(here("VAST_results", "BS", "yfs", "VASTfit.RDS"))
+bs_nrs_fit <- readRDS(here("VAST_results", "BS", "nrs", "VASTfit.RDS"))
 
 bs_fit <- list(bs_pol_fit, bs_cod_fit, bs_yel_fit, bs_nrs_fit) 
+
 eao_bs_plots <- list()
 for(i in 1:length(bs_fit)) {
-  out <- eao(fit = bs_fit[[i]], save_data = FALSE, save_plot = FALSE)
+  out <- eao(fit = bs_fit[[i]], dir = sp2[i], save_data = FALSE, save_plot = FALSE)
   plot <- out + ggtitle(species_bs[i])
   eao_bs_plots[[i]] <- plot
 }
