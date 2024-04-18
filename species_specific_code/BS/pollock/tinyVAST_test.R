@@ -69,21 +69,21 @@ control = tinyVASTcontrol( getsd = FALSE,
 #' linear predictor:
 #' ----------------------------------------------------------------------------
 family = list(
-  Age_1 = delta_gamma(),
-  Age_2 = delta_gamma(),
-  Age_3 = delta_gamma(),
-  Age_4 = delta_gamma(),
-  Age_5 = delta_gamma(), 
-  Age_6 = delta_gamma(),
-  Age_7 = delta_gamma(),
-  Age_8 = delta_gamma(),
-  Age_9 = delta_gamma(),
-  Age_10 = delta_gamma(),
-  Age_11 = delta_gamma(),
-  Age_12 = delta_gamma(),
-  Age_13 = delta_gamma(),
-  Age_14 = delta_gamma(),
-  Age_15 = delta_gamma()     
+  Age_1 = tweedie(),
+  Age_2 = tweedie(),
+  Age_3 = tweedie(),
+  Age_4 = tweedie(),
+  Age_5 = tweedie(), 
+  Age_6 = tweedie(),
+  Age_7 = tweedie(),
+  Age_8 = tweedie(),
+  Age_9 = tweedie(),
+  Age_10 = tweedie(),
+  Age_11 = tweedie(),
+  Age_12 = tweedie(),
+  Age_13 = tweedie(),
+  Age_14 = tweedie(),
+  Age_15 = tweedie()     
 )
 
 #Data$Year = factor(Data$Year)
