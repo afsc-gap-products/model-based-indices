@@ -9,16 +9,25 @@
 ##                versions specified in the 2024 Terms of Reference (TOR)
 ##                https://drive.google.com/file/d/1TmW9gySrWVGxv5OXpTbkMml6vAbi14Xl/view?usp=drive_link
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-rm(list = ls())
+remotes::install_github("afsc-gap-products/coldpool")
+library(tidyverse)
+library(VAST) 
+library(sf)
+library(scales)
+library(coldpool)
+library(akgfmaps)
+
+# Set species, model -------------------------------------------------------
 which_model <- c("hindcast", "production")[1] # specify by changing index
+species <- 21720
 species_name <- "kamchatka_flounder"
 
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Import packages ----
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-remotes::install_github("afsc-gap-products/coldpool")
-library(coldpool) 
-library(VAST) 
+workDir <- paste0(getwd(),"/species_specific_code/BS/", 
+                  species_name, "/", which_model, "/")
+if(!dir.exists(workDir))
+  dir.create(path = workDir, recursive = TRUE)
+if(!dir.exists(paste0(workDir, "results/")))
+  dir.create(path = paste0(workDir, "results/"), recursive = TRUE)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   System preferences ----
@@ -70,95 +79,112 @@ sessionInfo()
 sink()
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Load VAST data ----
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-Data_Geostat <- readRDS(file = paste0(folder, "data/data_geostat_index.RDS"))
-
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Load coldpool covariate data ----
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CPE <- scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)
-covariate_data <- data.frame(Year = c(coldpool:::cold_pool_index$YEAR, 2020),
-                             Lat = mean(Data_Geostat$Lat),
-                             Lon = mean(Data_Geostat$Lon), 
-                             CPE = c(CPE, 0))
-covariate_data <- covariate_data[covariate_data$Year > 1990,]
-
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Set VAST settings ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-settings <- FishStatsUtils::make_settings( 
-  n_x = 750,
-  Region = "Eastern_Bering_Sea",
-  purpose = "index2",
-  fine_scale = TRUE,
-  strata.limits = data.frame(STRATA = as.factor('All_areas')),
-  ObsModel = c(2, 1),
-  FieldConfig = c("Omega1" = "IID", "Epsilon1" = "IID", 
-                  "Omega2" = "IID", "Epsilon2" = "IID"),
-  RhoConfig = c("Beta1" = 0, "Beta2" = 0, "Epsilon1" = 4, "Epsilon2" = 4),
-  OverdispersionConfig = c("Eta1" = 0, "Eta2" = 0),
-  # Options = c("Calculate_Range" = TRUE, 
-  #             "Calculate_effective_area" = TRUE, 
-  #             "treat_nonencounter_as_zero" = FALSE),
-  use_anisotropy = TRUE,
+Region <- "Eastern_Bering_Sea"
+strata_names = "EBS"
+knot_method <- "grid"
+grid_size_km <- 25
+n_x <- 350 # Reduced from standard of 750 knots used in EBS + NBS indices
+FieldConfig <- c("Omega1"="IID", "Epsilon1"="IID", "Omega2"="IID", "Epsilon2"="IID")
+RhoConfig <- c("Beta1"=0, "Beta2"=0, "Epsilon1"=4, "Epsilon2"=4)
+OverdispersionConfig <- c("Eta1"=0, "Eta2"=0)
+ObsModel <- c(2,1)
+Options <-  c("Calculate_Range"=TRUE, "Calculate_effective_area"=TRUE, "treat_nonencounter_as_zero"=FALSE )
+Aniso <- TRUE
+BiasCorr <- TRUE
+getJointPrecision <- TRUE
+getReportCovariance <- TRUE
+fine_scale <- TRUE
+max_cells <- 2000
+strata.limits <- data.frame(STRATA = as.factor('All_areas'))
+
+
+settings <- make_settings( 
+  n_x=n_x,
+  Region=Region,
+  purpose="index2",
+  fine_scale = fine_scale,
+  strata.limits=strata.limits,
+  ObsModel = ObsModel,
+  FieldConfig = FieldConfig,
+  RhoConfig = RhoConfig,
+  OverdispersionConfig = OverdispersionConfig,
+  Options = Options,
+  use_anisotropy = Aniso,
   Version = VAST_cpp_version,
-  max_cells = 2000,
-  knot_method = "grid",
-  bias.correct = TRUE)
+  max_cells = max_cells,
+  knot_method = knot_method,
+  bias.correct = BiasCorr
+)
 
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Run VAST model ----
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-fit <- FishStatsUtils::fit_model( 
-  
-  ## Input settings
-  "working_dir" = paste0(folder, "results/"), 
-  "settings" = settings, 
-  "create_strata_per_region" = TRUE,
-  
-  ## Input Data
-  "Lat_i" = Data_Geostat[,'Lat'], 
-  "Lon_i" = Data_Geostat[,'Lon'], 
-  "t_i" = Data_Geostat[,'Year'], 
-  "c_i" = rep(0, nrow(Data_Geostat)), 
-  "b_i" = Data_Geostat[,'Catch_KG'], 
-  "a_i" = Data_Geostat[,'AreaSwept_km2'], 
-  "v_i" = Data_Geostat[,'Vessel'],
-  
-  ## Output settings
-  "getJointPrecision" = TRUE, 
-  "getReportCovariance" = TRUE,
-  "getsd" = TRUE,
-  
-  ## Model tuning (increase number of newtonsteps if final gradient is too large)
-  "newtonsteps" = 1,
-  
-  ## Covariate data
-  "X1_formula"= ~ CPE,
-  "X2_formula"= ~ CPE,
-  "X1config_cp" <- as.matrix(2),
-  "X2config_cp" <- as.matrix(2) ,
-  "covariate_data" = covariate_data)
+# Read catch data ---------------------------------------------------------
 
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Save results locally ----
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+dat <- read_rds(paste0(workDir, "data/data_geostat_biomass_index.RDS"))
 
-## Save VAST fit object
-saveRDS(object = fit, 
-        file = paste0(folder, "results/", species_name, "_VASTfit.RDS"))
+# Cold Pool covariate -----------------------------------------------------
+cpe <- scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)
+covariate_data <- data.frame(Year = c(coldpool:::cold_pool_index$YEAR, 2020),
+                             Lat = mean(dat$Lat),
+                             Lon = mean(dat$Lon), 
+                             cpe = c(cpe, 0))
 
-## Save diagnostics and other outputs
-results <- FishStatsUtils::plot_results( 
-  fit = fit, 
-  working_dir = paste0(folder, "results/output_plots/"),
-  zrange = c(-3, 3), 
-  n_cells = 600, 
-  strata_names = c("Both", "EBS", "NBS"), 
-  check_residuals = TRUE,
-  n_samples = 0)
+# Load covariates
+formula <- ~ cpe
+Xconfig_zcp <- array(2, dim=c(2,1,1) )
+X1config_cp <- as.matrix(2)
+X2config_cp <- as.matrix(2)
 
-saveRDS(object = results, 
-        file = paste0(folder, "results/output_plots/diagnostics.RDS"))
 
+# Build the model ---------------------------------------------------------
+fit <- fit_model( "settings"=settings, 
+                  "Lat_i"=dat[,'Lat'], 
+                  "Lon_i"=dat[,'Lon'], 
+                  "t_i"=dat[,'Year'], 
+                  "c_i"=rep(0,nrow(dat)), 
+                  "b_i"=dat[,'Catch_KG'], 
+                  "a_i"=dat[,'AreaSwept_km2'], 
+                  "v_i"=dat[,'Vessel'],
+                  "create_strata_per_region"=TRUE,
+                  "getJointPrecision"=getJointPrecision, 
+                  "getReportCovariance"=getReportCovariance,
+                  "X1_formula"=formula,
+                  "X2_formula"=formula,
+                  "X1config_cp" <- X1config_cp,
+                  "X2config_cp" <- X2config_cp,
+                  "covariate_data"=covariate_data,
+                  "test_fit" = TRUE,
+                  "working_dir" = workDir,
+                  "newtonsteps" = 1
+)
+
+
+# Save results
+
+saveRDS(fit, file = paste0(workDir, "results/VASTfit.RDS"))
+
+
+# Plots -------------------------------------------------------------------
+# If you need to load a fit in a new session:
+#dyn.load(dynlib(VAST_cpp_version))
+
+# Plot results
+results <- plot_results( fit, 
+                         zrange = c(-3,3), 
+                         n_cells = 600, 
+                         strata_names = strata_names, 
+                         check_residuals=TRUE,
+                         n_samples=0,
+                         working_dir = paste0(workDir, "results/")
+)
+
+saveRDS(results, file = paste0(workDir, "results/VASTresults.RDS"))
+
+# If residual plots don't... uh... plot...
+# plot_quantile_residuals( fit=fit )
+# 
+# map_list = make_map_info( "Region"=settings$Region, "spatial_list"=fit$spatial_list, "Extrapolation_List"=fit$extrapolation_list )
+# plot_maps(fit=fit, n_cells = 600, Obj=fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
+
+# Plot DB vs VAST Comparison ----------------------------------------------
+plot(dat %>% group_by(Year) %>% summarise(mean(Catch_KG)), type ="l") # mean cpue for quick look
