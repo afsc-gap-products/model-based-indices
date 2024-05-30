@@ -1,13 +1,13 @@
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## Project:       Model-based estimate of abundance index for EBS-NBS Kamchatka
+## Project:       Model-based estimate of abundance index for EBS Kamchatka
 ## Survey POC:    Lewis Barnett (lewis.barnett@noaa.gov)
 ## Output POC:    Meaghan Bryan (meaghan.bryan@noaa.gov)
-## Description:   2023 hindcast index standardization for Kamchatka flounder
-##                     in the Eastern and Northern Bering Sea
+## Description:   2024 hindcast index standardization for Kamchatka flounder
+##                     in the Eastern Bering Sea
 ##  NOTES: 
 ##                Make sure R and package versions are consistent with those 
-##                versions specified in the 2023 Terms of Reference (TOR)
-##                https://drive.google.com/file/d/1Jog0lZx3Y9D0yRqDSl2X-BSqR_zyEJUw/view?usp=share_link
+##                versions specified in the 2024 Terms of Reference (TOR)
+##                https://drive.google.com/file/d/1TmW9gySrWVGxv5OXpTbkMml6vAbi14Xl/view?usp=drive_link
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 rm(list = ls())
 which_model <- c("hindcast", "production")[1] # specify by changing index
@@ -23,9 +23,11 @@ library(VAST)
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   System preferences ----
 ##   Updated every year
+#    if you have newer versions than those below that is completely fine!
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-current_year <- 2023
+current_year <- 2024
 VAST_cpp_version <- "VAST_v14_0_1" # or VAST_v13_1_0 or later
+# if you have newer versions than those below that is completely fine!
 pck_version <- c("VAST" = "3.10.0",
                  "FishStatsUtils" = "2.12.0",
                  "Matrix" = "1.5-3",
@@ -87,7 +89,7 @@ covariate_data <- covariate_data[covariate_data$Year > 1990,]
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 settings <- FishStatsUtils::make_settings( 
   n_x = 750,
-  Region = c("Eastern_Bering_Sea", "Northern_Bering_Sea"),
+  Region = "Eastern_Bering_Sea",
   purpose = "index2",
   fine_scale = TRUE,
   strata.limits = data.frame(STRATA = as.factor('All_areas')),
