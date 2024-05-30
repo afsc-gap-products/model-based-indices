@@ -99,7 +99,6 @@ fine_scale <- TRUE
 max_cells <- 2000
 strata.limits <- data.frame(STRATA = as.factor('All_areas'))
 
-
 settings <- make_settings( 
   n_x=n_x,
   Region=Region,
