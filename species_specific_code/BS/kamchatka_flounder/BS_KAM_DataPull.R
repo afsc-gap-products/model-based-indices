@@ -1,25 +1,21 @@
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## Project:       Prepare EBS/NBS catch weight data
+## Project:       Prepare EBS catch weight data for VAST
 ## Authors:       Lewis Barnett (lewis.barnett@noaa.gov) 
-##                adapted from 
 ##                Zack Oyafuso (zack.oyafuso@noaa.gov)
-##                Emily Markowitz (emily.markowitz@noaa.gov)
-##                Jason Conner (jason.conner@noaa.gov)
-## Description:   Prepare haul-level CPUE for the 
-##                EBS and NBS for Kamchatka flounder
+## Description:   Prepare haul-level CPUE for  
+##                Kamchatka flounder in the EBS
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-rm(list = ls())
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Import sumfish ----
-##   Installation instructions: https://github.com/afsc-gap-products/sumfish
-##   Setup Oracle Account
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-library(sumfish)
-sumfish::getSQL()
+##   Import gapindex package, connect to Oracle. Make sure you are connected
+##   to the internal network or VPN. 
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+remotes::install_github("afsc-gap-products/gapindex")
+library(gapindex)
+sql_channel <- gapindex::get_connected()
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Select species and years ----
+##   Select constants ----
 ##   start_year and current_year are used when querying RACEBASE via sumfish
 ##
 ##   For some species, we want to use all the years from 
@@ -28,143 +24,197 @@ sumfish::getSQL()
 ##   we declare another variable called min_year to filter years at and after 
 ##   min_year for that purpose. By default, we set min_year <- start_year.
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-species_name <- "kamchatka_flounder"
-species_code <- 10112
-start_year <- 1991
-current_year <- 2022
-min_year <- start_year
-
 which_model <- c("hindcast", "production")[1] # specify by changing index
 
+start_year <- 1991
+current_year <- 2024
+species_code <- 10112
+species_name <- "kamchatka_flounder"
+start_year_age <- 1991
+plus_group <- 25
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Pull EBS catch and effort data
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## First, pull data from the standard EBS stations
+ebs_data <- gapindex::get_data(year_set = start_year:current_year,
+                                        survey_set = "EBS",
+                                        spp_codes = species_code,
+                                        pull_lengths = TRUE, 
+                                        haul_type = 3, 
+                                        abundance_haul = "Y",
+                                        sql_channel = sql_channel,
+                                        na_rm_strata = TRUE)
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Calculate CPUE for EBS and reorder columns
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ebs_cpue <- subset(x = gapindex::calc_cpue(racebase_tables = ebs_data),
+                   select = c("SURVEY_DEFINITION_ID", "SURVEY", "YEAR", 
+                              "DESIGN_YEAR", "STRATUM", "HAULJOIN",
+                              "LATITUDE_DD_START", "LATITUDE_DD_END",
+                              "LONGITUDE_DD_START", "LONGITUDE_DD_END",
+                              "SPECIES_CODE", "WEIGHT_KG", "COUNT",
+                              "AREA_SWEPT_KM2", "CPUE_KGKM2", "CPUE_NOKM2"))          
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Calculate Total Abundance 
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ebs_popn_stratum <- gapindex::calc_biomass_stratum(racebase_tables = ebs_data,
+                                                   cpue = ebs_cpue)
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Calculate numerical CPUE for a given haul/sex/length bin
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sizecomp <- gapindex::calc_sizecomp_stratum(
+  racebase_tables = ebs_data,
+  racebase_cpue = ebs_cpue,
+  racebase_stratum_popn = ebs_popn_stratum,
+  spatial_level = "haul",
+  fill_NA_method = "BS")
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Calculate globally filled Age-Length Key for EBS
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+if (start_year != start_year_age) { 
+  ebs_data$size <- merge(x = ebs_data$size,
+                         y = ebs_data$cruise[, c("CRUISEJOIN", "CRUISE")],
+                         by = "CRUISEJOIN")
+  ebs_data$size <- subset(x = ebs_data$size, 
+                          CRUISE >= start_year_age * 100)
+  
+  ebs_data$specimen <- subset(x = ebs_data$specimen, 
+                              CRUISE >= start_year_age * 100)
+}
+
+ebs_alk <- gapindex::calc_alk(racebase_tables = ebs_data, 
+                              unsex = "unsex", 
+                              global = TRUE)
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Decompose the numerical CPUE (S_ijklm) for a given haul and sex/length 
+##   bin across ages. S_ijklm is the numerical CPUE of the ith station in 
+##   stratum j for species k, length bin l, and sex m. 
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+alk <- merge(x = sizecomp,
+                     y = ebs_alk,
+                     by = c("SURVEY", "YEAR", "SPECIES_CODE", 
+                            "SEX", "LENGTH_MM"))
+alk$AGE_CPUE_NOKM2 <- 
+  alk$S_ijklm_NOKM2 * alk$AGE_FRAC
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Aggregate numerical CPUE across lengths for a given age/sex/haul. 
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+age_cpue <- rbind(
+  ## Aggregate ages younger than the `plus_group`
+  stats::aggregate(AGE_CPUE_NOKM2 ~ AGE + HAULJOIN + SPECIES_CODE,
+                   data = alk,
+                   FUN = sum,
+                   drop = F,
+                   subset = AGE < plus_group),
+  ## Aggregate ages at or older than the `plus_group` as one age
+  cbind(AGE = plus_group,
+        stats::aggregate(AGE_CPUE_NOKM2 ~ HAULJOIN + SPECIES_CODE,
+                         data = alk,
+                         FUN = sum,
+                         drop = F,
+                         subset = AGE >= plus_group))
+)
+
+## Zero-fill CPUEs for missing ages. First we create a grid of all possible
+## HAULJOINs and ages. But, there are hauls with positive numerical catches
+## but no associated size data. These hauls will be removed.
+
+## Hauls with zero catch
+unique_hauls_cpue_zeros <- 
+  sort(x = unique(x = ebs_cpue$HAULJOIN[ebs_cpue$CPUE_NOKM2 == 0]))
+## Hauls with postive count data
+unique_hauls_cpue_pos <- 
+  sort(x = unique(x = ebs_cpue$HAULJOIN[ebs_cpue$CPUE_NOKM2 > 0]))
+## Hauls with size data
+unique_hauls_sizecomp <- 
+  sort(x = unique(x = sizecomp$HAULJOIN))
+
+every_combo_of_ages <- 
+  expand.grid(HAULJOIN = c(unique_hauls_cpue_zeros,
+                           unique_hauls_cpue_pos[unique_hauls_cpue_pos %in% 
+                                                   unique_hauls_sizecomp]),
+              SPECIES_CODE = species_code,
+              AGE = min(age_cpue$AGE, na.rm = TRUE):plus_group)
+
+## Merge the age_cpue onto the `every_combo_of_ages` df using "HAULJOIN", 
+## "SPECIES_CODE", and "AGE" as a composite key. all.x = TRUE will reveal
+## missing ages denoted by an NA AGE_CPUE_NOKM2 value
+every_combo_of_ages <- merge(x = every_combo_of_ages,
+                             y = age_cpue,
+                             by = c("HAULJOIN", "SPECIES_CODE", "AGE"),
+                             all.x = TRUE)
+
+## Turn NA AGE_CPUE_NOKM2 values to zero
+every_combo_of_ages$AGE_CPUE_NOKM2[
+  is.na(x = every_combo_of_ages$AGE_CPUE_NOKM2)
+] <- 0
+
+## Append the latitude and longitude information from the `ebs_cpue` df
+## using "HAULJOIN" as a key. 
+age_cpue <- merge(x = every_combo_of_ages,
+                  y = ebs_cpue[, c("HAULJOIN", "SURVEY", "YEAR",
+                                       "LATITUDE_DD_START",
+                                       "LONGITUDE_DD_START")],
+                  by = "HAULJOIN")
+
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Create directory to store data products
+##   Format VAST Data
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-folder <- paste0(getwd(),"/species_specific_code/BS/",species_name)
-dir.create(folder)
+data_geostat_biomass_index <- with(ebs_cpue,
+                                   data.frame(Hauljoin = HAULJOIN,
+                                              Region = SURVEY,
+                                              Catch_KG = CPUE_KGKM2,
+                                              Year = YEAR,
+                                              Vessel = "missing", 
+                                              AreaSwept_km2 = 1,
+                                              Lat = LATITUDE_DD_START,
+                                              Lon = LONGITUDE_DD_START,
+                                              Pass = 0))
 
-res_dir <- paste0(getwd(), "/species_specific_code/BS/", 
-                  species_name, "/", which_model, "/", "data/")
-if(!dir.exists(paste0(res_dir))) 
-  dir.create(path = paste0(res_dir), recursive = TRUE)
+data_geostat_numerical_index <- with(ebs_cpue,
+                                     data.frame(Hauljoin = HAULJOIN,
+                                                Region = SURVEY,
+                                                Catch_KG = CPUE_NOKM2,
+                                                Year = YEAR,
+                                                Vessel = "missing", 
+                                                AreaSwept_km2 = 1,
+                                                Lat = LATITUDE_DD_START,
+                                                Lon = LONGITUDE_DD_START,
+                                                Pass = 0))
 
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Pull EBS database ----
-##   Query database for the standard EBS survey haul and catch data.
-##   Append nonstandard well-performing EBS hauls that occurred in 1994, 2001, 
-##   2005, and 2006. These tows are not used in the design-based estimates but
-##   because they follow standard procedures, can be included in a model-
-##   based estimate.
-##
-##   Notes: haul_type == 3 = standard bottom sample (pre-programmed station)
-##          PERFORMANCE 0 is a good performance code, > 0 are satisfactory and
-##          < 0 are bad performance codes for a particular haul.
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-EBS <- sumfish::getRacebase(year = c(start_year, current_year), 
-                            survey = 'EBS_SHELF', 
-                            speciesCode = species_code) 
+data_geostat_agecomps <- with(age_cpue, 
+                              data.frame(Hauljoin = HAULJOIN,
+                                         Region = SURVEY,
+                                         Catch_KG = AGE_CPUE_NOKM2,
+                                         Year = YEAR,
+                                         Vessel = "missing",
+                                         Age = AGE,
+                                         AreaSwept_km2 = 1,
+                                         Lat = LATITUDE_DD_START,
+                                         Lon = LONGITUDE_DD_START,
+                                         Pass = 0)) 
 
-EBS_nonstandard_hauls <- EBS$haul_other %>%
-  filter(CRUISE %in% c(200101, 199401, 200501, 200601) 
-         & PERFORMANCE >= 0
-         & HAUL_TYPE == 3
-         & !is.na(STRATUM))
+if (start_year != start_year_age) {
+  data_geostat_agecomps <- subset(x = data_geostat_agecomps,
+                                  subset = Year >= start_year_age)
+}
 
-EBS_nonstandard_catch <- EBS$catch_other %>%
-  filter(HAULJOIN %in% EBS_nonstandard_hauls$HAULJOIN)
-
-EBS$catch <- bind_rows(EBS$catch, EBS_nonstandard_catch)
-EBS$haul <- bind_rows(EBS$haul, EBS_nonstandard_hauls)
-
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Pull NBS database ----
-##   Query database for the standard NBS survey haul and catch data.
-##   Append nonstandard well-performing NBS hauls that occurred in 2018 that
-##   are in the EBS dataset. The way that this is queried is by selecting
-##   records from the Bering Sea (BS), CRUISE is 201801 (Year 2018),
-##   and haul_type == 13, meaning it is an index sample tow.
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-
-## Standard NBS Hauls
-NBS <- sumfish::getRacebase(year = c(start_year, current_year), 
-                            survey = 'NBS_SHELF', 
-                            speciesCode = species_code) 
-
-## 2018 NBS cruise
-NBS18.cruise <- dplyr::filter(EBS$cruise, CRUISE == 201801)
-NBS18.haul <- sumfish::getSQL("select * from racebase.haul where region = 'BS' and cruise = 201801 and haul_type = 13 and performance>=0")
-NBS18.haul$STRATUM <- '99'
-NBS18.catch <- sumfish::getSQL("select * from racebase.catch where hauljoin in (select hauljoin from racebase.haul where region = 'BS' and cruise = 201801 and haul_type = 13 and performance>=0)")
-NBS18.stratum <- data.frame(SURVEY = 'NBS_18', 
-                            STRATUM = '99', 
-                            STRATUM_AREA = 158286)
-NBS18.length <- sumfish::getSQL("select * from racebase.length where hauljoin in (select hauljoin from racebase.haul where region = 'BS' and cruise = 201801 and haul_type = 13 and performance>=0)")
-NBS18.specimen <- sumfish::getSQL("select * from racebase.specimen where hauljoin in (select hauljoin from racebase.haul where region = 'BS' and cruise = 201801 and haul_type = 13 and performance>=0)")
-
-## Combine all the NBS18 data types into a list
-NBS18 <- list(cruise = NBS18.cruise,
-              haul = NBS18.haul,
-              catch = NBS18.catch,
-              species = NBS$species,
-              stratum = NBS18.stratum,
-              length = NBS18.length,
-              specimen = NBS18.specimen) 
-
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Calculate haul-level CPUEs ----
-##   Fill in zeros for hauls that did not encounter the species, 
-##   Bind EBS, NBS and NBS18 haul data
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-sumEBS <- sumfish::sumHaul(EBS) %>%
-  dplyr::mutate(REGION = "EBS")
-sumNBS <- sumfish::sumHaul(NBS) %>%
-  dplyr::mutate(REGION = "NBS")
-sum18 <- sumfish::sumHaul(NBS18) %>%
-  dplyr::mutate(STRATUM = as.character(STRATUM),
-                REGION = "NBS")
-
-weightAll <- sumAll <- dplyr::bind_rows(sumEBS, sumNBS,sum18) %>%
-  dplyr::filter(SPECIES_CODE %in% species_code, 
-                YEAR >= min_year,
-                !is.na(EFFORT))
-
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Test for missing values
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-check_hauls <- c(EBS$haul$HAULJOIN, NBS$haul$HAULJOIN, NBS18$haul$HAULJOIN)
-ifelse(test = length(sumAll$HAULJOIN[!sumAll$HAULJOIN %in% check_hauls]) == 0,
-       yes = "No missing hauls",
-       no = paste0(length(sumAll$HAULJOIN[!sumAll$HAULJOIN %in% check_hauls]),
-                   " missing hauls. Check code."))
-
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Format VAST Data ----
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-data_geostat_index <- 
-  with(sumAll,
-       data.frame(Region = REGION,
-                  Catch_KG = wCPUE, #cpue units: kg per hectare
-                  Year = YEAR,
-                  Vessel = "missing", 
-                  AreaSwept_km2 = 0.01, # converts cpue units to: kg per km^2
-                  Lat = START_LATITUDE,
-                  Lon = START_LONGITUDE,
-                  Pass = 0 ))
-
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Save output ----
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-
-## Index data
-write_rds(x = weightAll, 
-          file = paste0(res_dir, "EBS_NBS_Index.RDS"))
-write_rds(x = data_geostat_index, 
-          file = paste0(res_dir, "data_geostat_index.RDS"))
-
-## Strata data
-strata <- dplyr::bind_rows(EBS$stratum, NBS$stratum, NBS18$stratum) 
-write_rds(x = strata, 
-          file = paste0(res_dir, "EBS_NBS_strata.RDS"))
-
-## Raw data
-write_rds(x = list(EBS = EBS, NBS = NBS, NBS18 = NBS18), 
-          file = paste0(res_dir, "raw_data.RDS"))
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Save output. Set dir_out to the appropriate directory. 
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+dir_out <- paste0(getwd(),"/species_specific_code/BS/", 
+                  species_name, "/", which_model, "/data/")
+if (!dir.exists(paths = dir_out)) dir.create(path = dir_out, recursive = T)
+for (ifile in c("data_geostat_biomass_index", 
+                "data_geostat_numerical_index",
+                "data_geostat_agecomps", 
+                "sizecomp", "alk", "ebs_data")) 
+  saveRDS(object = get(x = ifile), 
+          file = paste0(dir_out, ifile, ".RDS"))
