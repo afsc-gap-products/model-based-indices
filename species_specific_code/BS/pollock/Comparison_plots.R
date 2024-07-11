@@ -210,4 +210,4 @@ ggsave(all_props, filename = here(workDir, "results", "age_comp_compare_tinyTwee
 ggsave(comp_diff, filename = here(workDir, "results", "age_comp_diff_tinyTweedie.png"),
        width=200, height=200, units="mm", dpi=300)
 ggsave(comp_trends, filename = here(workDir, "results", "age_comp_trends_tinyTweedie.png"),
-       width=200, height=150, units="mm", dpi=300)
+       width=260, height=120, units="mm", dpi=300)
