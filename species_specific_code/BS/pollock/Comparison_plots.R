@@ -159,7 +159,48 @@ comp_diff <- comp_difference(new = new_props, old = old_props,
                              save_results = FALSE)
 comp_diff
 
-# Save plots ------------------------------------------------------------------
+## Check trends in difference between models by age & year
+comp_trends <- function(new, old, names) {
+  new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
+  
+  # Get difference between new and old props
+  check_props <- round(new[,1:15] - old[,1:15], 4)
+  check_props_tab <- cbind(check_props, new[,16:17])
+  check_props_abs <- round(abs(new[,1:15] - old[,1:15]), 4)
+  check_props_abs_tab <-  cbind(check_props_abs, new[,16:17])
+  
+  colnames(check_props_tab)[1:15] <- 1:15
+  props <- melt(check_props_tab, id.vars = c("Year", "Region"), 
+                     variable.name = "Age", value.name = "Proportion") %>%
+    # add column for coloring the bars in the plot based on positive/negative
+    mutate(sign = case_when(Proportion >= 0 ~ "positive",
+                            Proportion < 0 ~ "negative"))
+  
+  # Plot difference over ages
+  label <- paste0("Difference between ", names[1], " and ", names[2])
+  plot_age <- ggplot(props, aes(x = Age, y = Proportion, color = sign)) +
+    # geom_violin() +
+    geom_jitter(height = 0, width = 0.1, alpha = 0.6, show.legend = FALSE) +
+    scale_color_manual(values = c("cornflowerblue", "darkred")) +
+    scale_x_discrete(breaks = c(1, 5, 10, 15)) +
+    ylab(label) 
+  
+  # Plot difference over years
+  plot_year <- ggplot(props, aes(x = Year, y = Proportion, color = sign)) +
+    # geom_violin() +
+    geom_jitter(height = 0, width = 0.1, alpha = 0.6, show.legend = FALSE) +
+    scale_color_manual(values = c("cornflowerblue", "darkred")) +
+    ylab("")
+
+  plot_both <- ggpubr::ggarrange(plot_age, plot_year)  # combine plots
+  return(plot_both)
+}
+
+comp_trends <- comp_trends(new = new_props, old = old_props,
+                           names = c("tinyVAST (Tweedie)", "2023 production"))
+comp_trends
+
+ # Save plots ------------------------------------------------------------------
 ggsave(index_comp, filename = here(workDir, "results", save_dir, "index_comparison.png"),
        width=130, height=160, units="mm", dpi=300)
 ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_difference.png"),
@@ -168,3 +209,5 @@ ggsave(all_props, filename = here(workDir, "results", "age_comp_compare_tinyTwee
        width=200, height=180, units="mm", dpi=300)
 ggsave(comp_diff, filename = here(workDir, "results", "age_comp_diff_tinyTweedie.png"),
        width=200, height=200, units="mm", dpi=300)
+ggsave(comp_trends, filename = here(workDir, "results", "age_comp_trends_tinyTweedie.png"),
+       width=200, height=150, units="mm", dpi=300)
