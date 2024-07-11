@@ -11,7 +11,7 @@ library(reshape2)
 library(viridis)
 
 # Set ggplot theme
-devtools::install_github("seananderson/ggsidekick")
+# devtools::install_github("seananderson/ggsidekick")
 library(ggsidekick)
 theme_set(theme_sleek())
 
@@ -160,7 +160,7 @@ comp_diff <- comp_difference(new = new_props, old = old_props,
 comp_diff
 
 # Save plots ------------------------------------------------------------------
-ggsave(comp_index, filename = here(workDir, "results", save_dir, "index_comparison.png"),
+ggsave(index_comp, filename = here(workDir, "results", save_dir, "index_comparison.png"),
        width=130, height=160, units="mm", dpi=300)
 ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_difference.png"),
        width=130, height=180, units="mm", dpi=300)
