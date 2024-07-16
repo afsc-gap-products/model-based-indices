@@ -88,7 +88,8 @@ index_diff
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
 old_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))[, -1]
-new_props <- read.csv(here(workDir, "results", "tinyVAST_props.csv"))
+new_props <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props.csv"))
+new_props_dg <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv"))
 
 # Update old_props to match tinyVAST test output
 tiny_years <- c(1980:2019, 2021:2023)
@@ -115,8 +116,8 @@ compare_props <- function(props, names, last_year) {
   return(plot)
 }
 
-all_props <- compare_props(props = list(new_props, old_props),
-                           names = c("tinyVAST (Tweedie)", "2023 production"))
+all_props <- compare_props(props = list(new_props, new_props_dg, old_props),
+                           names = c("tinyVAST (Tweedie)", "tinyVAST (delta gamma)", "2023 production"))
 all_props
 
 # Plot difference between two models ------------------------------------------
@@ -205,9 +206,9 @@ ggsave(index_comp, filename = here(workDir, "results", save_dir, "index_comparis
        width=130, height=160, units="mm", dpi=300)
 ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_difference.png"),
        width=130, height=180, units="mm", dpi=300)
-ggsave(all_props, filename = here(workDir, "results", "age_comp_compare_tinyTweedie.png"),
+ggsave(all_props, filename = here(workDir, "results", "tinyVAST", "age_comp_compare_tinyALL.png"),
        width=200, height=180, units="mm", dpi=300)
-ggsave(comp_diff, filename = here(workDir, "results", "age_comp_diff_tinyTweedie.png"),
+ggsave(comp_diff, filename = here(workDir, "results", "tinyVAST", "age_comp_diff_tinyTweedie.png"),
        width=200, height=200, units="mm", dpi=300)
-ggsave(comp_trends, filename = here(workDir, "results", "age_comp_trends_tinyTweedie.png"),
+ggsave(comp_trends, filename = here(workDir, "results", "tinyVAST", "age_comp_trends_tinyTweedie.png"),
        width=260, height=120, units="mm", dpi=300)
