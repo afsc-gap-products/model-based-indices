@@ -25,24 +25,32 @@ save_dir <- paste0(this_year, " hindcast")
 # Read in indices & make sure columns for year = Time, Estimate, Error are named correctly
 index1 <- read.csv(here(workDir, "results", "VAST Index", "Index.csv"))
 colnames(index1)[6] <- "error"
-index2 <- read.csv(here(workDir, "results", "Index_2023.csv"))
+index2 <- read.csv(here(workDir, "results", "Comps", "Index.csv"))
 colnames(index2)[6] <- "error"
+
+# When using the index from the comp model, sum across ages
+index2 <- index2 %>% group_by(Time, Stratum) %>%
+  summarize(Estimate = sum(Estimate),
+            error = mean(error)) 
 
 # Combine & plot any number of indices. 
 compare_index <- function(indices, names) {
   df <- data.frame()
   for(i in 1:length(indices)) {
     index <- indices[[i]]
+    index <- index[, c("Time", "Stratum", "Estimate", "error")]
+    index$Estimate <- index$Estimate / 1000000000  # convert to million tons
+    index$error <- index$error / 1000000000  # convert to million tons
     index$version <- names[i]
     df <- rbind.data.frame(df, index)
   }
   
   plot <- ggplot(df %>% filter(Time != 2020), 
-                 aes(x = Time, y = (Estimate / 1000000000), 
+                 aes(x = Time, y = Estimate, 
                      color = version, shape = version)) +
     geom_line(alpha = 0.3) +
-    geom_pointrange(aes(ymin = (Estimate / 1000000000) - (error / 1000000000),
-                        ymax = (Estimate / 1000000000) + (error / 1000000000)), alpha = 0.8) +
+    geom_pointrange(aes(ymin = Estimate - error, ymax = Estimate + error), 
+                    alpha = 0.8) +
     ylim(0, NA) +
     xlab("Year") + ylab("Index (Mt)") +
     scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
@@ -52,7 +60,7 @@ compare_index <- function(indices, names) {
 }
 
 index_comp <- compare_index(indices = list(index1, index2), 
-                            names = c("2024 hindcast", "2023 production"))
+                            names = c("2024 hindcast", "2024 comp model"))
 index_comp
 
 # Difference between two indices
