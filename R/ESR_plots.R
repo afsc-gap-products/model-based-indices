@@ -23,8 +23,8 @@ theme_set(theme_sleek())
 this_year <- 2023
 
 # Read in VAST results - update for each species
-# workDir <- here("species_specific_code", "BS", "pollock", "results")
-workDir <- here("VAST_results", "BS", "nrs")
+workDir <- here("species_specific_code", "BS", "pollock", "results")
+# workDir <- here("VAST_results", "BS", "nrs")
 
 VAST_results <- readRDS(here(workDir, "VASTresults.RDS"))  # for COG
 VAST_fit <- readRDS(here(workDir, "VASTfit.RDS"))  # for EAO
@@ -63,7 +63,8 @@ cog <- function(results = VAST_results, dir = saveDir, save_data = FALSE, save_p
     geom_line() +
     geom_ribbon(aes(ymin = (COG_hat - SE), ymax = (COG_hat + SE)), alpha = 0.2) +
     xlab("") + ylab("") +
-    facet_wrap(~ m, ncol = 1, scales = "free_y")
+    facet_wrap(~ m, ncol = 1, scales = "free_y") +
+    theme(plot.background = element_rect(fill = "transparent"))
   
   # Convert to lat/long using akgfmaps package and plot
   cog_east <- cog %>% filter(m == "Easting (km)" & Year != 2020)
@@ -114,7 +115,10 @@ cog <- function(results = VAST_results, dir = saveDir, save_data = FALSE, save_p
     #                aes(x = X, y = Y, xmin = xmin,xmax = xmax, color = Year), alpha = 0.8) +
     coord_sf(xlim = c(-179, -157), ylim = c(54, 65), expand = FALSE) +
     scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
-    labs(x = NULL, y = NULL)
+    scale_x_continuous(breaks = c(-178, -158)) +
+    scale_y_continuous(breaks = c(55, 64)) +
+    labs(x = NULL, y = NULL) +
+    theme(plot.background = element_rect(fill = "transparent"))
   
   cog_error2 <- cog_error[-1, c(1:2)]
   cog_error2[nrow(cog_error2) + 1, ] <- NA
@@ -130,20 +134,28 @@ cog <- function(results = VAST_results, dir = saveDir, save_data = FALSE, save_p
     geom_errorbar(aes(ymin = ymin, ymax = ymax, color = Year), alpha = 0.4) +
     geom_errorbarh(aes(xmin = xmin, xmax = xmax, color = Year), alpha = 0.4) +
     scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
-    xlab("Longitude (°W)") + ylab("Latitude (°N)")
+    xlab("Longitude (°W)") + ylab("Latitude (°N)") +
+    theme(plot.background = element_rect(fill = "transparent"))
   
   # Inset map into sparkleplot
   inset <- ggdraw() +
     draw_plot(plot = sparkle) +
     draw_plot(plot = map +
                 theme(legend.position = "none") +
-                guides(x = "none", y = "none") +
-                theme(plot.background = element_rect(fill = "transparent")), 
-              x = 0.79, y = 0.75, width = 0.21, height = 0.21) 
+                guides(x = "none", y = "none"), 
+              x = 0.81, y = 0.75, width = 0.21, height = 0.21) 
   
   # Combine sparkleplot and time-series plot
   all <- plot_grid(inset, ts)
   all
+  
+  # Another inset for using independently
+  inset2 <- ggdraw() +
+    draw_plot(plot = sparkle) +
+    draw_plot(plot = map +
+                theme(legend.position = "none") +
+                guides(x = "none", y = "none"), 
+              x = 0.60, y = 0.76, width = 0.21, height = 0.21) 
   
   if(save_data == TRUE) {
     # Save COG as UTM (easting/northing)
@@ -157,26 +169,30 @@ cog <- function(results = VAST_results, dir = saveDir, save_data = FALSE, save_p
   
   if(save_plots == TRUE) {
     ggsave(ts, filename = here(dir, "COG_utm.png"),
-           width = 150, height = 180, unit = "mm", dpi = 300)
+           width = 150, height = 180, unit = "mm", dpi = 300, bg = "white")
     ggsave(map, filename = here(dir, "COG_map.png"),
-           width = 110, height = 90, unit = "mm", dpi = 300)
+           width = 110, height = 90, unit = "mm", dpi = 300,  bg = "white")
     ggsave(sparkle, filename = here(dir, "COG_scatter.png"),
-           width = 130, height = 100, unit = "mm", dpi = 300)
+           width = 130, height = 100, unit = "mm", dpi = 300,  bg = "white")
     ggsave(all, filename = here(dir, "COG_all.png"),
-           width = 240, height = 100, unit = "mm", dpi = 300)
+           width = 250, height = 100, unit = "mm", dpi = 300,  bg = "white")
+    ggsave(inset2, filename = here(dir, "COG_inset.png"),
+           width = 130, height = 100, unit = "mm", dpi = 300,  bg = "white")
   }
   
-  return(list(table = cog_latlon, table_error = cog_error, ts = ts, map = map, sparkle = sparkle, all = all))
+  return(list(table = cog_latlon, table_error = cog_error, 
+              ts = ts, map = map, sparkle = sparkle, all = all, inset = inset2))
 }
 
 cog_plots <- cog()
-cog_plots$all
+cog_plots$all  # map insert may look funny here!
+cog_plots$map
 
 
 # Effective area occupied -----------------------------------------------------
 options(scipen = 999)
 
-eao <- function(fit = VAST_fit, dir = saveDir, save_data = FALSE, save_plot = FALSE) {
+eao <- function(fit = VAST_fit, dir = saveDir, save_data = FALSE, save_plot = TRUE) {
   # Get EAO estimate from VAST fit object
   report <- TMB::summary.sdreport(fit$parameter_estimates$SD)
   area <- report[which(rownames(report) == "log_effective_area_ctl"), c('Estimate', 'Std. Error')]
