@@ -18,8 +18,7 @@ library(sf)
 #' ----------------------------------------------------------------------------
 data( bering_sea_pollock_ages )
 
-# subset to Years 2010-2023 (to speed up the example)
-Data = subset( bering_sea_pollock_ages )
+Data = bering_sea_pollock_ages  # SNW: rename, as we're no longer subsampling the years
 
 # Add Year-_Age interaction
 Data$Age = factor( paste0("Age_",Data$Age) )
