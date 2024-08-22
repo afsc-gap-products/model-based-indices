@@ -149,6 +149,23 @@ prop_plot
 ggsave(prop_plot, filename = here("VAST_results", "2023_age_comp.png"),
        width=120, height=180, units="mm", dpi=300)
 
+library(gganimate)
+# Animated version, just for fun.
+prop_gif <- ggplot(props_ebs, aes(x = Age, y = Proportion, fill = color)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_viridis(option = "turbo") +
+  scale_x_discrete(breaks = c(1, 5, 10, 15)) +
+  scale_y_continuous(limits = c(0, 0.5), breaks = c(0, 0.2, 0.4)) +
+  ylab("Proportion") + 
+  guides(fill = "none") +
+  # facet_wrap(~ Year, ncol = 4, dir = "v") +
+  # theme(strip.text.x = element_blank()) +
+  # geom_text(x = 13, y = 0.45, aes(label = Year), color = "grey30", size = 2.8) +
+  labs(title = "Year: {frame_time}") +
+  transition_time(Year) +
+  ease_aes()
+anim_save(here("VAST_results", "2023_age_comp.gif"), prop_gif, fps = 5)
+
 
 ### Cold pool extent covariate ------------------------------------------------
 # Cold pool covariabe
