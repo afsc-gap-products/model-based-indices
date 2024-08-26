@@ -136,13 +136,13 @@ saveRDS(object = fit$ParHat,
 ## General output plots, DHARMa residuals
 results <- FishStatsUtils::plot_results( 
   fit = fit, 
-  working_dir = paste0(folder, "results_age/output_plots/"),
+  working_dir = paste0(folder, "results_age/"),
   plot_set = NULL,
   strata_names = strata_names, 
   check_residuals = TRUE)
 
 saveRDS(object = results, 
-        file = paste0(folder, "results_age/output_plots/diagnostics.RDS"))
+        file = paste0(folder, "results_age/VASTresults.RDS"))
 
 ## Mapping information
 map_list = FishStatsUtils::make_map_info( 
@@ -200,13 +200,17 @@ FishStatsUtils::plot_maps(
   working_dir = paste0(folder, "results_age/spatiotemporal_effects/")) 
 
 ## Predicted Proportions
+if(!dir.exists(paste0(folder, "results_age/proportions/"))){
+  dir.create(paste0(folder, "results_age/proportions/"))
+}
+
 proportions <- FishStatsUtils::calculate_proportion( 
   TmbData = fit$data_list, 
   Index = results$Index, 
   year_labels = Year_Set, 
   years_to_plot = which(fit$year_labels != 2020),
   strata_names = strata_names, 
-  DirName = paste0(folder, "results_age/output_plots/"))
+  DirName = paste0(folder, "results_age/proportions/"))
 
 prop <- t(data.frame(proportions$Prop_ctl))
 colnames(prop) <- c(paste0("age_", seq(from = 1, length = ncol(prop) - 1 )),
@@ -214,9 +218,6 @@ colnames(prop) <- c(paste0("age_", seq(from = 1, length = ncol(prop) - 1 )),
 rownames(prop) <- as.vector(sapply(X = strata_names, 
                                    FUN = function(x) paste0(x, "_", Year_Set)))
 
-if(!dir.exists(paste0(folder, "results_age/proportions/"))){
-  dir.create(paste0(folder, "results_age/proportions/"))
-}
 saveRDS(object = proportions, 
         file = paste0(folder, "results_age/proportionsVAST_proportions.RDS"))
 write.csv(x = prop, 

@@ -325,6 +325,10 @@ save.image(file = here("species_specific_code", "BS", "pollock", "index_comparis
 p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
 p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
 p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
+
+p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
+p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
+p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
 save(p, p_ebs, p_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "predictions.RData"))
 
 ind <- get_index(p, bias_correct = TRUE, area = p$data$area_in_survey_km2)
@@ -369,6 +373,20 @@ ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, ymax
   ggtitle("NBS") +
   coord_cartesian(expand = FALSE)
 
+ggplot(filter(both_i, stratum == "EBS"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
+  geom_ribbon(alpha = 0.1) +
+  geom_line(alpha = 0.8) + 
+  #ylim(0, max(both_i$upr)) +
+  ggtitle("EBS") +
+  coord_cartesian(expand = FALSE)
+
+ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
+  geom_ribbon(alpha = 0.1) +
+  geom_line(alpha = 0.8) + 
+  #ylim(0, max(both_i$upr)) +
+  ggtitle("NBS") +
+  coord_cartesian(expand = FALSE)
+
 # TODO: include subregional indices in plots
 ```
 
@@ -389,4 +407,3 @@ R.Version()$version.string
 packageVersion("VAST")
 packageVersion("FishStatsUtils")
 ```
-git reset --hard 0d1d7fc32
