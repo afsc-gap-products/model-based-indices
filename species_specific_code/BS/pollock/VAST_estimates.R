@@ -225,45 +225,45 @@ X2config_cp <- as.matrix(2)
 # Build the model ---------------------------------------------------------
 # quick fit:
 
-# settings_quick <- settings
-# settings_quick$n_x <- 100  # 100 knots for testing
-# settings_quick$bias.correct <- TRUE
+settings_quick <- settings
+settings_quick$n_x <- 100  # 100 knots for testing
+settings_quick$bias.correct <- TRUE
 
 options(max.print = .Machine$integer.max)
 
-# fit <- fit_model( "settings"=settings_quick, 
-#                   "Lat_i"=Data_Geostat[,'Lat'], 
-#                   "Lon_i"=Data_Geostat[,'Lon'], 
-#                   "t_i"=Data_Geostat[,'Year'], 
-#                   "c_i"=rep(0,nrow(Data_Geostat)),
-#                   "b_i"=Data_Geostat[,'Catch_KG_km2'],
-#                   "a_i"=Data_Geostat[,'AreaSwept_km2'], 
-#                   "v_i"=Data_Geostat[,'Vessel'],
-#                   "create_strata_per_region"=TRUE,
-#                   #"getJointPrecision"=getJointPrecision, # turn on for full run
-#                   #"getReportCovariance"=getReportCovariance,  # turn on for full run
-#                   "X1_formula"=formula,
-#                   "X2_formula"=formula,
-#                   "X1config_cp" = X1config_cp,
-#                   "X2config_cp" = X2config_cp ,
-#                   "covariate_data"= covariate_data,
-#                   # getsd=TRUE,
-#                   getsd=FALSE,            #for testing
-#                   # "run_model" = FALSE,    #for testing
-#                   # "build_model" = FALSE,  #for testing
-#                   # test_fit = FALSE,       #for testing
-#                   newtonsteps=0,          #for testing
-#                   # CheckForBugs = FALSE,   #for testing
-#                   "working_dir" = workDir
-# )
+fit_quick <- fit_model( "settings"=settings_quick,
+                        "Lat_i"=Data_Geostat[,'Lat'],
+                        "Lon_i"=Data_Geostat[,'Lon'],
+                        "t_i"=Data_Geostat[,'Year'],
+                        "c_i"=rep(0,nrow(Data_Geostat)),
+                        "b_i"=Data_Geostat[,'Catch_KG_km2'],
+                        "a_i"=Data_Geostat[,'AreaSwept_km2'],
+                        "v_i"=Data_Geostat[,'Vessel'],
+                        "create_strata_per_region"=TRUE,
+                        #"getJointPrecision"=getJointPrecision, # turn on for full run
+                        #"getReportCovariance"=getReportCovariance,  # turn on for full run
+                        "X1_formula"=formula,
+                        "X2_formula"=formula,
+                        "X1config_cp" = X1config_cp,
+                        "X2config_cp" = X2config_cp ,
+                        "covariate_data"= covariate_data,
+                        # getsd=TRUE,
+                        getsd=FALSE,            #for testing
+                        # "run_model" = FALSE,    #for testing
+                        # "build_model" = FALSE,  #for testing
+                        # test_fit = FALSE,       #for testing
+                        newtonsteps=0,          #for testing
+                        # CheckForBugs = FALSE,   #for testing
+                        "working_dir" = workDir
+)
 # 
-# saveRDS(fit, file = here(workDir, "VAST Index" ,"VASTfit_quick.RDS"))
-# fit_check <- readRDS(file = here(workDir, "results", "VAST Index", "VASTfit_quick.RDS"))
-# fit_check$ParHat
+# saveRDS(fit_quick, file = here(workDir, "VAST Index" ,"VASTfit_quick.RDS"))
+# fit_check_quick <- readRDS(file = here(workDir, "results", "VAST Index", "VASTfit_quick.RDS"))
+# fit_check_quick$ParHat
 
 # full model fit:
 start.time <- Sys.time() #"2024-03-14 16:49 PDT"
-full_fit <- fit_model( "settings"=settings, 
+fit <- fit_model( "settings"=settings, 
                   "Lat_i"=Data_Geostat[,'Lat'], 
                   "Lon_i"=Data_Geostat[,'Lon'], 
                   "t_i"=Data_Geostat[,'Year'], 
@@ -294,8 +294,8 @@ full_fit <- fit_model( "settings"=settings,
 stop.time <- Sys.time()
 
 # Save results
-saveRDS(full_fit, file = here(workDir, "results", "VAST Index", "VASTfit_full.RDS"))
-# full_fit <- readRDS(file = paste0(workDir,"/VASTfit_full.RDS"))
+saveRDS(fit, file = here(workDir, "results", "VAST Index", "VASTfit.RDS"))
+# full_fit <- readRDS(file = paste0(workDir,"/VASTfit.RDS"))
 
 # If you need to load a fit in a new session:
 # dyn.load(dynlib("VAST_v12_0_0"))
