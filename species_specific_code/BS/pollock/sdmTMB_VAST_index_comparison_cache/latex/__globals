@@ -1,0 +1,5 @@
+data	%>%	::	as.data.frame	as.integer	ddc_cpue_kg_ha	here	read.csv	start_latitude	start_longitude	year
+coldpool	$	:::	as.integer	c	data.frame	left_join	mean	scale	select	year
+config	c
+settings	as.factor	c	data.frame	FieldConfig	make_settings	RhoConfig
+fit	!	::	~	as.matrix	covariate_data	dat_ll	dir.create	file.exists	fit_model	here	if	paste0	readRDS	saveRDS	settings
