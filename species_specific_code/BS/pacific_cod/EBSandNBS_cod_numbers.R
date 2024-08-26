@@ -1,5 +1,3 @@
-## TODO: set up results directories properly, some of the output is going to root dir
-
 library(tidyverse)
 library(VAST) 
 library(sf)
@@ -147,10 +145,8 @@ fit <- fit_model( "settings"=settings,
                   "working_dir" = workDir
 )
 
-
 # Save results
-
-saveRDS(fit, file = "VASTfit.RDS")
+saveRDS(fit, file = paste0(workDir, "results/VASTfit.RDS"))
 
 
 # Plots -------------------------------------------------------------------
@@ -259,5 +255,3 @@ saveRDS(fit, file = "VASTfit.RDS")
     print(spPlot)
 
     ggsave(paste0(workDir,"results/Index_compare.png"), width=8, height=6, units="in")
-   
-
