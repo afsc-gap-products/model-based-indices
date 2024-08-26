@@ -7,7 +7,7 @@ output:
     number_sections: true
 ---
 
-```{r setup, include = FALSE, cache=FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r packages, message=FALSE, warning=FALSE, cache=FALSE}
-remotes::install_github("afsc-gap-products/coldpool")
+#remotes::install_github("afsc-gap-products/coldpool")
 library(VAST)
 library(sp)
 library(sdmTMB)
@@ -130,7 +130,7 @@ fit$parameter_estimates$diagnostics
 
 Now we fit the same model in sdmTMB:
 
-```{r sdmTMB-example, echo = TRUE, cache=TRUE}
+```{r sdmTMB-example, echo = TRUE}
 dat <- dat_ll %>% 
   rename(X = lon, Y = lat)
   
@@ -248,7 +248,7 @@ if (file.exists(here("species_specific_code", "BS", "pollock", "index_comparison
 
 We can compare the index we would get using sdmTMB. 
 
-```{r sdmTMB-index, cache=TRUE, echo=TRUE}
+```{r sdmTMB-index, echo=TRUE}
 # prep prediction grids (all, EBS, NBS) and transform to UTM projection
 load(here("extrapolation_grids", "eastern_bering_sea_grid.rda"))
 load(here("extrapolation_grids", "northern_bering_sea_grid.rda"))
@@ -282,8 +282,21 @@ grid_nbs <- as.data.frame(spTransform(grid_ll_nbs, CRS("+proj=utm +zone=2")))
 grid_nbs$X <- grid_nbs$coords.x1 / 1000 # scale to km to work with smaller numbers
 grid_nbs$Y <- grid_nbs$coords.x2 / 1000 
 
-# combined grid
-grid <- rbind(grid_ebs, grid_nbs)
+# Combined grid
+grid <- bind_rows(grid_nbs, grid_ebs)
+
+# combine grid and aggregate to reduce cells if have computational issues
+# However, this example is not replicating the scale of the combined index
+# grid_sf <- sf::st_as_sf(rbind(grid_ebs, grid_nbs), 
+#                         coords = c("coords.x1", "coords.x2"), 
+#                         crs = sf::st_crs(3338))
+# grid_ras <- stars::st_rasterize(grid_sf %>% select(area_in_survey_km2, geometry))
+# grid <- terra::as.data.frame(terra::aggregate(terra::rast(grid_ras), 
+#                                               fact = 2, 
+#                                               fun = "sum", 
+#                                               na.rm = TRUE), 
+#                              xy = TRUE) %>%
+#   mutate(X = x / 1000, Y = y / 1000) # scale to km to work with smaller numbers
 
 # replicate extrapolation grids for each year in data
 pred_grid_ebs <- replicate_df(grid_ebs, "year_f", unique(dat$year_f))
@@ -292,9 +305,6 @@ pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
 pred_grid_ebs$year <- as.integer(as.character(factor(pred_grid_ebs$year_f)))
 pred_grid_nbs$year <- as.integer(as.character(factor(pred_grid_nbs$year_f)))
 pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
-# pred_grid_ebs <- bind_rows(pred_grid_ebs, replicate_df(grid_ebs, "year", 2020L))
-# pred_grid_nbs <- bind_rows(pred_grid_nbs, replicate_df(grid_nbs, "year", 2020L))
-# pred_grid <- bind_rows(pred_grid, replicate_df(grid, "year", 2020L))
 
 # join in cold pool covariate
 pred_grid_ebs <- left_join(pred_grid_ebs, select(covariate_data, year, cpe), by = "year")
@@ -302,18 +312,28 @@ pred_grid_nbs <- left_join(pred_grid_nbs, select(covariate_data, year, cpe), by 
 pred_grid <- left_join(pred_grid, select(covariate_data, year, cpe), by = "year")
 
 # get index for total area, and the two subareas of interest (EBS, NBS)
-area <- pred_grid$area_in_survey_km2
-area_ebs <- pred_grid_ebs$area_in_survey_km2
-area_nbs  <- pred_grid_nbs$area_in_survey_km2
-
 p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
-ind <- get_index(p, bias_correct = TRUE, area = area)
+ind <- get_index(p, bias_correct = TRUE, area = p$fake_nd$area_in_survey_km2)
 
 p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
-ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = area_ebs)
+ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = p_ebs$fake_nd$area_in_survey_km2)
 
 p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
-ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = area_nbs)
+ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = p_nbs$fake_nd$area_in_survey_km2)
+save.image(file = here("species_specific_code", "BS", "pollock", "index_comparison", "results.RData"))
+
+p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
+p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
+p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
+save(p, p_ebs, p_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "predictions.RData"))
+
+ind <- get_index(p, bias_correct = TRUE, area = p$data$area_in_survey_km2)
+ind$stratum <- "Both"
+ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = p_ebs$data$area_in_survey_km2)
+ind_ebs$stratum <- "EBS"
+ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = p_nbs$data$area_in_survey_km2)
+ind_nbs$stratum <- "NBS"
+save(ind, ind_ebs, ind_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "indices.RData"))
 ```
 
 Now, we can compare the indices. 
@@ -322,16 +342,34 @@ Now, we can compare the indices.
 vast_i <- read.csv(here("species_specific_code", "BS", "pollock", "index_comparison", "Index.csv")) %>%
   mutate(index = "VAST", year = as.numeric(Time), est = Estimate, 
     se = Std..Error.for.ln.Estimate.) %>% 
-  select(index, year, est, se) %>% 
+  select(index, year, est, se, stratum = Stratum) %>% 
   mutate(lwr = exp(log(est) + qnorm(0.025) * se)) %>% 
   mutate(upr = exp(log(est) + qnorm(0.975) * se))
-sdm_i <- ind %>% mutate(index = "sdmTMB")
+sdm_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "sdmTMB")
 both_i <- bind_rows(sdm_i, vast_i) %>% filter(est > 0)
-ggplot(both_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
+
+ggplot(filter(both_i, stratum == "Both"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
   geom_ribbon(alpha = 0.1) +
   geom_line(alpha = 0.8) + 
   ylim(0, max(both_i$upr)) +
+  ggtitle("EBS + NBS") +
   coord_cartesian(expand = FALSE)
+
+ggplot(filter(both_i, stratum == "EBS"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
+  geom_ribbon(alpha = 0.1) +
+  geom_line(alpha = 0.8) + 
+  #ylim(0, max(both_i$upr)) +
+  ggtitle("EBS") +
+  coord_cartesian(expand = FALSE)
+
+ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
+  geom_ribbon(alpha = 0.1) +
+  geom_line(alpha = 0.8) + 
+  #ylim(0, max(both_i$upr)) +
+  ggtitle("NBS") +
+  coord_cartesian(expand = FALSE)
+
+# TODO: include subregional indices in plots
 ```
 
 ```{r}
@@ -351,3 +389,4 @@ R.Version()$version.string
 packageVersion("VAST")
 packageVersion("FishStatsUtils")
 ```
+git reset --hard 0d1d7fc32
