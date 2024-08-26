@@ -16,8 +16,10 @@ theme_set(theme_sleek())
 
 this_year <- 2023
 
+workDir <- here("species_specific_code","BS","pollock")  # define working directory
+
 ### VAST index ----------------------------------------------------------------
-index <- read.csv("Index.csv")
+index <- read.csv(here(workDir, "results", "VAST Index", "Index.csv"))
 
 # Calculate 2023 difference for both areas
 diff_23 <- ((index[42, 5] - index[41, 5]) / index[41, 5]) * 100
@@ -38,11 +40,11 @@ index_all_areas <- ggplot(index %>% filter(Time != 2020),
   geom_pointrange(aes(ymin = (Estimate / 1000000000) - (error / 1000000000),
                       ymax = (Estimate / 1000000000) + (error / 1000000000)), alpha = 0.8) +
   ylim(0, NA) +
-  xlab("Year") + ylab("Index (Mt)") +
+  xlab("Year") + ylab("Index of Abundance (Mt)") +
   facet_wrap(~ Stratum, ncol = 1)
 index_all_areas
 
-ggsave(index_all_areas, filename = here("species_specific_code", "BS", "pollock", "plots", "index_all_areas.png"),
+ggsave(index_all_areas, filename = here(workDir, "plots", "index_all_areas.png"),
        width=130, height=160, units="mm", dpi=300)
 
 # Plot just EBS
@@ -53,8 +55,11 @@ index_ebs <- ggplot(ebs, aes(x = Time, y = (Estimate / 1000000000))) +
   geom_pointrange(aes(ymin = (Estimate / 1000000000) - (error / 1000000000),
                       ymax = (Estimate / 1000000000) + (error / 1000000000)), alpha = 0.8) +
   ylim(0, NA) +
-  xlab("Year") + ylab("Index (Mt)") 
+  xlab("Year") + ylab("Index of Abundance (Mt)") 
 index_ebs
+
+ggsave(index_ebs, filename = here(workDir, "plots", "index_ebs.png"),
+       width=130, height=90, units="mm", dpi=300)
 
 # Compare to design-based index from gapindex ---------------------------------
 sql_channel <- gapindex::get_connected()  # connect to Oracle
@@ -118,11 +123,11 @@ db_mb <- rbind.data.frame(cbind.data.frame(Year = db_index$YEAR,
   xlab("Year") + ylab("EBS Index (Mt)")
 db_mb
 
-ggsave(db_mb, filename = here("VAST_results", "2023_db_vast.png"),
+ggsave(db_mb, filename = here(workDir, "plots", "2023_db_vast.png"),
        width=170, height=90, units="mm", dpi=300)
 
 ### Plot VAST age comps -------------------------------------------------------
-proportions <- read.csv("proportions.csv")[, -1]
+proportions <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))[, -1]
 colnames(proportions)[1:15] <- 1:15
 props <- melt(proportions, id.vars = c("Year", "Region"),
               variable.name = "Age", value.name = "Proportion")
@@ -146,7 +151,7 @@ prop_plot <- ggplot(props_ebs, aes(x = Age, y = Proportion, fill = color)) +
   geom_text(x = 13, y = 0.45, aes(label = Year), color = "grey30", size = 2.8)
 prop_plot
 
-ggsave(prop_plot, filename = here("VAST_results", "2023_age_comp.png"),
+ggsave(prop_plot, filename = here(workDir, "plots", "2023_age_comp.png"),
        width=120, height=180, units="mm", dpi=300)
 
 library(gganimate)
@@ -155,16 +160,14 @@ prop_gif <- ggplot(props_ebs, aes(x = Age, y = Proportion, fill = color)) +
   geom_bar(stat = "identity", position = "dodge") +
   scale_fill_viridis(option = "turbo") +
   scale_x_discrete(breaks = c(1, 5, 10, 15)) +
-  scale_y_continuous(limits = c(0, 0.5), breaks = c(0, 0.2, 0.4)) +
+  scale_y_continuous(limits = c(0, 0.51), breaks = c(0, 0.2, 0.4)) +
   ylab("Proportion") + 
   guides(fill = "none") +
-  # facet_wrap(~ Year, ncol = 4, dir = "v") +
-  # theme(strip.text.x = element_blank()) +
-  # geom_text(x = 13, y = 0.45, aes(label = Year), color = "grey30", size = 2.8) +
-  labs(title = "Year: {frame_time}") +
-  transition_time(Year) +
-  ease_aes()
-anim_save(here("VAST_results", "2023_age_comp.gif"), prop_gif, fps = 5)
+  labs(title = "Year: {next_state}") +
+  transition_states(Year, transition_length = 1, state_length = 2, wrap = TRUE) +
+  ease_aes("linear")
+# animate(prop_gif)
+anim_save(here(workDir, "plots", "2023_age_comp.gif"), prop_gif, fps = 2)
 
 
 ### Cold pool extent covariate ------------------------------------------------
