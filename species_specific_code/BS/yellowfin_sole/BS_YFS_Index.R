@@ -11,7 +11,7 @@
 ##                https://docs.google.com/document/d/18CeXcHhHK48hrtkiC6zygXlHj6YVrWEd/edit
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 rm(list = ls())
-which_model <- c("hindcast", "production")[1]
+which_model <- c("hindcast", "production")[2]
 species_name <- "yellowfin_sole"
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -77,11 +77,11 @@ Data_Geostat <-
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Load coldpool covariate data ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# mean_bt_lt100m <- scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)
-# covariate_data <- data.frame(Year = c(coldpool:::cold_pool_index$YEAR, 2020),
-#                              Lat = mean(Data_Geostat$Lat),
-#                              Lon = mean(Data_Geostat$Lon),
-#                              mean_bt_lt100m = c(mean_bt_lt100m, 0))
+mean_bt_lt100m <- scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)
+covariate_data <- data.frame(Year = c(coldpool:::cold_pool_index$YEAR, 2020),
+                             Lat = mean(Data_Geostat$Lat),
+                             Lon = mean(Data_Geostat$Lon),
+                             mean_bt_lt100m = c(mean_bt_lt100m, 0))
 
 # coldpool package wouldnt load on this version of R
 # write.csv(file = paste0(folder, "data/mean_bt_lt100m.csv"),
