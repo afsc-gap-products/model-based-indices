@@ -52,7 +52,7 @@ for (pck in 1:length(pck_version)) {
 }
 
 # Import data -------------------------------------------------------------
-Data_Geostat <- readRDS(file = paste0(folder, 
+Data_Geostat <- readRDS(file = paste0(workDir, 
                                       "data/data_geostat_agecomps.RDS"))
 
 # Settings ----------------------------------------------------------------
@@ -119,18 +119,18 @@ saveRDS(fit, file = paste0(workDir,"/results_age/",species_name,"_VASTfit.RDS"))
 
 ## Parameter estimates
 saveRDS(object = fit$ParHat, 
-        file = paste0(folder, "results_age/starting_parameters.RDS"))
+        file = paste0(workDir, "results_age/starting_parameters.RDS"))
 
 ## General output plots, DHARMa residuals
 results <- FishStatsUtils::plot_results( 
   fit = fit, 
-  working_dir = paste0(folder, "results_age/"),
+  working_dir = paste0(workDir, "results_age/"),
   plot_set = NULL,
   strata_names = strata_names, 
   check_residuals = TRUE)
 
 saveRDS(object = results, 
-        file = paste0(folder, "results_age/VASTresults.RDS"))
+        file = paste0(workDir, "results_age/VASTresults.RDS"))
 
 ## Mapping information
 map_list = FishStatsUtils::make_map_info( 
@@ -142,8 +142,8 @@ map_list = FishStatsUtils::make_map_info(
 n_ages <- length(unique(Data_Geostat$Age))
 Year_Set <- fit$year_labels
 
-if(!dir.exists(paste0(folder, "results_age/predicted_density/"))){
-  dir.create(paste0(folder, "results_age/predicted_density/"))
+if(!dir.exists(paste0(workDir, "results_age/predicted_density/"))){
+  dir.create(paste0(workDir, "results_age/predicted_density/"))
 }
 
 FishStatsUtils::plot_maps( 
@@ -155,11 +155,11 @@ FishStatsUtils::plot_maps(
   Obj = fit$tmb_list$Obj, 
   year_labels = Year_Set,
   PlotDF = map_list[["PlotDF"]],
-  working_dir = paste0(folder, "results_age/predicted_density/")) 
+  working_dir = paste0(workDir, "results_age/predicted_density/")) 
 
 ## Predicted Spatial Fields
-if(!dir.exists(paste0(folder, "results_age/spatial_effects/"))){
-  dir.create(paste0(folder, "results_age/spatial_effects/"))
+if(!dir.exists(paste0(workDir, "results_age/spatial_effects/"))){
+  dir.create(paste0(workDir, "results_age/spatial_effects/"))
 }
 FishStatsUtils::plot_maps( 
   fit = fit, 
@@ -170,11 +170,11 @@ FishStatsUtils::plot_maps(
   year_labels = Year_Set,
   Obj = fit$tmb_list$Obj, 
   PlotDF = map_list[["PlotDF"]],
-  working_dir = paste0(folder, "results_age/spatial_effects/")) 
+  working_dir = paste0(workDir, "results_age/spatial_effects/")) 
 
 ## Predicted Spatiotemporal Fields
-if(!dir.exists(paste0(folder, "results_age/spatiotemporal_effects/"))){
-  dir.create(paste0(folder, "results_age/spatiotemporal_effects/"))
+if(!dir.exists(paste0(workDir, "results_age/spatiotemporal_effects/"))){
+  dir.create(paste0(workDir, "results_age/spatiotemporal_effects/"))
 }
 FishStatsUtils::plot_maps( 
   fit = fit, 
@@ -185,11 +185,11 @@ FishStatsUtils::plot_maps(
   year_labels = Year_Set,
   Obj = fit$tmb_list$Obj, 
   PlotDF = map_list[["PlotDF"]],
-  working_dir = paste0(folder, "results_age/spatiotemporal_effects/")) 
+  working_dir = paste0(workDir, "results_age/spatiotemporal_effects/")) 
 
 ## Predicted Proportions
-if(!dir.exists(paste0(folder, "results_age/proportions/"))){
-  dir.create(paste0(folder, "results_age/proportions/"))
+if(!dir.exists(paste0(workDir, "results_age/proportions/"))){
+  dir.create(paste0(workDir, "results_age/proportions/"))
 }
 
 proportions <- FishStatsUtils::calculate_proportion( 
@@ -198,7 +198,7 @@ proportions <- FishStatsUtils::calculate_proportion(
   year_labels = Year_Set, 
   years_to_plot = which(fit$year_labels != 2020),
   strata_names = strata_names, 
-  DirName = paste0(folder, "results_age/proportions/"))
+  DirName = paste0(workDir, "results_age/proportions/"))
 
 prop <- t(data.frame(proportions$Prop_ctl))
 colnames(prop) <- c(paste0("age_", seq(from = 1, length = ncol(prop) - 1 )),
@@ -207,6 +207,6 @@ rownames(prop) <- as.vector(sapply(X = strata_names,
                                    FUN = function(x) paste0(x, "_", Year_Set)))
 
 saveRDS(object = proportions, 
-        file = paste0(folder, "results_age/proportionsVAST_proportions.RDS"))
+        file = paste0(workDir, "results_age/proportionsVAST_proportions.RDS"))
 write.csv(x = prop, 
-          file = paste0(folder, "results_age/proportions/clean_proportions.csv"))
+          file = paste0(workDir, "results_age/proportions/clean_proportions.csv"))
