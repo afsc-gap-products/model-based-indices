@@ -2,6 +2,7 @@ library(tidyverse)
 library(VAST) 
 library(sf)
 library(scales)
+#remotes::install_github("afsc-gap-products/coldpool")
 library(coldpool)
 library(akgfmaps)
 
@@ -26,7 +27,7 @@ sessionInfo()
 sink()
 
 # Make sure package versions are correct for current year ------------------
-current_year <- 2023
+current_year <- 2024
 VAST_cpp_version <- "VAST_v14_0_1"
 pck_version <- c("VAST" = "3.10.0",
                  "FishStatsUtils" = "2.12.0",
@@ -92,7 +93,6 @@ settings <- make_settings(
     )
 
 # Read catch data ---------------------------------------------------------
-
 dat <- read_rds(paste0(workDir, "data/data_geostat_biomass_index.RDS"))
 
 # Cold Pool covariate -----------------------------------------------------
@@ -131,11 +131,8 @@ fit <- fit_model( "settings"=settings,
                   "newtonsteps" = 1
 )
 
-
 # Save results
-
 saveRDS(fit, file = paste0(workDir, "results/VASTfit.RDS"))
-
 
 # Plots -------------------------------------------------------------------
     # If you need to load a fit in a new session:
@@ -172,7 +169,6 @@ saveRDS(fit, file = paste0(workDir, "results/VASTfit.RDS"))
     ln_km2 <- ln_km2[which(ln_km2$Year %in% unique(fit$data_frame$t_i)),]
     write.csv( ln_km2, file=paste0(workDir,"results/ln_effective_area.csv"), row.names=FALSE )
     
-
 
 # Plot DB vs VAST Comparison ----------------------------------------------
 plot(dat %>% group_by(Year) %>% summarise(mean(Catch_KG)), type ="l") # mean cpue for quick look
