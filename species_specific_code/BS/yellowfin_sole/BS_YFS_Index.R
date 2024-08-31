@@ -77,11 +77,11 @@ Data_Geostat <-
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Load coldpool covariate data ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-mean_bt_lt100m <- scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)
-covariate_data <- data.frame(Year = c(coldpool:::cold_pool_index$YEAR, 2020),
-                             Lat = mean(Data_Geostat$Lat),
-                             Lon = mean(Data_Geostat$Lon),
-                             mean_bt_lt100m = c(mean_bt_lt100m, 0))
+# mean_bt_lt100m <- scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)
+# covariate_data <- data.frame(Year = c(coldpool:::cold_pool_index$YEAR, 2020),
+#                              Lat = mean(Data_Geostat$Lat),
+#                              Lon = mean(Data_Geostat$Lon),
+#                              mean_bt_lt100m = c(mean_bt_lt100m, 0))
 
 # coldpool package wouldnt load on this version of R
 # write.csv(file = paste0(folder, "data/mean_bt_lt100m.csv"),
@@ -193,7 +193,7 @@ yfs_dbe <- RODBC::sqlQuery(channel = chl,
 ## Extract VAST Index Estimates
 mbe <- 
   subset(x = read.csv(file = paste0(folder, 
-                                    "results_index/output_plots/Index.csv")),
+                                    "results_index/Index.csv")),
          subset = Stratum %in% c("EBS", "NBS"),
          select = c(Time, Stratum, Estimate, Std..Error.for.ln.Estimate.))
 mbe$Estimate <- mbe$Estimate / 1000
@@ -208,5 +208,5 @@ dbe_vast_comp <- merge(x = mbe, all.x = TRUE,
 ## Save comparison
 write.csv(x = dbe_vast_comp,
           file = paste0(folder, 
-                        "results_index/output_plots/dbe_vs_vast_comp.csv"),
+                        "results_index/dbe_vs_vast_comp.csv"),
           row.names = F)
