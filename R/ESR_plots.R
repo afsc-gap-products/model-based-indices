@@ -128,9 +128,14 @@ cog <- function(results = VAST_results, dir = saveDir, save_data = FALSE, save_p
   # Plot as scatter (sparkleplot)
   sparkle <- ggplot(data = cog_error, aes(x = X, y = Y, color = Year)) +
     geom_point() +
+    # With arrow
+    # geom_segment(data = cog_error2 %>% filter(Year >= this_year - 10), 
+    #              aes(x = X, y = Y, xend = X2, yend = Y2), 
+    #              alpha = 0.8, arrow = arrow(length = unit(0.03, "npc"))) +
+    # Without arrow
     geom_segment(data = cog_error2 %>% filter(Year >= this_year - 10), 
                  aes(x = X, y = Y, xend = X2, yend = Y2), 
-                 alpha = 0.8, arrow = arrow(length = unit(0.03, "npc"))) +
+                 alpha = 0.8) +
     geom_errorbar(aes(ymin = ymin, ymax = ymax, color = Year), alpha = 0.4) +
     geom_errorbarh(aes(xmin = xmin, xmax = xmax, color = Year), alpha = 0.4) +
     scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
@@ -185,7 +190,8 @@ cog <- function(results = VAST_results, dir = saveDir, save_data = FALSE, save_p
 }
 
 cog_plots <- cog()
-cog_plots$all  # map insert may look funny here!
+# Map insert may look funny here because of the dimensions of the Rstudio plotting window. Check saved plot!
+cog_plots$all  
 cog_plots$map
 
 
