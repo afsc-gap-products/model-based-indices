@@ -16,12 +16,12 @@ workDir <- paste0(getwd(),"/species_specific_code/BS/",
                       species_name, "/", which_model, "/")
 if(!dir.exists(workDir))
   dir.create(path = workDir, recursive = TRUE)
-if(!dir.exists(paste0(workDir, "results/")))
-  dir.create(path = paste0(workDir, "results/"), recursive = TRUE)
+if(!dir.exists(paste0(workDir, "results_n/")))
+  dir.create(path = paste0(workDir, "results_n/"), recursive = TRUE)
 
 
 # Record sessionInfo -------------------------------------------------------
-sink(file = paste0(workDir, "results/session_info.txt"), 
+sink(file = paste0(workDir, "results_n/session_info.txt"), 
      type = "output")
 sessionInfo()
 sink()
@@ -131,7 +131,7 @@ fit <- fit_model( "settings"=settings,
 )
 
 # Save results
-saveRDS(fit, file = paste0(workDir, "results/VASTfit.RDS"))
+saveRDS(fit, file = paste0(workDir, "results_n/VASTfit.RDS"))
 
 # Plots -------------------------------------------------------------------
     # If you need to load a fit in a new session:
@@ -144,10 +144,10 @@ saveRDS(fit, file = paste0(workDir, "results/VASTfit.RDS"))
                              strata_names = strata_names, 
                              check_residuals=TRUE,
                              n_samples=0,
-                             working_dir = paste0(workDir, "results/" )
+                             working_dir = paste0(workDir, "results_n/" )
                             )
     
-    saveRDS(results, file = paste0(workDir, "results/VASTresults.RDS"))
+    saveRDS(results, file = paste0(workDir, "results_n/VASTresults.RDS"))
     
     # residuals
     plot_quantile_residuals( fit=fit )
@@ -155,7 +155,7 @@ saveRDS(fit, file = paste0(workDir, "results/VASTfit.RDS"))
     plot_maps(fit=fit, n_cells = 600, Obj=fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
     
     # ESP products
-    write.csv( results$Range$COG_Table, file=paste0(workDir,"results/COG.csv"), row.names=FALSE )
+    write.csv( results$Range$COG_Table, file=paste0(workDir,"results_n/COG.csv"), row.names=FALSE )
     
     ##save effective area occupied for ESP request
     report = TMB::summary.sdreport(fit$parameter_estimates$SD)
@@ -163,7 +163,7 @@ saveRDS(fit, file = paste0(workDir, "results/VASTfit.RDS"))
     Year <- sort(unique(fit$year_labels))
     ln_km2 <- as.data.frame(cbind(ln_km2, Year))
     ln_km2 <- ln_km2[which(ln_km2$Year %in% unique(fit$data_frame$t_i)),]
-    write.csv( ln_km2, file=paste0(workDir,"results/ln_effective_area.csv"), row.names=FALSE )
+    write.csv( ln_km2, file=paste0(workDir,"results_n/ln_effective_area.csv"), row.names=FALSE )
     
     
 # Plot DB vs VAST Comparison ----------------------------------------------
