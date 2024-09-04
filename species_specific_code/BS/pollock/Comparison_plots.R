@@ -25,43 +25,66 @@ save_dir <- paste0(this_year, " hindcast")
 # Read in indices & make sure columns for year = Time, Estimate, Error are named correctly
 index1 <- read.csv(here(workDir, "results", "VAST Index", "Index.csv"))
 colnames(index1)[6] <- "error"
-index2 <- read.csv(here(workDir, "results", "Comps", "Index.csv"))
-colnames(index2)[6] <- "error"
+index1$Estimate <- index1$Estimate / 1000000000
+index1$error <- index1$error / 1000000000
 
-# When using the index from the comp model, sum across ages
-index2 <- index2 %>% group_by(Time, Stratum) %>%
-  summarize(Estimate = sum(Estimate),
-            error = mean(error)) 
+index2 <- read.csv(here(workDir, "archive", "Index_2022.csv"))
+colnames(index2)[6] <- "error"
+index2$Estimate <- index2$Estimate / 1000000000
+index2$error <- index2$error / 1000000000
+
+index3 <- readRDS(here(workDir, "archive", "VASTresults_2021.RDS"))$Index$Table
+index3 <- index3[, -5]
+colnames(index3) <- c("Time", "Units", "Stratum", "Estimate", "error")
+index3$Estimate <- index3$Estimate / 1000000
+index3$error <- index3$error / 1000000
+
+# # When needed, sum across ages
+# index2 <- index2 %>% group_by(Time, Stratum) %>%
+#   summarize(Estimate = sum(Estimate),
+#             error = mean(error)) 
 
 # Combine & plot any number of indices. 
-compare_index <- function(indices, names) {
+compare_index <- function(indices, names, ebs_only = FALSE) {
   df <- data.frame()
   for(i in 1:length(indices)) {
     index <- indices[[i]]
-    index <- index[, c("Time", "Stratum", "Estimate", "error")]
-    index$Estimate <- index$Estimate / 1000000000  # convert to million tons
-    index$error <- index$error / 1000000000  # convert to million tons
+    index <- index[c("Time", "Stratum", "Estimate", "error")]
+    # index$Estimate <- index$Estimate / 1000000000  # convert to million tons
+    # index$error <- index$error / 1000000000  # convert to million tons
     index$version <- names[i]
     df <- rbind.data.frame(df, index)
   }
   
-  plot <- ggplot(df %>% filter(Time != 2020), 
+  df <- df %>% filter(Time !=2020)
+  
+  if(ebs_only == TRUE) {
+    df <- df %>% filter(Time !=2020 & Stratum == "EBS") 
+  }
+  
+  plot <- ggplot(df, 
                  aes(x = Time, y = Estimate, 
                      color = version, shape = version)) +
     geom_line(alpha = 0.3) +
     geom_pointrange(aes(ymin = Estimate - error, ymax = Estimate + error), 
                     alpha = 0.8) +
     ylim(0, NA) +
-    xlab("Year") + ylab("Index (Mt)") +
-    scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
-    facet_wrap(~ Stratum, scales = "free_y", ncol = 1)
+    xlab("Year") + ylab("Index of Abundance (Mt)") +
+    scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) 
+  
+  if(ebs_only == FALSE) {
+    plot <- plot + facet_wrap(~ Stratum, scales = "free_y", ncol = 1)
+  }
   
   return(plot)
 }
 
-index_comp <- compare_index(indices = list(index1, index2), 
-                            names = c("2024 hindcast", "2024 comp model"))
+index_comp <- compare_index(indices = list(index1, index2, index3), 
+                            names = c("2023", "2022", "2021"),
+                            ebs_only = TRUE)
 index_comp
+# ggsave(index_comp, filename = here(workDir, "plots", "index_ebs_comparison.png"),
+#        width=130, height=90, units="mm", dpi=300)
 
 # Difference between two indices
 index_difference <- function(new, old, names, save_results = FALSE) {
