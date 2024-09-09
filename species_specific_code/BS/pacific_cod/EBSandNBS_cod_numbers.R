@@ -166,8 +166,64 @@ saveRDS(fit, file = paste0(workDir, "results_n/VASTfit.RDS"))
     write.csv( ln_km2, file=paste0(workDir,"results_n/ln_effective_area.csv"), row.names=FALSE )
     
     
-# Plot DB vs VAST Comparison ----------------------------------------------
-plot(dat %>% group_by(Year) %>% summarise(mean(Catch_N)), type ="l") # mean cpue for quick look
+# Plot design-based estimate vs VAST estimate ------------------------------
 
-# TODO: plot vs gapindex DB index
-    
+# query db index
+sql_channel <- gapindex::get_connected() # enter credentials in pop-out window
+
+db <- RODBC::sqlQuery(channel = sql_channel, 
+                       query = 
+                             "
+WITH FILTERED_STRATA AS (
+SELECT AREA_ID, DESCRIPTION FROM GAP_PRODUCTS.AKFIN_AREA
+WHERE AREA_TYPE = 'REGION'
+AND SURVEY_DEFINITION_ID IN (143, 98))
+
+-- Select columns for output data
+SELECT 
+POPULATION_COUNT,
+POPULATION_VAR,
+YEAR, 
+DESCRIPTION
+
+-- Identify what tables to pull data from
+FROM GAP_PRODUCTS.AKFIN_BIOMASS BIOMASS
+JOIN FILTERED_STRATA STRATA 
+ON STRATA.AREA_ID = BIOMASS.AREA_ID
+
+-- Filter data results
+WHERE BIOMASS.SPECIES_CODE = 21720")
+
+db <- db %>% 
+  mutate(stratum = recode(DESCRIPTION, 
+                          `EBS Standard Plus NW Region: All Strata` = "EBS", 
+                          `NBS Region: All Strata` = "NBS"),
+    se_estimate = sqrt(POPULATION_VAR)) %>% 
+  filter(stratum != "EBS Standard Region: All Strata") %>%
+  select(stratum,
+         year = YEAR, 
+         estimate_n = POPULATION_COUNT,
+         se_estimate) %>%
+  mutate(estimator = "db")
+
+# load model-based index
+mb <- read.csv(paste0(workDir, "results_n/Index.csv")) 
+mb <- mb %>% filter(Stratum != "Both") %>%
+  select(stratum = Stratum,
+         year = Time,
+         estimate_n = Estimate,
+         se_estimate = Std..Error.for.Estimate) %>%
+  mutate(estimator = "mb")
+
+d <- bind_rows(db, mb) %>% filter(year != 2020)
+saveRDS(d, file=paste0(workDir,"results_n/db_mb_index.RDS"))
+
+library(ggplot2)
+ggplot(d, aes(year, estimate_n, group = interaction(stratum, estimator), 
+              color = estimator, shape = stratum)) +
+  geom_pointrange(aes(ymin = estimate_n - se_estimate, 
+                      ymax = estimate_n + se_estimate),
+                  size = 0.3,
+                  position = position_dodge(width = 0.5)) + 
+  theme_bw()
+ggsave(file=paste0(workDir,"results_n/db_mb_index_comparison.png"), height = 4, width = 6, units = c("in"))
