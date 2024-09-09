@@ -100,7 +100,7 @@ dir.create(RunDir, recursive = TRUE)
 setwd(RunDir)
 
 # Run model
-start.time <- Sys.time() #"2024-03-13 12:51:08 PDT"
+start.time <- Sys.time() #"2024-09-05 16:43:13 PDT"
 fit = fit_model( "settings"=settings, 
                  "Lat_i"=Data_Geostat[,'Lat'], 
                  "Lon_i"=Data_Geostat[,'Lon'], 
@@ -145,7 +145,7 @@ results <- plot_results( fit, #zrange = c(-3,3), n_cells = 600,
 saveRDS(results, file = "VASTresults_age.RDS")
 
 #Load results if taking a previous model run
-readRDS(file = paste0(getwd(), "/VASTresults_age.RDS"))
+# readRDS(file = paste0(getwd(), "/VASTresults_age.RDS"))
 
 # Expand to proportional population numbers -------------------------------
 VASTfit <- fit
@@ -181,14 +181,13 @@ write.csv(prop,"proportions.csv")
 # compare proportions
 
 # read_csv()
-new_props <- read.csv(paste0(RunDir, "/proportions.csv"))
-old_props <- read.csv(here("VAST_results", "pollock_proportions_2022.csv"))
+old_props <- read.csv(here("species_specific_code", "BS", "pollock", "results", "2024 Hindcast", "Comps", "proportions.csv"))
+new_props <- prop
 
 dim(new_props)
 dim(old_props)
-new_props <- new_props[,-1]
 
-new_props <- subset(new_props, new_props$Year < 2023)
+new_props <- subset(new_props, new_props$Year < 2024)
 
 check_props <- round(new_props[,1:15] - old_props[,1:15], 4)
 check_props_tab <- cbind(check_props, new_props[,16:17])

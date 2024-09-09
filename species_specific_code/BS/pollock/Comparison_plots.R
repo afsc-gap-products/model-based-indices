@@ -19,7 +19,7 @@ theme_set(theme_sleek())
 workDir <- here("species_specific_code", "BS", "pollock")
 this_year <- 2024
 
-save_dir <- paste0(this_year, " hindcast")
+save_dir <- paste0(this_year, " Production")
 
 # Compare Indices of Abundance ------------------------------------------------
 # Read in indices & make sure columns for year = Time, Estimate, Error are named correctly
@@ -118,13 +118,16 @@ index_diff
 
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
-old_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))[, -1]
-new_props <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props.csv"))
-new_props_dg <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv"))
+old_props <- read.csv(here(workDir, "results", "2024 Hindcast", "Comps", "proportions.csv"))[, -1]
+new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
+# new_props_dg <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv"))
 
-# Update old_props to match tinyVAST test output
-tiny_years <- c(1980:2019, 2021:2023)
-old_props <- old_props %>% filter(Year %in% tiny_years & Region == "EBS")
+# # Update old_props to match tinyVAST test output
+# tiny_years <- c(1980:2019, 2021:2023)
+# old_props <- old_props %>% filter(Year %in% tiny_years & Region == "EBS")
+
+# Set names for old and new comps
+names <- list(old = "2024 Hindcast", new = "2024 Production")
 
 ## Combine age comp models into one plot --------------------------------------
 compare_props <- function(props, names, last_year) {
@@ -147,8 +150,8 @@ compare_props <- function(props, names, last_year) {
   return(plot)
 }
 
-all_props <- compare_props(props = list(new_props, new_props_dg, old_props),
-                           names = c("tinyVAST (Tweedie)", "tinyVAST (delta gamma)", "2023 production"))
+all_props <- compare_props(props = list(new_props, old_props),
+                           names = c(names$new, names$old))
 all_props
 
 # Plot difference between two models ------------------------------------------
@@ -187,7 +190,7 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
 }
 
 comp_diff <- comp_difference(new = new_props, old = old_props,
-                             names = c("tinyVAST (Tweedie)", "2023 production"),
+                             names = c(names$new, names$old),
                              save_results = FALSE)
 comp_diff
 
@@ -229,7 +232,7 @@ comp_trends <- function(new, old, names) {
 }
 
 comp_trends <- comp_trends(new = new_props, old = old_props,
-                           names = c("tinyVAST (Tweedie)", "2023 production"))
+                           names = c(names$new, names$old))
 comp_trends
 
  # Save plots ------------------------------------------------------------------
