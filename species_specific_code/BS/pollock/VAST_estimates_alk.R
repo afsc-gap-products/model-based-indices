@@ -170,7 +170,7 @@ prop <- data.frame(t(data.frame(proportions$Prop_ctl))) %>%
               )
     )
 
-write.csv(prop,"proportions.csv")
+write.csv(prop,"proportions.csv", row.names = FALSE)
 
 
 # check results -----------------------------------------------------------
