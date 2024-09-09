@@ -198,7 +198,7 @@ db <- db %>%
   mutate(stratum = recode(DESCRIPTION, 
                           `EBS Standard Plus NW Region: All Strata` = "EBS", 
                           `NBS Region: All Strata` = "NBS"),
-         se_estimate = sqrt(BIOMASS_VAR),
+         se_estimate = sqrt(BIOMASS_VAR) * 1000,
          estimate_kg = BIOMASS_MT * 1000)  %>% 
   filter(stratum != "EBS Standard Region: All Strata") %>%
   select(stratum,
