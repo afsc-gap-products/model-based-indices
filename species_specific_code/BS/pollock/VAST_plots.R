@@ -185,7 +185,6 @@ cold_pool_plot
 ggsave(cold_pool_plot, filename = here("output", "cold_pool_covariate.png"),
        width = 120, height = 100, unit = "mm", dpi = 300)
 
-
 # Cold pool vs. index value ---------------------------------------------------
 cold_pollock_cor <- cor(index[index$Stratum == "EBS", ]$Estimate, cold_pool$area_lte2_km2)
 

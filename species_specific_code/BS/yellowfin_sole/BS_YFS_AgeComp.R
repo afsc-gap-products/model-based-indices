@@ -8,7 +8,7 @@
 ## Description:   VAST estimates of age composition for EBS+NBS yellowfin sole
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 rm(list = ls())
-which_model <- c("hindcast", "production")[1]
+which_model <- c("hindcast", "production")[2]
 species_name <- "yellowfin_sole"
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

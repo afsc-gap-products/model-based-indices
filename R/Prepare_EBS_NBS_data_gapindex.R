@@ -17,9 +17,9 @@ sql_channel <- gapindex::get_connected()
 species_info <- data.frame(species_name = c("yellowfin_sole", "Pacific_cod"),
                            species_code = c(10210, 21720),
                            start_year = 1982,
-                           current_year = 2023,
+                           current_year = 2024,
                            plus_group = c(20, 12), 
-                           start_year_age = c(1982, 1994))[1, ]
+                           start_year_age = c(1982, 1994))[2, ]
 
 ## Set constants
 start_year <- species_info$start_year
@@ -446,7 +446,7 @@ data_geostat_biomass_index <- with(ebs_nbs_cpue,
 data_geostat_numerical_index <- with(ebs_nbs_cpue,
                                      data.frame(Hauljoin = HAULJOIN,
                                                 Region = SURVEY,
-                                                Catch_KG = CPUE_NOKM2,
+                                                Catch_N = CPUE_NOKM2,
                                                 Year = YEAR,
                                                 Vessel = "missing", 
                                                 AreaSwept_km2 = 1,
@@ -457,7 +457,7 @@ data_geostat_numerical_index <- with(ebs_nbs_cpue,
 data_geostat_agecomps <- with(age_cpue, 
                               data.frame(Hauljoin = HAULJOIN,
                                          Region = SURVEY,
-                                         Catch_KG = AGE_CPUE_NOKM2,
+                                         Catch_N = AGE_CPUE_NOKM2,
                                          Year = YEAR,
                                          Vessel = "missing",
                                          Age = AGE,

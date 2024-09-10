@@ -11,7 +11,7 @@
 ##                https://docs.google.com/document/d/18CeXcHhHK48hrtkiC6zygXlHj6YVrWEd/edit
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 rm(list = ls())
-which_model <- c("hindcast", "production")[1]
+which_model <- c("hindcast", "production")[2]
 species_name <- "yellowfin_sole"
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -193,7 +193,7 @@ yfs_dbe <- RODBC::sqlQuery(channel = chl,
 ## Extract VAST Index Estimates
 mbe <- 
   subset(x = read.csv(file = paste0(folder, 
-                                    "results_index/output_plots/Index.csv")),
+                                    "results_index/Index.csv")),
          subset = Stratum %in% c("EBS", "NBS"),
          select = c(Time, Stratum, Estimate, Std..Error.for.ln.Estimate.))
 mbe$Estimate <- mbe$Estimate / 1000
@@ -208,5 +208,5 @@ dbe_vast_comp <- merge(x = mbe, all.x = TRUE,
 ## Save comparison
 write.csv(x = dbe_vast_comp,
           file = paste0(folder, 
-                        "results_index/output_plots/dbe_vs_vast_comp.csv"),
+                        "results_index/dbe_vs_vast_comp.csv"),
           row.names = F)

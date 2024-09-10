@@ -23,7 +23,7 @@ sessionInfo()
 sink()
 
 # Make sure package versions are correct for current year ------------------
-current_year <- 2023
+current_year <- 2024
 prev_year <- current_year-1
 VAST_cpp_version <- "VAST_v14_0_1"
 pck_version <- c("VAST" = "3.10.0",
@@ -51,12 +51,16 @@ for (pck in 1:length(pck_version)) {
   rm(pck, temp_version)
 }
 
+# Import data -------------------------------------------------------------
+Data_Geostat <- readRDS(file = paste0(workDir, 
+                                      "data/data_geostat_agecomps.RDS"))
+
 # Settings ----------------------------------------------------------------
-Region <- c("Eastern_Bering_Sea","Northern_Bering_Sea")
+Region <- c("eastern_bering_sea","northern_bering_sea")
 Method <- "Mesh"
 knot_method <- "grid"
 grid_size_km <- 25
-n_x <- 50 #n_x <- 50   # Specify number of stations (a.k.a. "knots")
+n_x <- 50 # Specify number of "knots"
 FieldConfig <- c("Omega1"="IID", "Epsilon1"="IID", "Omega2"="IID", "Epsilon2"="IID")
 RhoConfig <- c("Beta1"=0, "Beta2"=0, "Epsilon1"=4, "Epsilon2"=4)
 OverdispersionConfig <- c("Eta1"=0, "Eta2"=0)
@@ -91,148 +95,118 @@ settings <- make_settings(
 
 strata_names = c("Both","EBS","NBS")
 
-#### Explore the data ####
+# Fit model ------------------------------------------------------------
 
-    # Age Composition ---------------------------------------------------------
-    plus_group <- 12
-    min_year <- 1994
-    
-    # Load age-length keys produced by sumfish
-    alk <- readRDS(paste0(workDir,"data/unstratified_alk.RDS"))
-    if(compare == TRUE){
-      alk <- readRDS(paste0(workDir,"data/",prev_year,"_production/unstratified_alk.RDS") )
-    }
-    
-    sizeComp <- readRDS(paste0(workDir,"data/EBS_NBS_SizeComp.RDS") ) %>% 
-      filter(YEAR >= min_year, !is.na(EFFORT))
+tic("running model")
+fit = fit_model( "settings"=settings, 
+                 "Lat_i"=Data_Geostat[,'Lat'], 
+                 "Lon_i"=Data_Geostat[,'Lon'], 
+                 "t_i"=Data_Geostat[,'Year'],  # "t_i"=rep(2019,nrow(Data_Geostat)),
+                 "c_i"=Data_Geostat[,'Age'], 
+                 "b_i"=Data_Geostat[,'Catch_N'], 
+                 "a_i"=Data_Geostat[,'AreaSwept_km2'], 
+                 "v_i"=Data_Geostat[,'Vessel'],
+                 Npool = Npool, 
+                 test_fit=FALSE, # set to FALSE if want to avoid interruption due to marginal fit issues
+                 create_strata_per_region=TRUE,
+                 "working_dir" = paste0(workDir,"/results_age/"),
+                 "CompileDir" = paste0(workDir,"/results_age/")
+)
+toc()  
 
-    haulData <- readRDS(paste0(workDir,"data/EBS_NBS_Index.RDS") ) %>% 
-        dplyr::filter(YEAR >= min_year, !is.na(EFFORT))
-    
-    # Get summary calculations - this also fills zeroes within year - add sex if generating sex-specific agecomps
-    allCats <- expand.grid(HAULJOIN=unique(haulData$HAULJOIN), 
-                           AGE = unique(alk$AGE[alk$AGE<=plus_group]), 
-                           noAge = 0) %>%
-    inner_join(haulData, by = c("HAULJOIN")) 
-    
-    
-    # Aggregate by Age key
-    Data <- sizeComp %>%
-      left_join(alk, by = c("YEAR", "REGION", "LENGTH","SEX","SPECIES_CODE"), 
-                relationship = "many-to-many") %>%
-      mutate(ageCPUE = nSizeCPUE * probability,
-             AGE = ifelse(AGE > plus_group,plus_group, AGE)) %>% 
-      group_by(YEAR,REGION,HAULJOIN,STRATUM,START_LONGITUDE, 
-               START_LATITUDE,nCPUE,AGE) %>%
-      summarize(ageCPUE = sum(ageCPUE), count=n()) %>%
-      ungroup() %>%
-      select(HAULJOIN,AGE, ageCPUE, count) %>%
-      right_join(allCats, by= c("HAULJOIN","AGE")) %>%
-      mutate(ageCPUE = ifelse(is.na(ageCPUE), noAge, ageCPUE)) # %>% filter(YEAR < 2021) 
-    
-    # Test CPUE
-    checkData <- Data %>%
-      group_by(YEAR,HAULJOIN, nCPUE) %>%
-      summarize(sum_age_cpue = sum(ageCPUE)) %>%
-      mutate(diff = nCPUE - sum_age_cpue)
+# Save results
+saveRDS(fit, file = paste0(workDir,"/results_age/",species_name,"_VASTfit.RDS"))
 
-    dbSummary <- Data %>%
-      group_by(YEAR, STRATUM, AGE) %>%
-      summarize(meanAgeCPUE = mean(ageCPUE)) %>%
-      inner_join(bind_rows(NBS$stratum,EBS$stratum), by="STRATUM") %>%
-      mutate(agePopStratum = meanAgeCPUE * STRATUM_AREA) %>%
-      group_by(YEAR, AGE) %>%
-      summarize(agePopTotal = sum(agePopStratum)) %>%
-      ungroup()
+## Parameter estimates
+saveRDS(object = fit$ParHat, 
+        file = paste0(workDir, "results_age/starting_parameters.RDS"))
 
-    write.csv(dbSummary, "design-estimate.csv")
-    
-    # Format the data for VAST
-    Data_Geostat <-  transmute(Data,
-                             Catch_KG = ifelse(is.na(ageCPUE),0,ageCPUE),
-                             Year = YEAR,
-                             Vessel = "missing",
-                             Age = AGE,
-                             AreaSwept_km2 = 0.01, # Converts CPUE to km^2
-                             Lat = START_LATITUDE,
-                             Lon = START_LONGITUDE,
-                             Pass = 0
-    ) %>%
-    data.frame()
-    
-    saveRDS(Data_Geostat, file = paste0(workDir,"data/Data_Geostat_comps_",species_name,".RDS"))
-    
+## General output plots, DHARMa residuals
+results <- FishStatsUtils::plot_results( 
+  fit = fit, 
+  working_dir = paste0(workDir, "results_age/"),
+  plot_set = NULL,
+  strata_names = strata_names, 
+  check_residuals = TRUE)
 
-# Run Analysis ------------------------------------------------------------
-    # Data_Geostat <- readRDS(file = here::here("species_specific_code","BS",species_name,which_model,"data",
-    #                                           paste0("Data_Geostat_comps_",species_code,".RDS")))
+saveRDS(object = results, 
+        file = paste0(workDir, "results_age/VASTresults.RDS"))
 
-  # Run model
-  tic("running model")
-  fit = fit_model( "settings"=settings, 
-                   "Lat_i"=Data_Geostat[,'Lat'], 
-                   "Lon_i"=Data_Geostat[,'Lon'], 
-                   "t_i"=Data_Geostat[,'Year'],  # "t_i"=rep(2019,nrow(Data_Geostat)),
-                   "c_i"=Data_Geostat[,'Age'], 
-                   "b_i"=Data_Geostat[,'Catch_KG'], 
-                   "a_i"=Data_Geostat[,'AreaSwept_km2'], 
-                   "v_i"=Data_Geostat[,'Vessel'],
-                   Npool = Npool, 
-                   test_fit=TRUE, # set to FALSE if want to avoid interruption due to marginal fit issues
-                   create_strata_per_region=TRUE,
-                   "working_dir" = paste0(workDir,"/results_age/"),
-                   "CompileDir" = paste0(workDir,"/results_age/")
-  )
+## Mapping information
+map_list = FishStatsUtils::make_map_info( 
+  "Region" = settings$Region, 
+  "spatial_list" = fit$spatial_list, 
+  "Extrapolation_List" = fit$extrapolation_list)
 
-  toc()  
-  # Save results
-  #saveRDS(fit, file = "VASTfit.RDS")
-  saveRDS(fit, file = paste0(workDir,"/results_age/",species_name,"_VASTfit.RDS"))
-  
-  
-  # Plots -------------------------------------------------------------------
-  # If you need to load a fit in a new session:
-  #dyn.load(dynlib("VAST_v14_0_1"))
-  
-  # Plot results
-  results <- plot_results( fit, zrange = c(-3,3), n_cells = 2000, strata_names = strata_names, 
-                           check_residuals = TRUE,  working_dir =  paste0(workDir,"/results_age/"))
-  #saveRDS(results, file = "VASTresults.RDS")
-  saveRDS(results,file = paste0(workDir,"/results_age/",species_name,"_results.RDS"))
-  
-  
-  # # If residual plots don't... uh... plot...
-  # plot_quantile_residuals( fit=fit)
-  # 
-  # map_list = make_map_info( "Region"=settings$Region, "spatial_list"=fit$spatial_list, "Extrapolation_List"=fit$extrapolation_list )
-  # plot_maps(fit=fit, n_cells = 2000, Obj=fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]])
-  
- 
+## Predicted density maps for each age group across years
+n_ages <- length(unique(Data_Geostat$Age))
+Year_Set <- fit$year_labels
 
-# Expand to proportional population numbers -------------------------------
-  VASTfit <- fit
-  # results = plot_results( settings=settings, fit=VASTfit, check_residuals=FALSE )
+if(!dir.exists(paste0(workDir, "results_age/predicted_density/"))){
+  dir.create(paste0(workDir, "results_age/predicted_density/"))
+}
 
-  
-  ## Variable names have changed in FishStatsUtils check for consistency ?calculate_proportion
-  Year_Set <- VASTfit$year_labels
-  Years2Include <- which(VASTfit$year_labels != 2020)
-  proportions <- calculate_proportion( TmbData=VASTfit$data_list, 
-                                      Index=results$Index, 
-                                      year_labels = Year_Set, 
-                                      years_to_plot = Years2Include,
-                                      strata_names=strata_names)
-  
-  prop <- data.frame(t(data.frame(proportions$Prop_ctl))) %>%
-    # drop_na() %>%
-    rename("age_0"=1,"age_1"=2,"age_2"=3,"age_3"=4,"age_4"=5,"age_5"=6,"age_6"=7,"age_7"=8,"age_8"=9,"age_9"=10,"age_10"=11,"age_11"=12,"age_12+"=13) %>%
-    bind_cols(data.frame(Year = rep(Year_Set,3) ), 
-              data.frame(Region = c(rep(strata_names[1],length(Year_Set)),
-                                    rep(strata_names[2],length(Year_Set)),
-                                    rep(strata_names[3],length(Year_Set)) ) 
-                         )
-              )
-  
-  write.csv(prop, paste0(workDir,"/results_age/",species_name,"_proportions.csv"))
-  saveRDS(prop, paste0(workDir,"/results_age/",species_name,"_proportions.RDS"))
-  
+FishStatsUtils::plot_maps( 
+  fit = fit, 
+  plot_set = 3,
+  n_cells = 200,
+  category_names = c(paste0("Age ", 1:(n_ages-1)), 
+                     paste0("Age ", n_ages, "+")),
+  Obj = fit$tmb_list$Obj, 
+  year_labels = Year_Set,
+  PlotDF = map_list[["PlotDF"]],
+  working_dir = paste0(workDir, "results_age/predicted_density/")) 
+
+## Predicted Spatial Fields
+if(!dir.exists(paste0(workDir, "results_age/spatial_effects/"))){
+  dir.create(paste0(workDir, "results_age/spatial_effects/"))
+}
+FishStatsUtils::plot_maps( 
+  fit = fit, 
+  plot_set = 16:17,
+  n_cells = 200,
+  category_names = c(paste0("Age ", 1:(n_ages-1)), 
+                     paste0("Age ", n_ages, "+")),
+  year_labels = Year_Set,
+  Obj = fit$tmb_list$Obj, 
+  PlotDF = map_list[["PlotDF"]],
+  working_dir = paste0(workDir, "results_age/spatial_effects/")) 
+
+## Predicted Spatiotemporal Fields
+if(!dir.exists(paste0(workDir, "results_age/spatiotemporal_effects/"))){
+  dir.create(paste0(workDir, "results_age/spatiotemporal_effects/"))
+}
+FishStatsUtils::plot_maps( 
+  fit = fit, 
+  plot_set = 6:7,
+  n_cells = 200,
+  category_names = c(paste0("Age ", 1:(n_ages-1)), 
+                     paste0("Age ", n_ages, "+")),
+  year_labels = Year_Set,
+  Obj = fit$tmb_list$Obj, 
+  PlotDF = map_list[["PlotDF"]],
+  working_dir = paste0(workDir, "results_age/spatiotemporal_effects/")) 
+
+## Predicted Proportions
+if(!dir.exists(paste0(workDir, "results_age/proportions/"))){
+  dir.create(paste0(workDir, "results_age/proportions/"))
+}
+
+proportions <- FishStatsUtils::calculate_proportion( 
+  TmbData = fit$data_list, 
+  Index = results$Index, 
+  year_labels = Year_Set, 
+  years_to_plot = which(fit$year_labels != 2020),
+  strata_names = strata_names, 
+  DirName = paste0(workDir, "results_age/proportions/"))
+
+prop <- t(data.frame(proportions$Prop_ctl))
+colnames(prop) <- c(paste0("age_", seq(from = 1, length = ncol(prop) - 1 )),
+                    paste0("age_", ncol(prop), "+"))
+rownames(prop) <- as.vector(sapply(X = strata_names, 
+                                   FUN = function(x) paste0(x, "_", Year_Set)))
+
+saveRDS(object = proportions, 
+        file = paste0(workDir, "results_age/proportionsVAST_proportions.RDS"))
+write.csv(x = prop, 
+          file = paste0(workDir, "results_age/proportions/clean_proportions.csv"))

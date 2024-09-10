@@ -2,6 +2,7 @@ library(tidyverse)
 library(VAST) 
 library(sf)
 library(scales)
+#remotes::install_github("afsc-gap-products/coldpool")
 library(coldpool)
 library(akgfmaps)
 
@@ -15,18 +16,18 @@ workDir <- paste0(getwd(),"/species_specific_code/BS/",
                       species_name, "/", which_model, "/")
 if(!dir.exists(workDir))
   dir.create(path = workDir, recursive = TRUE)
-if(!dir.exists(paste0(workDir, "results/")))
-  dir.create(path = paste0(workDir, "results/"), recursive = TRUE)
+if(!dir.exists(paste0(workDir, "results_b/")))
+  dir.create(path = paste0(workDir, "results_b/"), recursive = TRUE)
 
 
 # Record sessionInfo -------------------------------------------------------
-sink(file = paste0(workDir, "results/session_info.txt"), 
+sink(file = paste0(workDir, "results_b/session_info.txt"), 
      type = "output")
 sessionInfo()
 sink()
 
 # Make sure package versions are correct for current year ------------------
-current_year <- 2023
+current_year <- 2024
 VAST_cpp_version <- "VAST_v14_0_1"
 pck_version <- c("VAST" = "3.10.0",
                  "FishStatsUtils" = "2.12.0",
@@ -92,7 +93,6 @@ settings <- make_settings(
     )
 
 # Read catch data ---------------------------------------------------------
-
 dat <- read_rds(paste0(workDir, "data/data_geostat_biomass_index.RDS"))
 
 # Cold Pool covariate -----------------------------------------------------
@@ -102,12 +102,11 @@ covariate_data <- data.frame(Year = c(coldpool:::cold_pool_index$YEAR, 2020),
                              Lon = mean(dat$Lon), 
                              cpe = c(cpe, 0))
 
-    # Load covariates
-    formula <- ~ cpe
-    Xconfig_zcp <- array(2, dim=c(2,1,1) )
-    X1config_cp <- as.matrix(2)
-    X2config_cp <- as.matrix(2)
-
+# Load covariates
+formula <- ~ cpe
+Xconfig_zcp <- array(2, dim=c(2,1,1) )
+X1config_cp <- as.matrix(2)
+X2config_cp <- as.matrix(2)
     
 # Build the model ---------------------------------------------------------
 fit <- fit_model( "settings"=settings, 
@@ -131,121 +130,101 @@ fit <- fit_model( "settings"=settings,
                   "newtonsteps" = 1
 )
 
-
 # Save results
-
-saveRDS(fit, file = paste0(workDir, "results/VASTfit.RDS"))
-
+saveRDS(fit, file = paste0(workDir, "results_b/VASTfit.RDS"))
 
 # Plots -------------------------------------------------------------------
-    # If you need to load a fit in a new session:
-    #dyn.load(dynlib(VAST_cpp_version))
-    
-    # Plot results
-    results <- plot_results( fit, 
-                             zrange = c(-3,3), 
-                             n_cells = 600, 
-                             strata_names = strata_names, 
-                             check_residuals=TRUE,
-                             n_samples=0,
-                             working_dir = paste0(workDir, "results/")
-                             )
-    
-    saveRDS(results, file = paste0(workDir, "results/VASTresults.RDS"))
-    
-    
-    # If residual plots don't... uh... plot...
-    # plot_quantile_residuals( fit=fit )
-    # 
-    # map_list = make_map_info( "Region"=settings$Region, "spatial_list"=fit$spatial_list, "Extrapolation_List"=fit$extrapolation_list )
-    # plot_maps(fit=fit, n_cells = 600, Obj=fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
-    
-    
-    # ESP products
-    write.csv( results$Range$COG_Table, file=paste0(workDir,"results/COG.csv"), row.names=FALSE )
-    
-    ##save effective area occupied for ESP request
-    report = TMB::summary.sdreport(fit$parameter_estimates$SD)
-    ln_km2 = report[which(rownames(report)=="log_effective_area_ctl"),c('Estimate','Std. Error')]
-    Year <- sort(unique(fit$year_labels))
-    ln_km2 <- as.data.frame(cbind(ln_km2, Year))
-    ln_km2 <- ln_km2[which(ln_km2$Year %in% unique(fit$data_frame$t_i)),]
-    write.csv( ln_km2, file=paste0(workDir,"results/ln_effective_area.csv"), row.names=FALSE )
-    
+# If you need to load a fit in a new session:
+#dyn.load(dynlib(VAST_cpp_version))
+
+# Plot results
+results <- plot_results( fit, 
+                         zrange = c(-3,3), 
+                         n_cells = 600, 
+                         strata_names = strata_names, 
+                         check_residuals=TRUE,
+                         n_samples=0,
+                         working_dir = paste0(workDir, "results_b/" )
+                        )
+
+saveRDS(results, file = paste0(workDir, "results_b/VASTresults.RDS"))
+
+# residuals
+plot_quantile_residuals( fit=fit )
+map_list = make_map_info( "Region"=settings$Region, "spatial_list"=fit$spatial_list, "Extrapolation_List"=fit$extrapolation_list )
+plot_maps(fit=fit, n_cells = 600, Obj=fit$tmb_list$Obj, PlotDF=map_list[["PlotDF"]] )
+
+# ESP products
+write.csv( results$Range$COG_Table, file=paste0(workDir,"results_b/COG.csv"), row.names=FALSE )
+
+##save effective area occupied for ESP request
+report = TMB::summary.sdreport(fit$parameter_estimates$SD)
+ln_km2 = report[which(rownames(report)=="log_effective_area_ctl"),c('Estimate','Std. Error')]
+Year <- sort(unique(fit$year_labels))
+ln_km2 <- as.data.frame(cbind(ln_km2, Year))
+ln_km2 <- ln_km2[which(ln_km2$Year %in% unique(fit$data_frame$t_i)),]
+write.csv( ln_km2, file=paste0(workDir,"results_b/ln_effective_area.csv"), row.names=FALSE )
 
 
-# Plot DB vs VAST Comparison ----------------------------------------------
-plot(dat %>% group_by(Year) %>% summarise(mean(Catch_KG)), type ="l") # mean cpue for quick look
+# Plot design-based estimate vs VAST estimate ------------------------------
+
+# query db index
+sql_channel <- gapindex::get_connected() # enter credentials in pop-out window
+
+db <- RODBC::sqlQuery(channel = sql_channel, 
+                      query = 
+                        "
+WITH FILTERED_STRATA AS (
+SELECT AREA_ID, DESCRIPTION FROM GAP_PRODUCTS.AKFIN_AREA
+WHERE AREA_TYPE = 'REGION'
+AND SURVEY_DEFINITION_ID IN (143, 98))
+
+-- Select columns for output data
+SELECT 
+BIOMASS_MT,
+BIOMASS_VAR,
+YEAR, 
+DESCRIPTION
+
+-- Identify what tables to pull data from
+FROM GAP_PRODUCTS.AKFIN_BIOMASS BIOMASS
+JOIN FILTERED_STRATA STRATA 
+ON STRATA.AREA_ID = BIOMASS.AREA_ID
+
+-- Filter data results
+WHERE BIOMASS.SPECIES_CODE = 21720")
     
-##### OLD SUMFISH WAY ##################################################################
-    # Load shapefile with strata boundaries
-    # EBS_strata <- akgfmaps::get_base_layers("ebs")
-    # total_area <- sum(EBS_strata$survey.strata$F_AREA)
-    # EBS_strata <- mutate(EBS_strata$survey.strata, area_ratio = F_AREA/total_area)
-    # 
-    # # Convert dat to sf and transform projection
-    # sf_geostat <- st_as_sf(dat, coords = c("Lon", "Lat"), remove = FALSE, 
-    #                        crs = "+proj=longlat +datum=NAD83" ) %>%
-    #     st_transform(crs = st_crs(EBS_strata))
-    # 
-    # # Spatially intersect the two dataframes
-    # sf_geostat_strata <- st_join(sf_geostat, EBS_strata)
-    # na_check <- sf_geostat_strata[is.na(sf_geostat_strata$Stratum),]
-    # sf_geostat_strata[is.na(sf_geostat_strata$Catch_KG), "Catch_KG"] <- 0
-    # 
-    # # Calculate the DBEs
-    # Strata_Geostat <- sf_geostat_strata %>%
-    #     filter(!is.na(Stratum) ) %>%
-    #     group_by(Year, Stratum) %>%
-    #     summarize( mean_cpue = mean(Catch_KG),
-    #                area = first(F_AREA),
-    #                var_cpue = ( var(Catch_KG) / n() ),
-    #                Stratum_biomass = mean_cpue * area,
-    #                Stratum_biomass_var = ifelse(is.na(var_cpue),0, var_cpue * area^2)
-    #     ) %>%
-    #     ungroup()
-    # 
-    # DB_Geostat <- Strata_Geostat %>%
-    #     group_by(Year) %>%
-    #     summarize( total_biomass_mt = sum(Stratum_biomass)/1000,
-    #                total_biomass_mt_se = sqrt(sum(Stratum_biomass_var))/1000
-    #     ) %>%
-    #     mutate(Estimator = "Design-based") %>%
-    #     ungroup()
-    # 
-    # VASTindex <- read_csv( paste0(workDir,"results/Index.csv") ) %>%
-    #     mutate(Estimator = "VAST") %>%
-    #     filter(Stratum == "Both")
-    # 
-    # index_compare <- bind_rows(
-    #     dplyr::select(as.data.frame(DB_Geostat), Year, total_biomass_mt, total_biomass_mt_se, Estimator),
-    #     dplyr::mutate(VASTindex, Year=Time, total_biomass_mt = Estimate/1000, total_biomass_mt_se = `Std. Error for Estimate`/1000,Estimator)
-    # )
-    # 
-    # 
-    # pd <- position_dodge(.9)
-    # plotLimit <- 1.1*max(index_compare$total_biomass_mt+2*index_compare$total_biomass_mt_se)
-    # 
-    # spPlot <- ggplot(index_compare, aes(x=Year, y=total_biomass_mt, color=Estimator, group=Estimator)) +
-    #     geom_errorbar(aes(ymin=ifelse(total_biomass_mt-(2*total_biomass_mt_se) < 0, 0,total_biomass_mt-(2*total_biomass_mt_se)),ymax=total_biomass_mt+(2*total_biomass_mt_se)),
-    #                   width=.9,
-    #                   show.legend=T,
-    #                   position=pd) +
-    #     geom_point(aes(shape=Estimator), size=1.6, position=pd) +
-    #     theme_bw() +
-    #     ggtitle(paste0("Comparison of design-based and VAST estimators for ",species_name)) +
-    #     ylab("Index (1,000 fish) with 2 Standard Errors") +
-    #     scale_y_continuous(expand = c(0, 0), 
-    #                        breaks=pretty_breaks(n=5), 
-    #                        labels=comma,
-    #                        limits = c(0, plotLimit)
-    #     ) + 
-    #     scale_x_continuous(breaks=seq(1982,2020,2)) +
-    #     scale_color_manual(breaks= c("Design-based","VAST","Database"), values= c("blue","red","purple")) +
-    #     scale_shape_manual(breaks= c("Design-based","VAST","Database"), values= c(15,16,17)) +
-    #     theme(axis.text.x=element_text(angle=90,vjust=.5))
-    # print(spPlot)
-    # 
-    # ggsave(paste0(workDir,"results/Index_compare.png"), width=8, height=6, units="in")
-    # 
-    # 
+db <- db %>% 
+  mutate(stratum = recode(DESCRIPTION, 
+                          `EBS Standard Plus NW Region: All Strata` = "EBS", 
+                          `NBS Region: All Strata` = "NBS"),
+         se_estimate = sqrt(BIOMASS_VAR) * 1000,
+         estimate_kg = BIOMASS_MT * 1000)  %>% 
+  filter(stratum != "EBS Standard Region: All Strata") %>%
+  select(stratum,
+         year = YEAR, 
+         estimate_kg,
+         se_estimate) %>%
+  mutate(estimator = "db")
+
+# load model-based index
+mb <- read.csv(paste0(workDir, "results_b/Index.csv")) 
+mb <- mb %>% filter(Stratum != "Both") %>%
+  select(stratum = Stratum,
+         year = Time,
+         estimate_kg = Estimate,
+         se_estimate = Std..Error.for.Estimate) %>%
+  mutate(estimator = "mb")
+
+d <- bind_rows(db, mb) %>% filter(year != 2020)
+saveRDS(d, file=paste0(workDir,"results_b/db_mb_index.RDS"))
+
+library(ggplot2)
+ggplot(d, aes(year, estimate_kg, group = interaction(stratum, estimator), 
+              color = estimator, shape = stratum)) +
+  geom_pointrange(aes(ymin = estimate_kg - se_estimate, 
+                      ymax = estimate_kg + se_estimate),
+                  size = 0.3,
+                  position = position_dodge(width = 0.5)) + 
+  theme_bw()
+ggsave(file=paste0(workDir,"results_b/db_mb_index_comparison.png"), height = 4, width = 6, units = c("in"))
