@@ -19,49 +19,72 @@ theme_set(theme_sleek())
 workDir <- here("species_specific_code", "BS", "pollock")
 this_year <- 2024
 
-save_dir <- paste0(this_year, " hindcast")
+save_dir <- paste0(this_year, " production")
 
 # Compare Indices of Abundance ------------------------------------------------
 # Read in indices & make sure columns for year = Time, Estimate, Error are named correctly
 index1 <- read.csv(here(workDir, "results", "VAST Index", "Index.csv"))
 colnames(index1)[6] <- "error"
-index2 <- read.csv(here(workDir, "results", "Comps", "Index.csv"))
-colnames(index2)[6] <- "error"
+index1$Estimate <- index1$Estimate / 1000000000
+index1$error <- index1$error / 1000000000
 
-# When using the index from the comp model, sum across ages
-index2 <- index2 %>% group_by(Time, Stratum) %>%
-  summarize(Estimate = sum(Estimate),
-            error = mean(error)) 
+index2 <- read.csv(here(workDir, "archive", "Index_2022.csv"))
+colnames(index2)[6] <- "error"
+index2$Estimate <- index2$Estimate / 1000000000
+index2$error <- index2$error / 1000000000
+
+index3 <- readRDS(here(workDir, "archive", "VASTresults_2021.RDS"))$Index$Table
+index3 <- index3[, -5]
+colnames(index3) <- c("Time", "Units", "Stratum", "Estimate", "error")
+index3$Estimate <- index3$Estimate / 1000000
+index3$error <- index3$error / 1000000
+
+# # When needed, sum across ages
+# index2 <- index2 %>% group_by(Time, Stratum) %>%
+#   summarize(Estimate = sum(Estimate),
+#             error = mean(error)) 
 
 # Combine & plot any number of indices. 
-compare_index <- function(indices, names) {
+compare_index <- function(indices, names, ebs_only = FALSE) {
   df <- data.frame()
   for(i in 1:length(indices)) {
     index <- indices[[i]]
-    index <- index[, c("Time", "Stratum", "Estimate", "error")]
-    index$Estimate <- index$Estimate / 1000000000  # convert to million tons
-    index$error <- index$error / 1000000000  # convert to million tons
+    index <- index[c("Time", "Stratum", "Estimate", "error")]
+    # index$Estimate <- index$Estimate / 1000000000  # convert to million tons
+    # index$error <- index$error / 1000000000  # convert to million tons
     index$version <- names[i]
     df <- rbind.data.frame(df, index)
   }
   
-  plot <- ggplot(df %>% filter(Time != 2020), 
+  df <- df %>% filter(Time !=2020)
+  
+  if(ebs_only == TRUE) {
+    df <- df %>% filter(Time !=2020 & Stratum == "EBS") 
+  }
+  
+  plot <- ggplot(df, 
                  aes(x = Time, y = Estimate, 
                      color = version, shape = version)) +
     geom_line(alpha = 0.3) +
     geom_pointrange(aes(ymin = Estimate - error, ymax = Estimate + error), 
                     alpha = 0.8) +
     ylim(0, NA) +
-    xlab("Year") + ylab("Index (Mt)") +
-    scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
-    facet_wrap(~ Stratum, scales = "free_y", ncol = 1)
+    xlab("Year") + ylab("Index of Abundance (Mt)") +
+    scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) 
+  
+  if(ebs_only == FALSE) {
+    plot <- plot + facet_wrap(~ Stratum, scales = "free_y", ncol = 1)
+  }
   
   return(plot)
 }
 
-index_comp <- compare_index(indices = list(index1, index2), 
-                            names = c("2024 hindcast", "2024 comp model"))
+index_comp <- compare_index(indices = list(index1, index2, index3), 
+                            names = c("2023", "2022", "2021"),
+                            ebs_only = TRUE)
 index_comp
+# ggsave(index_comp, filename = here(workDir, "plots", "index_ebs_comparison.png"),
+#        width=130, height=90, units="mm", dpi=300)
 
 # Difference between two indices
 index_difference <- function(new, old, names, save_results = FALSE) {
@@ -95,13 +118,16 @@ index_diff
 
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
-old_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))[, -1]
-new_props <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props.csv"))
-new_props_dg <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv"))
+old_props <- read.csv(here(workDir, "results", "2023 production", "Comps", "proportions.csv"))[, -1]
+new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
+# new_props_dg <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv"))
 
-# Update old_props to match tinyVAST test output
-tiny_years <- c(1980:2019, 2021:2023)
-old_props <- old_props %>% filter(Year %in% tiny_years & Region == "EBS")
+# # Update old_props to match tinyVAST test output
+# tiny_years <- c(1980:2019, 2021:2023)
+# old_props <- old_props %>% filter(Year %in% tiny_years & Region == "EBS")
+
+# Set names for old and new comps
+names <- list(old = "2023 Production", new = "2024 Production")
 
 ## Combine age comp models into one plot --------------------------------------
 compare_props <- function(props, names, last_year) {
@@ -124,8 +150,8 @@ compare_props <- function(props, names, last_year) {
   return(plot)
 }
 
-all_props <- compare_props(props = list(new_props, new_props_dg, old_props),
-                           names = c("tinyVAST (Tweedie)", "tinyVAST (delta gamma)", "2023 production"))
+all_props <- compare_props(props = list(new_props, old_props),
+                           names = c(names$new, names$old))
 all_props
 
 # Plot difference between two models ------------------------------------------
@@ -164,7 +190,7 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
 }
 
 comp_diff <- comp_difference(new = new_props, old = old_props,
-                             names = c("tinyVAST (Tweedie)", "2023 production"),
+                             names = c(names$new, names$old),
                              save_results = FALSE)
 comp_diff
 
@@ -206,7 +232,7 @@ comp_trends <- function(new, old, names) {
 }
 
 comp_trends <- comp_trends(new = new_props, old = old_props,
-                           names = c("tinyVAST (Tweedie)", "2023 production"))
+                           names = c(names$new, names$old))
 comp_trends
 
  # Save plots ------------------------------------------------------------------
@@ -214,9 +240,9 @@ ggsave(index_comp, filename = here(workDir, "results", save_dir, "index_comparis
        width=130, height=160, units="mm", dpi=300)
 ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_difference.png"),
        width=130, height=180, units="mm", dpi=300)
-ggsave(all_props, filename = here(workDir, "results", "tinyVAST", "age_comp_compare_tinyALL.png"),
+ggsave(all_props, filename = here(workDir, "results", save_dir, "age_comp_compare.png"),
        width=200, height=180, units="mm", dpi=300)
-ggsave(comp_diff, filename = here(workDir, "results", "tinyVAST", "age_comp_diff_tinyTweedie.png"),
+ggsave(comp_diff, filename = here(workDir, "results", save_dir, "age_comp_diff.png"),
        width=200, height=200, units="mm", dpi=300)
-ggsave(comp_trends, filename = here(workDir, "results", "tinyVAST", "age_comp_trends_tinyTweedie.png"),
+ggsave(comp_trends, filename = here(workDir, "results", save_dir, "age_comp_trends.png"),
        width=260, height=120, units="mm", dpi=300)

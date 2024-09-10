@@ -6,6 +6,7 @@
 library(here)
 library(tidyverse)
 library(ggplot2)
+library(viridis)
 library(dplyr)
 library(reshape2)
 library(gapindex)
@@ -15,8 +16,10 @@ theme_set(theme_sleek())
 
 this_year <- 2023
 
+workDir <- here("species_specific_code","BS","pollock")  # define working directory
+
 ### VAST index ----------------------------------------------------------------
-index <- read.csv("Index.csv")
+index <- read.csv(here(workDir, "results", "VAST Index", "Index.csv"))
 
 # Calculate 2023 difference for both areas
 diff_23 <- ((index[42, 5] - index[41, 5]) / index[41, 5]) * 100
@@ -37,11 +40,11 @@ index_all_areas <- ggplot(index %>% filter(Time != 2020),
   geom_pointrange(aes(ymin = (Estimate / 1000000000) - (error / 1000000000),
                       ymax = (Estimate / 1000000000) + (error / 1000000000)), alpha = 0.8) +
   ylim(0, NA) +
-  xlab("Year") + ylab("Index (Mt)") +
+  xlab("Year") + ylab("Index of Abundance (Mt)") +
   facet_wrap(~ Stratum, ncol = 1)
 index_all_areas
 
-ggsave(index_all_areas, filename = here("species_specific_code", "BS", "pollock", "plots", "index_all_areas.png"),
+ggsave(index_all_areas, filename = here(workDir, "plots", "index_all_areas.png"),
        width=130, height=160, units="mm", dpi=300)
 
 # Plot just EBS
@@ -52,8 +55,11 @@ index_ebs <- ggplot(ebs, aes(x = Time, y = (Estimate / 1000000000))) +
   geom_pointrange(aes(ymin = (Estimate / 1000000000) - (error / 1000000000),
                       ymax = (Estimate / 1000000000) + (error / 1000000000)), alpha = 0.8) +
   ylim(0, NA) +
-  xlab("Year") + ylab("Index (Mt)") 
+  xlab("Year") + ylab("Index of Abundance (Mt)") 
 index_ebs
+
+ggsave(index_ebs, filename = here(workDir, "plots", "index_ebs.png"),
+       width=130, height=90, units="mm", dpi=300)
 
 # Compare to design-based index from gapindex ---------------------------------
 sql_channel <- gapindex::get_connected()  # connect to Oracle
@@ -117,26 +123,51 @@ db_mb <- rbind.data.frame(cbind.data.frame(Year = db_index$YEAR,
   xlab("Year") + ylab("EBS Index (Mt)")
 db_mb
 
-ggsave(db_mb, filename = here("VAST_results", "2023_db_vast.png"),
+ggsave(db_mb, filename = here(workDir, "plots", "2023_db_vast.png"),
        width=170, height=90, units="mm", dpi=300)
 
 ### Plot VAST age comps -------------------------------------------------------
-proportions <- read.csv("proportions.csv")[, -1]
+proportions <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))[, -1]
 colnames(proportions)[1:15] <- 1:15
 props <- melt(proportions, id.vars = c("Year", "Region"),
               variable.name = "Age", value.name = "Proportion")
-props_ebs <- props %>% filter(Region == "EBS")
+props_ebs <- props %>% 
+  filter(Region == "EBS") %>%
+  arrange(Year, Age)
 
-prop_plot <- ggplot(props_ebs, aes(x = Age, y = Proportion)) +
+# Set up shifting colors for each year to track cohorts
+colors <- rep(1:16, length(1982:this_year))
+props_ebs$color <- colors[1:nrow(props_ebs)]
+
+prop_plot <- ggplot(props_ebs, aes(x = Age, y = Proportion, fill = color)) +
   geom_bar(stat = "identity", position = "dodge") +
-  # scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
+  scale_fill_viridis(option = "turbo") +
   scale_x_discrete(breaks = c(1, 5, 10, 15)) +
-  ylab("Proportion-at-age") +
-  facet_wrap(~ Year, ncol = 6)
+  scale_y_continuous(limits = c(0, 0.5), breaks = c(0, 0.2, 0.4)) +
+  ylab("Proportion") + 
+  guides(fill = "none") +
+  facet_wrap(~ Year, ncol = 4, dir = "v") +
+  theme(strip.text.x = element_blank()) +
+  geom_text(x = 13, y = 0.45, aes(label = Year), color = "grey30", size = 2.8)
 prop_plot
 
-ggsave(comp_diff, filename = here("VAST_results", "2023_age_comp_diff.png"),
-       width=200, height=130, units="mm", dpi=300)
+ggsave(prop_plot, filename = here(workDir, "plots", "2023_age_comp.png"),
+       width=120, height=180, units="mm", dpi=300)
+
+library(gganimate)
+# Animated version, just for fun.
+prop_gif <- ggplot(props_ebs, aes(x = Age, y = Proportion, fill = color)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_viridis(option = "turbo") +
+  scale_x_discrete(breaks = c(1, 5, 10, 15)) +
+  scale_y_continuous(limits = c(0, 0.51), breaks = c(0, 0.2, 0.4)) +
+  ylab("Proportion") + 
+  guides(fill = "none") +
+  labs(title = "Year: {next_state}") +
+  transition_states(Year, transition_length = 1, state_length = 2, wrap = TRUE) +
+  ease_aes("linear")
+# animate(prop_gif)
+anim_save(here(workDir, "plots", "2023_age_comp.gif"), prop_gif, fps = 2)
 
 
 ### Cold pool extent covariate ------------------------------------------------
@@ -151,9 +182,8 @@ cold_pool_plot <- ggplot() +
   ylab("Cold pool covariate")
 cold_pool_plot
 
-ggsave(cold_pool, filename = here("output", "cold_pool_covariate.png"),
+ggsave(cold_pool_plot, filename = here("output", "cold_pool_covariate.png"),
        width = 120, height = 100, unit = "mm", dpi = 300)
-
 
 # Cold pool vs. index value ---------------------------------------------------
 cold_pollock_cor <- cor(index[index$Stratum == "EBS", ]$Estimate, cold_pool$area_lte2_km2)
@@ -169,41 +199,3 @@ cold_pollock_plot <- cold_pool_plot +
   geom_point(data = relative_index, aes(x = Year, y = Index), size = 2) +
   geom_line(data = relative_index, aes(x = Year, y = Index), size = 1)
 cold_pollock_plot
-
-### ESP plots -----------------------------------------------------------------
-# Center of gravity -----------------------------------------------------------
-cog <- read.csv(here("VAST_results", "COG.csv")) 
-cog$m[cog$m == 1] <- "Eastings"
-cog$m[cog$m == 2] <- "Northings"
-
-cog_plot <- ggplot(cog, aes(x = Year, y = COG_hat)) +
-  geom_line(alpha = 0.4) +
-  geom_pointrange(aes(ymin = (COG_hat - SE), ymax = (COG_hat + SE))) +
-  ylab("Center of Gravity") +
-  facet_wrap(~ m, ncol = 1, scales = "free_y")
-cog_plot
-
-ggsave(cog_plot, filename = here("VAST_results", "2023_pollock_COG.png"),
-       width = 150, height = 180, unit = "mm", dpi = 300)
-
-# Area occupied ---------------------------------------------------------------
-options(scipen = 999)
-area <- read.csv(here("VAST_results", "ln_effective_area.csv")) 
-area$Region <- c(rep("Both", length(1982:this_year) - 1), 
-                 rep("EBS", length(1982:this_year) - 1),
-                 rep("NBS", length(1982:this_year) - 1))
-colnames(area)[2] <- "error"
-area$Estimate <- exp(area$Estimate)
-area$error <- area$error
-
-area_plot <- ggplot(area, aes(x = Year, y = Estimate, color = Region)) +
-  geom_line(alpha = 0.4) +
-  geom_pointrange(aes(ymin = (Estimate - (Estimate * error)), 
-                      ymax = (Estimate + (Estimate * error))),
-                  alpha = 0.8) +
-  scale_y_continuous(labels = scales::comma, limits = c(0, NA)) +
-  ylab("Effective area occupied (km^2)")
-area_plot
-
-ggsave(area_plot, filename = here("VAST_results", "2023_pollock_area.png"),
-       width = 150, height = 100, unit = "mm", dpi = 300)

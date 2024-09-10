@@ -7,6 +7,7 @@
 .Rdat
 *.txt
 *.png
+*.gif
 *.csv
 data/
 results/
