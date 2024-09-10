@@ -19,7 +19,7 @@ theme_set(theme_sleek())
 workDir <- here("species_specific_code", "BS", "pollock")
 this_year <- 2024
 
-save_dir <- paste0(this_year, " Production")
+save_dir <- paste0(this_year, " production")
 
 # Compare Indices of Abundance ------------------------------------------------
 # Read in indices & make sure columns for year = Time, Estimate, Error are named correctly
@@ -118,7 +118,7 @@ index_diff
 
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
-old_props <- read.csv(here(workDir, "results", "2024 Hindcast", "Comps", "proportions.csv"))[, -1]
+old_props <- read.csv(here(workDir, "results", "2023 production", "Comps", "proportions.csv"))[, -1]
 new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
 # new_props_dg <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv"))
 
@@ -127,7 +127,7 @@ new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
 # old_props <- old_props %>% filter(Year %in% tiny_years & Region == "EBS")
 
 # Set names for old and new comps
-names <- list(old = "2024 Hindcast", new = "2024 Production")
+names <- list(old = "2023 Production", new = "2024 Production")
 
 ## Combine age comp models into one plot --------------------------------------
 compare_props <- function(props, names, last_year) {
@@ -240,9 +240,9 @@ ggsave(index_comp, filename = here(workDir, "results", save_dir, "index_comparis
        width=130, height=160, units="mm", dpi=300)
 ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_difference.png"),
        width=130, height=180, units="mm", dpi=300)
-ggsave(all_props, filename = here(workDir, "results", "tinyVAST", "age_comp_compare_tinyALL.png"),
+ggsave(all_props, filename = here(workDir, "results", save_dir, "age_comp_compare.png"),
        width=200, height=180, units="mm", dpi=300)
-ggsave(comp_diff, filename = here(workDir, "results", "tinyVAST", "age_comp_diff_tinyTweedie.png"),
+ggsave(comp_diff, filename = here(workDir, "results", save_dir, "age_comp_diff.png"),
        width=200, height=200, units="mm", dpi=300)
-ggsave(comp_trends, filename = here(workDir, "results", "tinyVAST", "age_comp_trends_tinyTweedie.png"),
+ggsave(comp_trends, filename = here(workDir, "results", save_dir, "age_comp_trends.png"),
        width=260, height=120, units="mm", dpi=300)
