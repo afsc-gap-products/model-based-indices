@@ -33,8 +33,8 @@ this_year <- lubridate::year(today())
 # this_year <- 2022  # different year for debugging
 Species = "pollock"
 speciesName <- paste0("Walleye_Pollock_age_",lubridate::year(today()),"_EBS-NBS")
-workDir <- here::here("species_specific_code","BS",Species)
-dir.create(workDir, showWarnings = FALSE)
+workDir <- here::here("species_specific_code","BS", Species)
+# dir.create(workDir, showWarnings = FALSE)
 
 # Settings ----------------------------------------------------------------
 
@@ -121,8 +121,8 @@ fit = fit_model( "settings"=settings,
                  create_strata_per_region=TRUE)
 
 # Save results
-
-saveRDS(fit, file = paste0(workDir,"/VASTfit_age.RDS"))
+dir.create(here(workDir, "results", "Comps"))
+saveRDS(fit, file = here(workDir, "results", "Comps", "VASTfit_age.RDS"))
 
 #Load results if using a previous model run
 #fit <- readRDS(file = paste0(workDir,"/VASTfit_age.RDS"))
@@ -142,7 +142,7 @@ sink()
 results <- plot_results( fit, #zrange = c(-3,3), n_cells = 600, 
                          strata_names = strata_names, 
                          check_residuals = TRUE )
-saveRDS(results, file = "VASTresults_age.RDS")
+saveRDS(results, file = here(workDir, "results", "Comps", "VASTresults_age.RDS"))
 
 #Load results if taking a previous model run
 # readRDS(file = paste0(getwd(), "/VASTresults_age.RDS"))
@@ -170,7 +170,7 @@ prop <- data.frame(t(data.frame(proportions$Prop_ctl))) %>%
               )
     )
 
-write.csv(prop,"proportions.csv", row.names = FALSE)
+write.csv(prop, file = here(workDir, "results", "Comps", "proportions.csv"), row.names = FALSE)
 
 
 # check results -----------------------------------------------------------
