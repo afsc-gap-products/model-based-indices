@@ -119,6 +119,7 @@ fit = fit_model( "settings"=settings,
                  # "build_model" = FALSE, # for testing
                  # CheckForBugs = FALSE,  # for testing
                  create_strata_per_region=TRUE)
+stop.time <- Sys.time()
 
 # Save results
 dir.create(here(workDir, "results", "Comps"))
