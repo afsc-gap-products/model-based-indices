@@ -17,6 +17,7 @@ packageVersion('VAST')
 packageVersion('INLA')
 packageVersion('TMB')
 packageVersion('TMBhelper')
+packageVersion('coldpool')
 
 # ## how to check your session info (see R version and all package versions)
 sessionInfo()
@@ -128,7 +129,11 @@ table(Data_Geostat$Year)
 
 # Cold pool covariate -----------------------------------------------------
 
-# devtools::install_github("afsc-gap-products/coldpool",  force = TRUE, R_REMOTES_NO_ERRORS_FROM_WARNINGS= TRUE)#, lib = .libPaths()[2])
+# Update coldpool package (before production run to get that summer's estimate)
+# remove.packages("coldpool")
+# devtools::install_github("afsc-gap-products/coldpool")#, force = TRUE, R_REMOTES_NO_ERRORS_FROM_WARNINGS= TRUE, lib = .libPaths()[2])
+# RESTART R
+
 coldpool:::cold_pool_index
 
 cold_pool <- coldpool:::cold_pool_index %>%
@@ -262,7 +267,7 @@ options(max.print = .Machine$integer.max)
 # fit_check_quick$ParHat
 
 # full model fit:
-start.time <- Sys.time() #"2024-03-14 16:49 PDT"
+start.time <- Sys.time() 
 fit <- fit_model( "settings"=settings, 
                   "Lat_i"=Data_Geostat[,'Lat'], 
                   "Lon_i"=Data_Geostat[,'Lon'], 
@@ -313,13 +318,6 @@ results <- plot_results(fit,
                         strata_names = strata_names, 
                         check_residuals=TRUE,
                         n_samples=0)
-
-# plot_results( full_fit, 
-#               # zrange = c(-3,3), 
-#               n_cells = 50^2, 
-#               strata_names = strata_names)#, 
-# check_residuals=TRUE,
-# n_samples=0)
 
 saveRDS(results, file = here(workDir, "results", "VAST Index", "VASTresults.RDS"))
 
