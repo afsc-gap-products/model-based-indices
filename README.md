@@ -1,26 +1,26 @@
 # model-based-indices
-code used for annual model based index production by GAP in GOA and the Bering Sea. Model-based-indices are produced
+Code used for annual model based index production by the AFSC GAP ModSquad in GOA and the Bering Sea. Model-based-indices are produced
 using the spatiotemporal delta-glmm implemented in [VAST](https://github.com/James-Thorson-NOAA/VAST), software developed by [Jim Thorson](https://github.com/James-Thorson-NOAA)
 
 ## Authors
-Primary contact: [@coleary-noaa](https://github.com/coleary-noaa)
+Primary contact: [@Lewis-Barnett-NOAA](https://github.com/Lewis-Barnett-NOAA)
 
 # Mission
 Provide VAST estimates of abundance and their standard error from GAP survey data for stock assessment authors in conjunction with traditional design-based estimators.
-- [TOR 2023](https://drive.google.com/file/d/1Jog0lZx3Y9D0yRqDSl2X-BSqR_zyEJUw/view)
+- [TOR or Terms Of Reference](https://drive.google.com/file/d/1TmW9gySrWVGxv5OXpTbkMml6vAbi14Xl/view?usp=drive_link)
 - [Annual stock assessment request form](https://docs.google.com/spreadsheets/d/18gr3owj5iAq1iCDX4wpQPUC9ldLz-YTsCBIfnkHqibo/edit?usp=sharing)
 - [Annual ESR request form](https://docs.google.com/spreadsheets/d/1SC-KzRmng0c2e1GpvqYQz4Ijr0_hlbGZbWiislXGGcw/edit?usp=sharing)
 - [ESP submission tool](https://apex.psmfc.org/akfin/f?p=140:LOGIN_DESKTOP:4779711459935:::::)
-- [2023 GOA notes](https://docs.google.com/document/d/1u97oBL31v5llxO1-5GLu1-x7k0zbU0LgviFEkWYdSCs/edit)
 
 # GAP Work Plan 
 - Species requests & alternate model-based runs/settings in from SSMA, ESP, ESR by 15 January
 - Run VAST with previous year survey data included as requested by SA author (March - April, code frozen by May)
 - Merge new frozen code (index & data retrival code) in git repo
-- Upload all VAST output files for hindcast and data (as an .Rdat) used to produce the indices to [google drive folder](https://drive.google.com/drive/folders/1yxn02yF0V1PNVw0_HpqeSK_XxgOy_LAT)
-- Notify the assessment lead & Cecilia (GOA) /Lewis (Bering) that you’ve completed hindcasts (March - April)
-- Run hindcasts again after survey with updated data (August - Sept., completed by 30 September) and upload results to the appropriate region production folder [on google drive](https://drive.google.com/drive/folders/1yxn02yF0V1PNVw0_HpqeSK_XxgOy_LAT), including data used
-- merge final index code & data pull code onto repo
+- Upload all VAST output files for hindcast and data (as an .Rdat) used to produce the indices to the appropriate region hindcast folder in the ModSquad [google drive folder](https://drive.google.com/drive/folders/1yxn02yF0V1PNVw0_HpqeSK_XxgOy_LAT)
+- Notify the assessment lead & ModSquad lead (Lewis) that you’ve completed hindcasts (March - April)
+- Run hindcast model structure again after survey with updated data (August - Sept., completed by 30 September) and upload results and data (as an .Rdat) used to produce the indices to the appropriate region production folder [on google drive](https://drive.google.com/drive/folders/1yxn02yF0V1PNVw0_HpqeSK_XxgOy_LAT)
+- Merge final index code & data pull code onto repo
+- Notify the assessment lead & ModSquad lead (Lewis) that you’ve completed the production estimates
 
 # General Production Timeline Estimate
 **March - April is the time window for any model exploration/iteration, as requested**
@@ -43,6 +43,9 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 - Identification of valid hauls for Bering Sea VAST indices, from Jason [here](https://docs.google.com/spreadsheets/d/1-z7AFYoTM0-RApsW9APfXX4CoA5mbk6k/edit#gid=1419989689)
 
 # Minimum standard of versions of software and key dependencies (i.e., using these versions or later)
+- **2024**: 
+  - Rv4.0.2: VAST v3.9.0, FishStatsUtils v2.10.0, cpp VAST_v13_1_0, TMB v1.7.22, Matrix v1.4-0, DHARMa 0.4.5; or,
+  - MRAN v4.0.2: VAST v3.9.0, FishStatsUtils v2.10.0, cpp VAST_v13_1_0, TMB v1.7.16, Matrix v1.2-18, DHARMa v0.3.2
 - **2023**: 
   - Rv4.0.2: VAST v3.9.0, FishStatsUtils v2.10.0, cpp VAST_v13_1_0, TMB v1.7.22, Matrix v1.4-0, DHARMa 0.4.5; or,
   - MRAN v4.0.2: VAST v3.9.0, FishStatsUtils v2.10.0, cpp VAST_v13_1_0, TMB v1.7.16, Matrix v1.2-18, DHARMa v0.3.2
@@ -56,10 +59,12 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 | Initial Model Setting  | Suggested alternative setting (if needed) |
 | :---         | :--- |
 | purpose = "index2” in make_settings()  | NA  |
-| knots = 750 in make_settings()  | knots = 500, 1000  |
+| knots = 750 in make_settings()  | knots = 500, 1000; 50 for age comps |
 | Poisson-link delta-gamma observation model[^1]: <br/> ObsModel = c(2,1) in make_settings()  | option 2: Tweedie ObsModel = c(10,2)[^2] <br/> option 3: delta-lognormal ObsModel = c(1,1)  |
 | knot_method = ‘grid’ in fit_model()  | knot_method = ‘samples’ if necessary to aid convergence or for comparison to a previous model fit  |
-| fine_scale = TRUE in make_settings()  | NA  |
+| fine_scale = TRUE in make_settings()  | fine_scale = FALSE  |
+| max_cells = 2000 in make_settings()  | max_cells = n_x * 10  |
+| Npool = 100 in make_model()  | Npool = 20 to 99  |
 | bias.correct = TRUE in make_settings()  | NA  |
 | refine = TRUE in fit_model()  | refine = FALSE  |
 | spatiotemporal fields: “IID” default settings for FieldConfig in make_settings()  | model spatiotemporal components (epsilon) as a first-order autoregressive process “AR1” (required for extremely unbalanced data) or “0” (if necessary to aid convergence)  |
@@ -68,13 +73,7 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 [^1]: Noting that for species with 100% encounters in any year we will use c(2,4) instead of c(2,1), or the equivalent setting for the lognormal <br/>
 [^2]: Tweedie also involves additional changes to RhoConfig and FieldConfig to ensure that there is only a single linear predictor being estimated, as documented elsewhere
 
-# Previous TORs
-- [TOR 2022](https://drive.google.com/file/d/1t13fVai8HOo3xtwxn_vazo9NDT8MrVar/view?usp=sharing)
-- [TOR 2021](https://docs.google.com/document/d/19gFkuNcJ_ezXzKqqOS1k5YnXyj3Tm_LyTMWGWyhy8ec/edit?usp=sharing)
-
-### **Note**: if a request to only include fish west of 140 degrees, just note that there are two components to this request:  (1) excluding data from east of 170 longitude and (2) specifying this as a "strata" boundary in the model settings in the VAST code
-
-# Bering specific links & files
+### **Note**: if a request to only include fish west of X degrees longitude, just note that there are two components to this request:  (1) excluding data from east of X degrees longitude and (2) specifying this as a "strata" boundary in the model settings in the VAST code
 
 # R support
-- Installation Guide for R 4.0.02 [here](https://docs.google.com/document/d/1tjAjvVsYbRBYLWwVdQ-Bs7GYALiUn2xFcUgcP8mQCHw/edit?usp=sharing)
+- Installation Guide for R 4.0.2, required to run MRAN [here](https://docs.google.com/document/d/1tjAjvVsYbRBYLWwVdQ-Bs7GYALiUn2xFcUgcP8mQCHw/edit?usp=sharing)
