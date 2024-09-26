@@ -5,6 +5,7 @@
 # Date created: 2024.09.25
 
 library(gapindex)
+library(dplyr)
 
 # Connect to Oracle (will only work on the NOAA network or VPN)
 sql_channel <- gapindex::get_connected()
@@ -26,6 +27,10 @@ cpue <- calc_cpue(racebase_tables = data)
 # Calculate biomass (w/variance), mean/variance CPUE across strata
 biomass_stratum <- calc_biomass_stratum(racebase_tables = data, 
                                         cpue = cpue)
+total_biomass <- biomass_stratum %>%
+  group_by(YEAR) %>%
+  summarize(biomass_mt = sum(BIOMASS_MT))
+
 # Calculate size compositions by stratum
 sizecomp_stratum <- calc_sizecomp_stratum(racebase_tables = data,
                                           racebase_cpue = cpue,
