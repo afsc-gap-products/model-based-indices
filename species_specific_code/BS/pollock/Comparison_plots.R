@@ -28,16 +28,16 @@ colnames(index1)[6] <- "error"
 index1$Estimate <- index1$Estimate / 1000000000
 index1$error <- index1$error / 1000000000
 
-index2 <- read.csv(here(workDir, "archive", "Index_2022.csv"))
+index2 <- read.csv(here(workDir, "results", "2024 Hindcast", "VAST Index", "Index.csv"))
 colnames(index2)[6] <- "error"
 index2$Estimate <- index2$Estimate / 1000000000
 index2$error <- index2$error / 1000000000
 
-index3 <- readRDS(here(workDir, "archive", "VASTresults_2021.RDS"))$Index$Table
-index3 <- index3[, -5]
-colnames(index3) <- c("Time", "Units", "Stratum", "Estimate", "error")
-index3$Estimate <- index3$Estimate / 1000000
-index3$error <- index3$error / 1000000
+index3 <- read.csv(here(workDir, "results", "2023 Production", "VAST Index", "Index.csv"))
+colnames(index3)[6] <- "error"
+index3$Estimate <- index3$Estimate / 1000000000
+index3$error <- index3$error / 1000000000
+
 
 # # When needed, sum across ages
 # index2 <- index2 %>% group_by(Time, Stratum) %>%
@@ -80,18 +80,18 @@ compare_index <- function(indices, names, ebs_only = FALSE) {
 }
 
 index_comp <- compare_index(indices = list(index1, index2, index3), 
-                            names = c("2023", "2022", "2021"),
+                            names = c("2024 Production", "2024 Hindcast", "2023 Production"),
                             ebs_only = TRUE)
 index_comp
-# ggsave(index_comp, filename = here(workDir, "plots", "index_ebs_comparison.png"),
-#        width=130, height=90, units="mm", dpi=300)
+ggsave(index_comp, filename = here(workDir, "plots", "index_ebs_comparison.png"),
+       width=130, height=90, units="mm", dpi=300)
 
 # Difference between two indices
 index_difference <- function(new, old, names, save_results = FALSE) {
   new <- new <- subset(new, new$Time < this_year)  # make sure new dataset is the same length as the old
   df <- cbind.data.frame(Year = new$Time,
                          Stratum = new$Stratum,
-                         Difference = (new$Estimate - old$Estimate) / old$Estimate)
+                         Difference = ((new$Estimate - old$Estimate) / old$Estimate) * 100)
 
   if(save_results == TRUE) {  # save to drive, if you want. Check file paths.
     write.csv(df, here(results_dir, save_dir, "index_difference.csv"))
@@ -103,7 +103,7 @@ index_difference <- function(new, old, names, save_results = FALSE) {
     mutate(sign = case_when(Difference >= 0 ~ "Positive",
                             Difference < 0 ~ "Negative"))
   
-  label <- paste0("Relative change between ", names[1], " and ", names[2])
+  label <- paste0("Percent difference between ", names[1], " and ", names[2])
   plot <- ggplot(df, aes(x = Year, y = Difference, fill = sign)) +
     geom_bar(stat = "identity", show.legend = FALSE) +
     scale_fill_manual(values = c("cornflowerblue", "darkred")) +
@@ -113,12 +113,14 @@ index_difference <- function(new, old, names, save_results = FALSE) {
 }
 
 index_diff <- index_difference(new = index1, old = index2,
-                               names = c("2024 hindcast", "2023 production"))
+                               names = c("2024 Prod.", "2024 Hind."))
 index_diff
+ggsave(index_diff, filename = here(workDir, "plots", "index_ebs_difference.png"),
+       width=130, height=110, units="mm", dpi=300)
 
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
-old_props <- read.csv(here(workDir, "results", "2023 production", "Comps", "proportions.csv"))[, -1]
+old_props <- read.csv(here(workDir, "results", "2024 Hindcast", "Comps", "proportions.csv"))[, -1]
 new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
 # new_props_dg <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv"))
 
@@ -127,7 +129,7 @@ new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
 # old_props <- old_props %>% filter(Year %in% tiny_years & Region == "EBS")
 
 # Set names for old and new comps
-names <- list(old = "2023 Production", new = "2024 Production")
+names <- list(old = "2024 Hindcast", new = "2024 Production")
 
 ## Combine age comp models into one plot --------------------------------------
 compare_props <- function(props, names, last_year) {
