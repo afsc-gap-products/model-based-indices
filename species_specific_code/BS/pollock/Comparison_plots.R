@@ -28,21 +28,58 @@ colnames(index1)[6] <- "error"
 index1$Estimate <- index1$Estimate / 1000000000
 index1$error <- index1$error / 1000000000
 
-index2 <- read.csv(here(workDir, "archive", "Index_2022.csv"))
-colnames(index2)[6] <- "error"
-index2$Estimate <- index2$Estimate / 1000000000
-index2$error <- index2$error / 1000000000
+# index2 <- read.csv(here(workDir, "results", "2024 Hindcast", "VAST Index", "Index.csv"))
+# colnames(index2)[6] <- "error"
+# index2$Estimate <- index2$Estimate / 1000000000
+# index2$error <- index2$error / 1000000000
+# 
+# index3 <- read.csv(here(workDir, "results", "2023 Production", "VAST Index", "Index.csv"))
+# colnames(index3)[6] <- "error"
+# index3$Estimate <- index3$Estimate / 1000000000
+# index3$error <- index3$error / 1000000000
 
-index3 <- readRDS(here(workDir, "archive", "VASTresults_2021.RDS"))$Index$Table
-index3 <- index3[, -5]
-colnames(index3) <- c("Time", "Units", "Stratum", "Estimate", "error")
-index3$Estimate <- index3$Estimate / 1000000
-index3$error <- index3$error / 1000000
+# Get design-based index from GAP_PRODUCTS - first connect to Oracle
+if (file.exists("Z:/Projects/ConnectToOracle.R")) {
+  source("Z:/Projects/ConnectToOracle.R")
+} else {
+  # For those without a ConnectToOracle file
+  channel <- odbcConnect(dsn = "AFSC", 
+                         uid = rstudioapi::showPrompt(title = "Username", 
+                                                      message = "Oracle Username", 
+                                                      default = ""), 
+                         pwd = rstudioapi::askForPassword("Enter Password"),
+                         believeNRows = FALSE)
+}
+
+# check to see if connection has been established
+odbcGetInfo(channel)
+
+# Pull index 
+wp_db_index <- RODBC::sqlQuery(channel = channel,
+                               query = "SELECT 
+                                    YEAR, 
+                                    CASE
+                                     WHEN AREA_ID = 99900 THEN 'EBS'
+                                     WHEN AREA_ID = 99902 THEN 'NBS'
+                                    END AS REGION, 
+                                    BIOMASS_MT,
+                                    SQRT(BIOMASS_VAR)/BIOMASS_MT AS BIOMASS_CV
+                                    FROM GAP_PRODUCTS.BIOMASS
+                                    WHERE SPECIES_CODE = 21740
+                                    AND AREA_ID in (99900, 99902)")
+
+colnames(wp_db_index) <- c("Time", "Stratum", "Estimate", "error")
+wp_db_index$Estimate <- wp_db_index$Estimate / 1000000
+wp_db_index$error <- wp_db_index$error / 1000000
+
 
 # # When needed, sum across ages
 # index2 <- index2 %>% group_by(Time, Stratum) %>%
 #   summarize(Estimate = sum(Estimate),
 #             error = mean(error)) 
+
+# Set names for old and new index
+names_index <- list(old = "2024 Design-based", new = "2024 Model-based")
 
 # Combine & plot any number of indices. 
 compare_index <- function(indices, names, ebs_only = FALSE) {
@@ -79,19 +116,19 @@ compare_index <- function(indices, names, ebs_only = FALSE) {
   return(plot)
 }
 
-index_comp <- compare_index(indices = list(index1, index2, index3), 
-                            names = c("2023", "2022", "2021"),
+index_comp <- compare_index(indices = list(wp_db_index, index1), 
+                            names = c(names_index$old, names_index$new),
                             ebs_only = TRUE)
 index_comp
-# ggsave(index_comp, filename = here(workDir, "plots", "index_ebs_comparison.png"),
-#        width=130, height=90, units="mm", dpi=300)
+ggsave(index_comp, filename = here(workDir, "plots", "index_dbmb_2024.png"),
+       width=130, height=90, units="mm", dpi=300)
 
 # Difference between two indices
 index_difference <- function(new, old, names, save_results = FALSE) {
   new <- new <- subset(new, new$Time < this_year)  # make sure new dataset is the same length as the old
   df <- cbind.data.frame(Year = new$Time,
                          Stratum = new$Stratum,
-                         Difference = (new$Estimate - old$Estimate) / old$Estimate)
+                         Difference = ((new$Estimate - old$Estimate) / old$Estimate) * 100)
 
   if(save_results == TRUE) {  # save to drive, if you want. Check file paths.
     write.csv(df, here(results_dir, save_dir, "index_difference.csv"))
@@ -101,9 +138,10 @@ index_difference <- function(new, old, names, save_results = FALSE) {
     filter(Stratum == "EBS") %>% # only Eastern Bering Sea for simplicity
     # add column for coloring the bars in the plot based on positive/negative
     mutate(sign = case_when(Difference >= 0 ~ "Positive",
-                            Difference < 0 ~ "Negative"))
+                            Difference < 0 ~ "Negative")) %>%
+    filter(Year != 2020)
   
-  label <- paste0("Relative change between ", names[1], " and ", names[2])
+  label <- paste0("Percent difference between ", names[1], " and ", names[2])
   plot <- ggplot(df, aes(x = Year, y = Difference, fill = sign)) +
     geom_bar(stat = "identity", show.legend = FALSE) +
     scale_fill_manual(values = c("cornflowerblue", "darkred")) +
@@ -112,13 +150,15 @@ index_difference <- function(new, old, names, save_results = FALSE) {
   return(plot)
 }
 
-index_diff <- index_difference(new = index1, old = index2,
-                               names = c("2024 hindcast", "2023 production"))
+index_diff <- index_difference(new = index1, old = wp_db_index,
+                               names = c(names_index$new, names_index$old))
 index_diff
+ggsave(index_diff, filename = here(workDir, "plots", "index_dbmb_diff_2024.png"),
+       width=130, height=110, units="mm", dpi=300)
 
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
-old_props <- read.csv(here(workDir, "results", "2023 production", "Comps", "proportions.csv"))[, -1]
+old_props <- read.csv(here(workDir, "results", "2024 Hindcast", "Comps", "proportions.csv"))[, -1]
 new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
 # new_props_dg <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv"))
 
@@ -127,7 +167,7 @@ new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
 # old_props <- old_props %>% filter(Year %in% tiny_years & Region == "EBS")
 
 # Set names for old and new comps
-names <- list(old = "2023 Production", new = "2024 Production")
+names_comps <- list(old = "2024 Hindcast", new = "2024 Production")
 
 ## Combine age comp models into one plot --------------------------------------
 compare_props <- function(props, names, last_year) {
@@ -151,7 +191,7 @@ compare_props <- function(props, names, last_year) {
 }
 
 all_props <- compare_props(props = list(new_props, old_props),
-                           names = c(names$new, names$old))
+                           names = c(names_comps$new, names_comps$old))
 all_props
 
 # Plot difference between two models ------------------------------------------
