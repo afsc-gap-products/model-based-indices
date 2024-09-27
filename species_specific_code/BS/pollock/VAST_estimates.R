@@ -1,8 +1,9 @@
 # This code produces VAST index estimates for the Bering Sea Pollock assessment
 # By: Caitlin I. Allen Akselrud
-# Contact: caitlin.allen_akselrud@noaa.gov
+# Maintained by: Sophia N. Wassermann
+# Contact: sophia.wassermann@noaa.gov
 # Date created: 2021.04.23
-# Date updated: 2022.11.17
+# Date updated: 2024.09.06
 
 
 # # package installs --------------------------------------------------------

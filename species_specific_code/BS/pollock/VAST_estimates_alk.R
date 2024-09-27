@@ -3,7 +3,7 @@
 # Maintained by: Sophia N. Wassermann
 # Contact: sophia.wassermann@noaa.gov
 # Date created: 2021.04.23
-# Date updated: 2024.03.13
+# Date updated: 2024.09.06
 
 # Notes -------------------------------------------------------------------
 
@@ -100,7 +100,7 @@ dir.create(RunDir, recursive = TRUE)
 setwd(RunDir)
 
 # Run model
-start.time <- Sys.time() #"2024-09-05 16:43:13 PDT"
+start.time <- Sys.time() 
 fit = fit_model( "settings"=settings, 
                  "Lat_i"=Data_Geostat[,'Lat'], 
                  "Lon_i"=Data_Geostat[,'Lon'], 
