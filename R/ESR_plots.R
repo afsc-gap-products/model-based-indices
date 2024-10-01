@@ -20,14 +20,15 @@ library(ggsidekick)
 theme_set(theme_sleek())
 
 # SET-UP ----------------------------------------------------------------------
-this_year <- 2023
+this_year <- 2024
 
-# Read in VAST results - update for each species
+# Read in VAST results - update for each species 
 workDir <- here("species_specific_code", "BS", "pollock", "results")
 # workDir <- here("VAST_results", "BS", "nrs")
 
-VAST_results <- readRDS(here(workDir, "VASTresults.RDS"))  # for COG
-VAST_fit <- readRDS(here(workDir, "VASTfit.RDS"))  # for EAO
+# Reading these in will take a moment!
+VAST_results <- readRDS(here(workDir, "Vast Index", "VASTresults.RDS"))  # for COG 
+VAST_fit <- readRDS(here(workDir, "Vast Index", "VASTfit.RDS"))  # for EAO
 
 # Make a results object 
 # TODO: test this a couple more times. Doesn't seem to work consistently
@@ -39,7 +40,7 @@ VAST_fit <- readRDS(here(workDir, "VASTfit.RDS"))  # for EAO
 #                              n_samples=0)
 
 # Create directory for saving output 
-saveDir <- here(workDir, paste0("ESR products ", this_year))
+saveDir <- here(workDir, paste0(this_year, " ESR products"))
 dir.create(saveDir, showWarnings = FALSE)
 
 
@@ -194,7 +195,6 @@ cog_plots <- cog()
 cog_plots$all  
 cog_plots$map
 
-
 # Effective area occupied -----------------------------------------------------
 options(scipen = 999)
 
@@ -251,6 +251,7 @@ eao <- function(fit = VAST_fit, dir = saveDir, save_data = FALSE, save_plot = TR
 eao_plot <- eao()
 eao_plot
 
+############ Stop here for single-species plotting! ##############
 
 # Combine regional COG into one map -------------------------------------------
 # Read in each species in the region and combine into a list
