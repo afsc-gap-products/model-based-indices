@@ -279,7 +279,7 @@ comp_trends
 
 # Save plots ------------------------------------------------------------------
 ggsave(index_comp, filename = here(workDir, "results", save_dir, "index_comparison.png"),
-       width=130, height=160, units="mm", dpi=300)
+       width=170, height=120, units="mm", dpi=300)
 ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_difference.png"),
        width=130, height=180, units="mm", dpi=300)
 ggsave(all_props, filename = here(workDir, "results", save_dir, "age_comp_compare.png"),
