@@ -79,7 +79,7 @@ wp_db_index$error <- wp_db_index$error / 1000000
 #             error = mean(error)) 
 
 # Set names for old and new index
-names_index <- list(old = "2024 Design-based", new = "2024 Model-based")
+names_index <- list(old = "2024 DB", new = "2024 MB")
 
 # Combine & plot any number of indices. 
 compare_index <- function(indices, names, ebs_only = FALSE) {
@@ -120,12 +120,16 @@ index_comp <- compare_index(indices = list(wp_db_index, index1),
                             names = c(names_index$old, names_index$new),
                             ebs_only = TRUE)
 index_comp
-ggsave(index_comp, filename = here(workDir, "plots", "index_dbmb_2024.png"),
-       width=130, height=90, units="mm", dpi=300)
 
 # Difference between two indices
 index_difference <- function(new, old, names, save_results = FALSE) {
-  new <- new <- subset(new, new$Time < this_year)  # make sure new dataset is the same length as the old
+  # Only run for EBS estimate
+  new <- new %>% filter(Stratum == "EBS")
+  old <- old %>% filter(Stratum == "EBS")
+  # make sure new dataset is the same length as the old
+  new <- new %>% 
+    filter(Time %in% min(old$Time):max(old$Time)) %>%
+    filter(Time != 2020)
   df <- cbind.data.frame(Year = new$Time,
                          Stratum = new$Stratum,
                          Difference = ((new$Estimate - old$Estimate) / old$Estimate) * 100)
@@ -153,12 +157,10 @@ index_difference <- function(new, old, names, save_results = FALSE) {
 index_diff <- index_difference(new = index1, old = wp_db_index,
                                names = c(names_index$new, names_index$old))
 index_diff
-ggsave(index_diff, filename = here(workDir, "plots", "index_dbmb_diff_2024.png"),
-       width=130, height=110, units="mm", dpi=300)
 
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
-old_props <- read.csv(here(workDir, "results", "2024 Hindcast", "Comps", "proportions.csv"))[, -1]
+old_props <- read.csv(here(workDir, "results", "2023 Production", "Comps", "proportions.csv"))
 new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
 # new_props_dg <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv"))
 
@@ -167,7 +169,7 @@ new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
 # old_props <- old_props %>% filter(Year %in% tiny_years & Region == "EBS")
 
 # Set names for old and new comps
-names_comps <- list(old = "2024 Hindcast", new = "2024 Production")
+names_comps <- list(old = "2024 (no ages)", new = "2024 production")
 
 ## Combine age comp models into one plot --------------------------------------
 compare_props <- function(props, names, last_year) {
@@ -230,7 +232,7 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
 }
 
 comp_diff <- comp_difference(new = new_props, old = old_props,
-                             names = c(names$new, names$old),
+                             names = c(names_comps$new, names_comps$old),
                              save_results = FALSE)
 comp_diff
 
@@ -272,10 +274,10 @@ comp_trends <- function(new, old, names) {
 }
 
 comp_trends <- comp_trends(new = new_props, old = old_props,
-                           names = c(names$new, names$old))
+                           names = c(names_comps$new, names_comps$old))
 comp_trends
 
- # Save plots ------------------------------------------------------------------
+# Save plots ------------------------------------------------------------------
 ggsave(index_comp, filename = here(workDir, "results", save_dir, "index_comparison.png"),
        width=130, height=160, units="mm", dpi=300)
 ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_difference.png"),
