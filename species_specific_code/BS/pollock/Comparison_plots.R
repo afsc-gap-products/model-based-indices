@@ -19,7 +19,7 @@ theme_set(theme_sleek())
 workDir <- here("species_specific_code", "BS", "pollock")
 this_year <- 2024
 
-save_dir <- paste0(this_year, " production")
+save_dir <- paste0(this_year, " Production")
 
 # Compare Indices of Abundance ------------------------------------------------
 # Read in indices & make sure columns for year = Time, Estimate, Error are named correctly
@@ -28,60 +28,69 @@ colnames(index1)[6] <- "error"
 index1$Estimate <- index1$Estimate / 1000000000
 index1$error <- index1$error / 1000000000
 
-# index2 <- read.csv(here(workDir, "results", "2024 Hindcast", "VAST Index", "Index.csv"))
-# colnames(index2)[6] <- "error"
-# index2$Estimate <- index2$Estimate / 1000000000
-# index2$error <- index2$error / 1000000000
-# 
+index2 <- read.csv(here(workDir, "results", "2023 Production", "VAST Index", "Index.csv"))
+colnames(index2)[6] <- "error"
+index2$Estimate <- index2$Estimate / 1000000000
+index2$error <- index2$error / 1000000000
+ 
 # index3 <- read.csv(here(workDir, "results", "2023 Production", "VAST Index", "Index.csv"))
 # colnames(index3)[6] <- "error"
 # index3$Estimate <- index3$Estimate / 1000000000
 # index3$error <- index3$error / 1000000000
 
-# Get design-based index from GAP_PRODUCTS - first connect to Oracle
-if (file.exists("Z:/Projects/ConnectToOracle.R")) {
-  source("Z:/Projects/ConnectToOracle.R")
-} else {
-  # For those without a ConnectToOracle file
-  channel <- odbcConnect(dsn = "AFSC", 
-                         uid = rstudioapi::showPrompt(title = "Username", 
-                                                      message = "Oracle Username", 
-                                                      default = ""), 
-                         pwd = rstudioapi::askForPassword("Enter Password"),
-                         believeNRows = FALSE)
-}
-
-# check to see if connection has been established
-odbcGetInfo(channel)
-
-# Pull index 
-wp_db_index <- RODBC::sqlQuery(channel = channel,
-                               query = "SELECT 
-                                    YEAR, 
-                                    CASE
-                                     WHEN AREA_ID = 99900 THEN 'EBS'
-                                     WHEN AREA_ID = 99902 THEN 'NBS'
-                                    END AS REGION, 
-                                    BIOMASS_MT,
-                                    SQRT(BIOMASS_VAR)/BIOMASS_MT AS BIOMASS_CV
-                                    FROM GAP_PRODUCTS.BIOMASS
-                                    WHERE SPECIES_CODE = 21740
-                                    AND AREA_ID in (99900, 99902)")
-
-colnames(wp_db_index) <- c("Time", "Stratum", "Estimate", "error")
-wp_db_index$Estimate <- wp_db_index$Estimate / 1000000
-wp_db_index$error <- wp_db_index$error / 1000000
-
-
 # # When needed, sum across ages
 # index2 <- index2 %>% group_by(Time, Stratum) %>%
 #   summarize(Estimate = sum(Estimate),
-#             error = mean(error)) 
+#             error = mean(error))
 
+# # Get design-based index from GAP_PRODUCTS ------------------------------------
+# if (file.exists("Z:/Projects/ConnectToOracle.R")) {
+#   source("Z:/Projects/ConnectToOracle.R")
+# } else {
+#   # For those without a ConnectToOracle file
+#   channel <- odbcConnect(dsn = "AFSC",
+#                          uid = rstudioapi::showPrompt(title = "Username",
+#                                                       message = "Oracle Username",
+#                                                       default = ""),
+#                          pwd = rstudioapi::askForPassword("Enter Password"),
+#                          believeNRows = FALSE)
+# }
+# 
+# # check to see if connection has been established
+# odbcGetInfo(channel)
+# 
+# # Pull index
+# wp_db_index <- RODBC::sqlQuery(channel = channel,
+#                                query = "SELECT
+#                                     YEAR,
+#                                     CASE
+#                                      WHEN AREA_ID = 99900 THEN 'EBS'
+#                                      WHEN AREA_ID = 99902 THEN 'NBS'
+#                                     END AS REGION,
+#                                     BIOMASS_MT,
+#                                     SQRT(BIOMASS_VAR)/BIOMASS_MT AS BIOMASS_CV
+#                                     FROM GAP_PRODUCTS.BIOMASS
+#                                     WHERE SPECIES_CODE = 21740
+#                                     AND AREA_ID in (99900, 99902)")
+# 
+# colnames(wp_db_index) <- c("Time", "Stratum", "Estimate", "error")
+# wp_db_index$Estimate <- wp_db_index$Estimate / 1000000
+# wp_db_index$error <- wp_db_index$error / 1000000
+# 
+# # Get design-based index from density-dependent correction --------------------
+# ddc_orig_biomass <- read.csv(here(workDir, "results", "design-based", "biomass_densdep_corrected_EBSonly_2024.csv"))
+# ddc_index <- ddc_orig_biomass %>%
+#   group_by(year) %>%
+#   summarize(Estimate = sum(biomass_MT_ha) / 1000000)
+# ddc_index$error <- 0
+# ddc_index$Stratum <- "EBS"
+# ddc_index <- ddc_index[, c(1, 4, 2, 3)]
+# colnames(ddc_index)[1] <- "Time"
+  
+# Combine and plot indices ----------------------------------------------------
 # Set names for old and new index
-names_index <- list(old = "2024 DB", new = "2024 MB")
+names_index <- c("DDC DB 2024", "MB 2024")
 
-# Combine & plot any number of indices. 
 compare_index <- function(indices, names, ebs_only = FALSE) {
   df <- data.frame()
   for(i in 1:length(indices)) {
@@ -116,20 +125,18 @@ compare_index <- function(indices, names, ebs_only = FALSE) {
   return(plot)
 }
 
-index_comp <- compare_index(indices = list(wp_db_index, index1), 
-                            names = c(names_index$old, names_index$new),
+index_comp <- compare_index(indices = list(ddc_index, index1), 
+                            names = c(names_index[1], names_index[2]),
                             ebs_only = TRUE)
 index_comp
 
 # Difference between two indices
 index_difference <- function(new, old, names, save_results = FALSE) {
-  # Only run for EBS estimate
-  new <- new %>% filter(Stratum == "EBS")
-  old <- old %>% filter(Stratum == "EBS")
+  # Only run for EBS estimate (and no 2020)
+  new <- new %>% filter(Stratum == "EBS" & Time != 2020)
+  old <- old %>% filter(Stratum == "EBS" & Time != 2020)
   # make sure new dataset is the same length as the old
-  new <- new %>% 
-    filter(Time %in% min(old$Time):max(old$Time)) %>%
-    filter(Time != 2020)
+  new <- new %>% filter(Time %in% min(old$Time):max(old$Time)) 
   df <- cbind.data.frame(Year = new$Time,
                          Stratum = new$Stratum,
                          Difference = ((new$Estimate - old$Estimate) / old$Estimate) * 100)
@@ -138,12 +145,8 @@ index_difference <- function(new, old, names, save_results = FALSE) {
     write.csv(df, here(results_dir, save_dir, "index_difference.csv"))
   }
   
-  df <- df %>% 
-    filter(Stratum == "EBS") %>% # only Eastern Bering Sea for simplicity
-    # add column for coloring the bars in the plot based on positive/negative
-    mutate(sign = case_when(Difference >= 0 ~ "Positive",
-                            Difference < 0 ~ "Negative")) %>%
-    filter(Year != 2020)
+  df <- df %>% mutate(sign = case_when(Difference >= 0 ~ "Positive",
+                                       Difference < 0 ~ "Negative"))
   
   label <- paste0("Percent difference between ", names[1], " and ", names[2])
   plot <- ggplot(df, aes(x = Year, y = Difference, fill = sign)) +
@@ -154,8 +157,8 @@ index_difference <- function(new, old, names, save_results = FALSE) {
   return(plot)
 }
 
-index_diff <- index_difference(new = index1, old = wp_db_index,
-                               names = c(names_index$new, names_index$old))
+index_diff <- index_difference(new = index1, old = index2,
+                               names = c(names_index[1], names_index[2]))
 index_diff
 
 # Compare Age Compositions ----------------------------------------------------
@@ -281,7 +284,7 @@ comp_trends
 ggsave(index_comp, filename = here(workDir, "results", save_dir, "index_comparison.png"),
        width=170, height=120, units="mm", dpi=300)
 ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_difference.png"),
-       width=130, height=180, units="mm", dpi=300)
+       width=170, height=120, units="mm", dpi=300)
 ggsave(all_props, filename = here(workDir, "results", save_dir, "age_comp_compare.png"),
        width=200, height=180, units="mm", dpi=300)
 ggsave(comp_diff, filename = here(workDir, "results", save_dir, "age_comp_diff.png"),
