@@ -299,6 +299,9 @@ fit <- fit_model( "settings"=settings,
 # 2022: setting questions- "input_grid", "refine", optimize_args
 stop.time <- Sys.time()
 
+# Check gradient
+fit$parameter_estimates$max_gradient
+
 # Save results
 dir.create(here(workDir, "results", "VAST Index"))
 saveRDS(fit, file = here(workDir, "results", "VAST Index", "VASTfit.RDS"))
