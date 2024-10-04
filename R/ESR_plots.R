@@ -45,7 +45,7 @@ dir.create(saveDir, showWarnings = FALSE)
 
 
 # Center of gravity -----------------------------------------------------------
-cog <- function(results = VAST_results, dir = saveDir, save_data = FALSE, save_plots = TRUE) {
+cog <- function(results = VAST_results, dir = saveDir, save_data = TRUE, save_plots = TRUE) {
   cog <- data.frame(results$Range$COG_Table)
   cog$Year <- as.numeric(cog$Year)
   cog$COG_hat <- as.numeric(cog$COG_hat)
@@ -198,7 +198,7 @@ cog_plots$map
 # Effective area occupied -----------------------------------------------------
 options(scipen = 999)
 
-eao <- function(fit = VAST_fit, dir = saveDir, save_data = FALSE, save_plot = TRUE) {
+eao <- function(fit = VAST_fit, dir = saveDir, save_data = TRUE, save_plot = TRUE) {
   # Get EAO estimate from VAST fit object
   report <- TMB::summary.sdreport(fit$parameter_estimates$SD)
   area <- report[which(rownames(report) == "log_effective_area_ctl"), c('Estimate', 'Std. Error')]
