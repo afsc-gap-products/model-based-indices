@@ -23,12 +23,17 @@ theme_set(theme_sleek())
 this_year <- 2024
 
 # Read in VAST results - update for each species 
-workDir <- here("species_specific_code", "BS", "pollock", "results")
+workDir <- here("species_specific_code", "BS", "pollock", "results") 
+# TODO: structure all species folders to have explicit hindcast and production
+# folders each containing a "results" folder for the index model, e.g.,
+# workDir <- here("species_specific_code", "BS", "pacific_cod", "production", "results") 
 # workDir <- here("VAST_results", "BS", "nrs")
 
-# Reading these in will take a moment!
-VAST_results <- readRDS(here(workDir, "Vast Index", "VASTresults.RDS"))  # for COG 
-VAST_fit <- readRDS(here(workDir, "Vast Index", "VASTfit.RDS"))  # for EAO
+# Reading these in will take a moment! ...note that these subfolders should be
+# standardized to results (for the index), and results_age (for comps), and 
+# we want the former
+VAST_results <- readRDS(here(workDir, "VASTresults.RDS"))  # for COG 
+VAST_fit <- readRDS(here(workDir, "VASTfit.RDS"))  # for EAO
 
 # Make a results object 
 # TODO: test this a couple more times. Doesn't seem to work consistently
@@ -39,7 +44,8 @@ VAST_fit <- readRDS(here(workDir, "Vast Index", "VASTfit.RDS"))  # for EAO
 #                              check_residuals=TRUE,
 #                              n_samples=0)
 
-# Create directory for saving output 
+# Create directory for saving output (should we change to underscores and no caps,
+# for the folder maybe? Maybe just change it to "esp")
 saveDir <- here(workDir, paste0(this_year, " ESR products"))
 dir.create(saveDir, showWarnings = FALSE)
 
@@ -254,6 +260,7 @@ eao_plot
 ############ Stop here for single-species plotting! ##############
 
 # Combine regional COG into one map -------------------------------------------
+# TODO: run after standardizing folder structures as noted above
 # Read in each species in the region and combine into a list
 bs_pol_res <- readRDS(here("species_specific_code", "BS", "pollock", "results", "VAST Index", "VASTresults.RDS"))
 bs_cod_res <- readRDS(here("VAST_results", "BS", "pcod", "VASTresults.RDS"))
