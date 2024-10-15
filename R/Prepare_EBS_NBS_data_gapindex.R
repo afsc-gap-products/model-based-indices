@@ -14,11 +14,12 @@ sql_channel <- gapindex::get_connected()
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Species-Specific Constants. Toggle species row
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-species_info <- data.frame(species_name = c("yellowfin_sole", "Pacific_cod"),
-                           species_code = c(10210, 21720),
+species_info <- data.frame(species_name = c("yellowfin_sole", "Pacific_cod",
+                                            "pollock"),
+                           species_code = c(10210, 21720, 21720),
                            start_year = 1982,
                            current_year = 2024,
-                           plus_group = c(20, 12), 
+                           plus_group = c(20, 12, 15), 
                            start_year_age = c(1982, 1994))[2, ]
 
 ## Set constants
