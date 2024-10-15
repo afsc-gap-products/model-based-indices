@@ -146,7 +146,7 @@ for (iyear in ebs_years) {
   
   if (iyear %in% ebs_years[c(1, 10, 19, 28)]) {
     mtext(side = 1, text = "Age (years)", outer = TRUE, line = 0.5, font = 2)
-    mtext(side = 2, text = "Propotion", outer = TRUE, line = 1, font = 2)
+    mtext(side = 2, text = "Proportion", outer = TRUE, line = 1, font = 2)
   }
 }
 dev.off()
