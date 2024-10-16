@@ -10,37 +10,47 @@
 library(tinyVAST)
 library(fmesher)
 library(sf)
+library(here)
 
 #' To start, we load sampling data that has undergone first-stage expansion. 
 #' This arises when each primary sampling unit includes secondary subsampling 
 #' of ages, and the subsampled proporrtion-at-age in each primary unit has been 
 #' expanded to the total abundance in that primary sample:
 #' ----------------------------------------------------------------------------
-data( bering_sea_pollock_ages )
+# data( bering_sea_pollock_ages )
+# 
+# Data = bering_sea_pollock_ages  # SNW: rename, as we're no longer subsampling the years
 
-Data = bering_sea_pollock_ages  # SNW: rename, as we're no longer subsampling the years
+species <- 21740
+this_year <- lubridate::year(Sys.Date())
+# this_year <- 2022  # different year for debugging
+Species <- "pollock"
+speciesName <- paste0("Walleye_Pollock_age_", lubridate::year(today()), "_EBS-NBS")
+workDir <- here::here("species_specific_code", "BS", Species)
+Data <- read.csv(here("species_specific_code", "BS", Species, "data", 
+                      paste0("VAST_ddc_alk_", this_year, ".csv")))
 
 # Add Year-_Age interaction
-Data$Age = factor( paste0("Age_",Data$Age) )
-Data$Year_Age = interaction( Data$Year, Data$Age )
+Data$Age <- factor(paste0("Age_", Data$Age))
+Data$Year_Age <- interaction(Data$Year, Data$Age)
 
 # Project data to UTM
-Data = st_as_sf( Data, 
+Data <- st_as_sf(Data, 
                  coords = c('Lon','Lat'),
-                 crs = st_crs(4326) )
-Data = st_transform( Data, 
-                     crs = st_crs("+proj=utm +zone=2 +units=km") )
+                 crs = st_crs(4326))
+Data <- st_transform(Data, 
+                     crs = st_crs("+proj=utm +zone=2 +units=km"))
 # Add UTM coordinates as columns X & Y
-Data = cbind( st_drop_geometry(Data), st_coordinates(Data) )
+Data <- cbind(st_drop_geometry(Data), st_coordinates(Data))
 
 #' Next, we construct the various inputs to tinyVAST
 #' ----------------------------------------------------------------------------
 # adds different variances for each age
-sem = ""
+sem <- ""
 
 # Constant AR1 spatio-temporal term across ages
 # and adds different variances for each age
-dsem = "
+dsem <- "
   Age_1 -> Age_1, 1, lag1
   Age_2 -> Age_2, 1, lag1
   Age_3 -> Age_3, 1, lag1
@@ -58,16 +68,16 @@ dsem = "
   Age_15 -> Age_15, 1, lag1
 "
 
-mesh = fm_mesh_2d( loc = Data[,c("X","Y")],
-                   cutoff = 50 )
-control = tinyVASTcontrol( getsd = FALSE,
+mesh <- fm_mesh_2d(loc = Data[,c("X","Y")],
+                   cutoff = 50)
+control <- tinyVASTcontrol(getsd = FALSE,
                            profile = c("alpha_j"),  
-                           trace = 0 )
+                           trace = 0)
 
 #' We could run the model with a log-linked Tweedie distribution and a single 
 #' linear predictor:
 #' ----------------------------------------------------------------------------
-family = list(
+family <- list(
   Age_1 = tweedie(),
   Age_2 = tweedie(),
   Age_3 = tweedie(),
@@ -85,10 +95,10 @@ family = list(
   Age_15 = tweedie()     
 )
 
-#Data$Year = factor(Data$Year)
-myfit = tinyVAST(
+# Data$Year = factor(Data$Year)
+myfit <- tinyVAST(
   data = Data,
-  formula = Abundance_per_hectare ~ 0 + Year_Age,  # SNW: needed to change column name
+  formula = CPUE_num ~ 0 + Year_Age,  
   sem = sem,
   dsem = dsem,
   family = family,
