@@ -13,12 +13,12 @@ library(here)
 
 ### CPUE ----------------------------------------------------------------------
 ## Load data files
-# TODO: update paths
-alk <- read.csv(here("data", "raw_data", "age_length_key_full_densdep_corrected2024.csv"))
-specimen <- read.csv(here("data", "raw_data", "raw_data_pollock_specimen_2024-10-15.csv"))
-haul <- read.csv(here("data", "raw_data", "raw_data_hauls_survey_2024-10-15.csv"))
-catch <- read.csv(here("data", "raw_data", "raw_data_pollock_catch_2024-10-15.csv"))
-cruise <- read.csv(here("data", "raw_data", "cruise_data.csv"))
+wd <- here("species_specific_code", "BS", "pollock", "weight-at-age")
+alk <- read.csv(here(wd, "data", "age_length_key_full_densdep_corrected2024.csv"))
+specimen <- read.csv(here(wd, "data", "raw_data_pollock_specimen_2024-10-15.csv"))
+haul <- read.csv(here(wd, "data", "raw_data_hauls_survey_2024-10-15.csv"))
+catch <- read.csv(here(wd, "data", "raw_data_pollock_catch_2024-10-15.csv"))
+cruise <- read.csv(here(wd, "data", "cruise_data.csv"))
 
 names(alk) <- tolower(names(alk))
 names(specimen) <- tolower(names(specimen))
@@ -80,14 +80,14 @@ missing_abundance <- subset(missing_abundance, missing_abundance$year != 2021)
 missing_abundance <- subset(missing_abundance, missing_abundance$age_cpue_corr != 0)
 
 # save intermediate steps as csv, if wanted
-write.csv(cpue_final_removed, here("data", "formatted_data", "missing_abundance.csv"),
-          row.names = FALSE)
-write.csv(cpue_final, here("data", "formatted_data", "cpue_final_no_zero_corrected.csv"),
-          row.names = FALSE)
+# write.csv(cpue_final_removed, here(wd, "data", "processed", "missing_abundance.csv"),
+#           row.names = FALSE)
+# write.csv(cpue_final, here(wd, "data", "processed", "cpue_final_no_zero_corrected.csv"),
+#           row.names = FALSE)
 
 # save intermediate steps as rds, if wanted
-saveRDS(cpue_final_removed, here("data", "formatted_data", "missing_abundance.rds"))
-saveRDS(cpue_final, here("data", "formatted_data", "cpue_final_no_zero_corrected.rds"))
+# saveRDS(cpue_final_removed, here(wd, "data", "processed", "missing_abundance.rds"))
+# saveRDS(cpue_final, here(wd, "data", "processed", "cpue_final_no_zero_corrected.rds"))
 
 # Remove weird age zeroes
 cpue_final_edit2 <- cpue_final_edit %>% 
@@ -151,9 +151,8 @@ glimpse(Data_long)
 Data_long <- subset(Data_long, Data_long$age_bin != 0)
 
 # Save final cpue data
-write.csv(Data_long, here("data", "formatted_data", "final", "cpue_final.csv"),
-          row.names = FALSE)
-saveRDS(Data_long, here("data", "formatted_data", "final", "cpue_final.rds"))
+write.csv(Data_long, here(wd, "data", "processed", "cpue_final.csv"), row.names = FALSE)
+# saveRDS(Data_long, here(wd, "data", "processed", "cpue_final.rds"))
 
 
 #### SPECIMEN DATA (IE WEIGHT) ------------------------------------------------
@@ -209,8 +208,8 @@ abline(a = 0,b = 1)
 abline(lm(weight_calculated ~ weight, data = data2), col = "blue")
 
 # Save intermediate step as csv, if wanted
-write.csv(data2, file = here("data", "formatted_data", "specimen_data_edited_complete.csv"), 
-          row.names = FALSE)
+# write.csv(data2, file = here(wd, "data", "processed", "specimen_data_edited_complete.csv"), 
+#           row.names = FALSE)
 
 # Create streamlined dataframe for individual weight data
 specimen_data <- data2[, c('year', 'start_latitude', 'start_longitude', 
@@ -219,9 +218,9 @@ specimen_data <- data2[, c('year', 'start_latitude', 'start_longitude',
                            'weight_calculated','length', 'data_available')]
 
 # Save as csv and rds
-write.csv(specimen_data, file = here("data", "formatted_data", "specimen_data_edited_streamlined.csv"),
+write.csv(specimen_data, file = here(wd, "data", "processed", "specimen_data_edited_streamlined.csv"),
           row.names = FALSE)
-saveRDS(specimen_data, file = here("data", "formatted_data", "specimen_data_edited_streamlined.rds"))
+# saveRDS(specimen_data, file = here(wd, "data", "processed", "specimen_data_edited_streamlined.rds"))
 
 
 ##### Handling extrapolation grid ---------------------------------------------
@@ -243,12 +242,12 @@ saveRDS(specimen_data, file = here("data", "formatted_data", "specimen_data_edit
 # saveRDS(bs_grid, file = "bs_grid.rds")
 
 # Read in extrapolation grid
-user_region <- readRDS(here("data", "formatted_data", "final", "bs_grid.rds"))
+user_region <- readRDS(here(wd, "data", "bs_grid.rds"))
 
 #### Combine CPUE and specimen (weight) data for model fitting
 # Upload CPUE and specimen data, if needed
-cpue_final <- read.csv(here("data", "formatted_data", "final", "cpue_final.csv"))
-specimen_data <- read.csv(here("data", "formatted_data", "specimen_data_edited_streamlined.csv"))
+cpue_final <- read.csv(here(wd, "data", "processed", "cpue_final.csv"))
+specimen_data <- read.csv(here(wd, "data", "processed", "specimen_data_edited_streamlined.csv"))
 
 # Combine datasets
 cpue_final$start_latitude <- as.numeric(cpue_final$start_latitude)
@@ -271,7 +270,6 @@ example <- subset(example, example$age_bin > 0)
 
 test <- example1$hauljoin %in% example2$hauljoin
 
-
 # Limit to before 2019 if wanted (ie exclude 2021 abundance data)
 # example <- subset(example, year < 2020)
 
@@ -285,5 +283,5 @@ check4 <- aggregate(age_cpue_sum ~ year + age_bin, check, FUN = length)
 check4 <- check4 %>% spread(key = "age_bin", value = "age_cpue_sum")
 
 # Save combined data
-write.csv(example, here("data", "formatted_data", "final", "data_combined.csv"))
-saveRDS(example, here("data", "formatted_data", "final", "data_combined.rds"))
+write.csv(example, here(wd, "data", "processed", "data_combined.csv"))
+saveRDS(example, here(wd, "data", "processed", "data_combined.rds"))
