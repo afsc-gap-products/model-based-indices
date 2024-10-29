@@ -96,6 +96,7 @@ family <- list(
 )
 
 # Data$Year = factor(Data$Year)
+start.time <- Sys.time() 
 myfit <- tinyVAST(
   data = Data,
   formula = CPUE_num ~ 0 + Year_Age,  
@@ -109,6 +110,10 @@ myfit <- tinyVAST(
   spatial_graph = mesh,
   control = control
 )
+stop.time <- Sys.time()
+
+# Save fit object
+saveRDS(myfit, here(workDir, "results", "tinyVAST_fit.RDS"))
 
 #' ----------------------------------------------------------------------------
 # Get shapefile for survey extent
@@ -180,4 +185,4 @@ colnames(tiny_out) <- c("age_1", "age_2", "age_3", "age_4", "age_5", "age_6",
                         "age_7", "age_8", "age_9", "age_10", "age_11", "age_12",
                         "age_13", "age_14", "age_15", "Year")
 tiny_out$Region <- "EBS"
-write.csv(tiny_out, "species_specific_code/BS/pollock/results/tinyVAST_props.csv", row.names = FALSE)
+write.csv(tiny_out, here(workDir, "results", "tinyVAST_props.csv"), row.names = FALSE)
