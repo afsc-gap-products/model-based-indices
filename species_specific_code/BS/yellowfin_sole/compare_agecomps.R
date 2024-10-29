@@ -176,7 +176,7 @@ for (iyear in nbs_years) {
         data = temp_df, col = "red")
 }
 mtext(side = 1, text = "Age (years)", outer = TRUE, line = 0.5, font = 2)
-mtext(side = 2, text = "Propotion", outer = TRUE, line = 1, font = 2)
+mtext(side = 2, text = "Proportion", outer = TRUE, line = 1, font = 2)
 dev.off()
 
 ## Both Regions
@@ -203,7 +203,7 @@ for (iyear in nbs_years) {
         data = temp_df, col = "red")
 }
 mtext(side = 1, text = "Age (years)", outer = TRUE, line = 0.5, font = 2)
-mtext(side = 2, text = "Propotion", outer = TRUE, line = 1, font = 2)
+mtext(side = 2, text = "Proportion", outer = TRUE, line = 1, font = 2)
 dev.off()
 
 with(with(RODBC::sqlQuery(channel = chl,
