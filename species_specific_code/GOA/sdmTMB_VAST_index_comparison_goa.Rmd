@@ -221,10 +221,23 @@ pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
 pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
 
 # make predictions and get index
+f2 <- here("species_specific_code", "GOA", "Gadus_macrocephalus", 
+           "index_comparison", "predictions.RDS")
+if (!file.exists(f2)) {
 p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
 saveRDS(p, file = here("species_specific_code", "GOA", "Gadus_macrocephalus", "index_comparison", "predictions.RDS"))
+} else {
+p <- readRDS(f2)
+}
+
+f3 <- here("species_specific_code", "GOA", "Gadus_macrocephalus", 
+           "index_comparison", "index.RDS")
+if (!file.exists(f3)) {
 ind <- get_index(p, bias_correct = TRUE, area = p$data$area_km2)
 saveRDS(ind, file = here("species_specific_code", "GOA", "Gadus_macrocephalus", "index_comparison", "index.RDS"))
+} else {
+ind <- readRDS(f3)
+}
 ```
 
 Now, we can compare the indices. 
@@ -236,14 +249,13 @@ vast_i <- read.csv(here("species_specific_code", "GOA", "Gadus_macrocephalus", "
   select(index, year, est, se) %>% 
   mutate(lwr = exp(log(est) + qnorm(0.025) * se)) %>% 
   mutate(upr = exp(log(est) + qnorm(0.975) * se))
-sdm_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "sdmTMB")
+sdm_i <- ind %>% mutate(index = "sdmTMB")
 both_i <- bind_rows(sdm_i, vast_i) %>% filter(est > 0)
 
 ggplot(both_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
   geom_ribbon(alpha = 0.1) +
   geom_line(alpha = 0.8) + 
   ylim(0, max(both_i$upr)) +
-  ggtitle("GOA") +
   coord_cartesian(expand = FALSE)
 ```
 
