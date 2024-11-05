@@ -222,8 +222,8 @@ pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
 
 # make predictions and get index
 p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
-ind <- get_index(p, bias_correct = TRUE, area = p$data$Area_km2)
 saveRDS(p, file = here("species_specific_code", "GOA", "Gadus_macrocephalus", "index_comparison", "predictions.RDS"))
+ind <- get_index(p, bias_correct = TRUE, area = p$data$area_km2)
 saveRDS(ind, file = here("species_specific_code", "GOA", "Gadus_macrocephalus", "index_comparison", "index.RDS"))
 ```
 
