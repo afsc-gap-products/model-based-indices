@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r packages, message=FALSE, warning=FALSE, cache=FALSE}
-#pak::pkg_install("pbs-assess/sdmTMB", dependencies = TRUE)
+#remotes::install_github("pbs-assess/sdmTMB", dependencies = TRUE)
 library(VAST)
 library(sp)
 library(sdmTMB)
@@ -200,11 +200,14 @@ We can compare the index we would get using sdmTMB.
 # prep prediction grid and transform to UTM projection
 grid_ll <- as.data.frame(input_grid)
 names(grid_ll) <- tolower(names(grid_ll))
-grid_ll <- grid_ll %>% 
-  rename(X = lon, Y = lat)
-coordinates(grid_ll) <- ~ X + Y
+coordinates(grid_ll) <- ~ lon + lat
 proj4string(grid_ll) <- CRS("+proj=longlat +datum=WGS84")
 grid <- as.data.frame(spTransform(grid_ll, CRS("+proj=utm +zone=3")))
+
+# rename and scale to km so values don't get too large
+grid$X <- grid$coords.x1 / 1000
+grid$Y <- grid$coords.x2 / 1000
+
 # or with sf:
 # grid_ll <- sf::st_as_sf(
 #   x = grid_ll,
