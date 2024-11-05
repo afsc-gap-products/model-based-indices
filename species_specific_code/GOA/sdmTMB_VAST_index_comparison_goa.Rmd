@@ -53,7 +53,7 @@ We will include a factor predictor that represents the mean estimate for each ti
 Unlike in sdmTMB, the fitting and predicting steps are all accomplished with the function `fit_model()` and thus we need to specify the prediction grid (referred to as the "extrapolation grid" in VAST). Here, X and Y are coordinates in UTM zone 3.
 
 ```{r settings, echo = TRUE}
-GOAgrid <- read.csv(paste0(getwd(),"/extrapolation_grids/GOAThorsonGrid_Less700m.csv"))
+GOAgrid <- read.csv(here("extrapolation_grids", "GOAThorsonGrid_Less700m.csv"))
 input_grid <- cbind(Lat=GOAgrid$Latitude, 
                     Lon=GOAgrid$Longitude,
                     Area_km2=GOAgrid$Shape_Area/1000000)
