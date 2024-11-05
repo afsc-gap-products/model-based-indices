@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 #remotes::install_github("afsc-gap-products/coldpool")
 library(VAST)
 library(sp)
-#pak::pak("pbs-assess/sdmTMB@index-split")
+#pak::pak("pbs-assess/sdmTMB@index-split") 
 library(sdmTMB)
 library(dplyr)
 library(ggplot2)
@@ -364,8 +364,6 @@ ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, ymax
   #ylim(0, max(both_i$upr)) +
   ggtitle("NBS") +
   coord_cartesian(expand = FALSE)
-
-# TODO: include subregional indices in plots
 ```
 
 ```{r}
