@@ -37,11 +37,11 @@ dat_ll <- readRDS(here("species_specific_code", "GOA", "Gadus_macrocephalus",
 
 dat_ll <-  dplyr::transmute(dat_ll,
                          cpue_kg_km2 = Catch_KG, 
-                         year = as.integer(year),
+                         year = as.integer(Year),
                          vessel = "missing",
                          effort = AreaSwept_km2, 
-                         lat = start_latitude,
-                         lon = start_longitude,
+                         lat = Lat,
+                         lon = Lon,
                          pass = 0) %>% 
                 as.data.frame() # ensure not a tibble
 ```
