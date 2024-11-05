@@ -22,17 +22,6 @@ save_dir <- here(workDir, "results", paste0(this_year, " production"))
 ### VAST index ----------------------------------------------------------------
 index <- read.csv(here(workDir, "results", "VAST Index", "Index.csv"))
 
-# Calculate 2024 difference for both areas
-diff_24 <- ((index[43, 5] - index[42, 5]) / index[42, 5]) * 100
-mean_24<- (index[43, 5] / mean((index %>% filter(Stratum == "EBS"))[, 5])) * 100
-
-# Calculate 2024 difference for EBS
-ebs_24_diff <- ((index[84, 5] - index[83, 5]) / index[83, 5]) * 100
-ebs_24_mean <- (index[84, 5] / mean((index %>% filter(Stratum == "EBS"))[, 5])) * 100
-
-# Caclulate percent NBS for 2023
-nbs_23 <- (index[126, 5] / index[42, 5]) * 100
-
 colnames(index)[6] <- "error"  # easier column name for plotting
 
 index_all_areas <- ggplot(index %>% filter(Time != 2020), 
@@ -61,6 +50,16 @@ index_ebs
 
 ggsave(index_ebs, filename = here(save_dir, "index_ebs.png"),
        width=130, height=90, units="mm", dpi=300)
+
+### Difference between this year & previous year biomass estimates ------------
+# Calculate difference for EBS
+ebs_24_diff <- ((ebs[nrow(ebs), 5] - ebs[(nrow(ebs) - 1), 5]) / ebs[(nrow(ebs) - 1), 5]) * 100
+ebs_24_mean <- ebs[nrow(ebs), 5] / mean(ebs[, 5]) * 100
+
+# Calculate difference for combined regions
+both <- index %>% filter(Stratum == "Both" & Time != 2020)
+both_24_diff <- ((both[nrow(both), 5] - both[(nrow(both) - 1), 5]) / both[(nrow(both) - 1), 5]) * 100
+both_24_mean <- both[nrow(both), 5] / mean(both[, 5]) * 100
 
 ### Plot VAST age comps -------------------------------------------------------
 proportions <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
@@ -104,7 +103,6 @@ prop_gif <- ggplot(props_ebs, aes(x = Age, y = Proportion, fill = color)) +
   ease_aes("linear")
 # animate(prop_gif)
 anim_save(here(save_dir, "Age_comp.gif"), prop_gif, fps = 2)
-
 
 ### Cold pool extent covariate ------------------------------------------------
 # Cold pool covariabe
