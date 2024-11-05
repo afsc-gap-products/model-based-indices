@@ -170,7 +170,7 @@ saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", "pollock", "index
 fit_sdmTMB <- readRDS(f1)
 }
 
-# diagnose estimation issues due to model structure♦
+# diagnose estimation issues due to model structure
 #TMBhelper::check_estimability(fit_sdmTMB$tmb_obj)
 ```
 
