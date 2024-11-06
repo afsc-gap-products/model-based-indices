@@ -27,13 +27,15 @@ library(sdmTMB)
 library(dplyr)
 library(ggplot2)
 library(here)
+
+species <- species
 ```
 
-We will fit geostatistical spatiotemporal models with VAST and sdmTMB for the purposes of index standardization and compare the outputs given the same data. We will use pacific cod data from the GOA AFSC GAP bottom trawl survey. The density units are kg/km^2^. 
+We will fit geostatistical spatiotemporal models with VAST and sdmTMB for the purposes of index standardization and compare the outputs given the same data. We will use `species` data from the GOA AFSC GAP bottom trawl survey. The density units are kg/km^2^. 
 
 ```{r data, echo = TRUE}
-dat_ll <- readRDS(here("species_specific_code", "GOA", "Gadus_macrocephalus", 
-                        "data", "Data_Geostat_Gadus_macrocephalus.rds"))
+dat_ll <- readRDS(here("species_specific_code", "GOA", species, 
+                        "data", paste0("Data_Geostat_", species, ".rds")))
 
 dat_ll <-  dplyr::transmute(dat_ll,
                          cpue_kg_km2 = Catch_KG, 
@@ -79,9 +81,10 @@ Next we will fit a GLMM (generalized linear mixed effects model).
 
 ```{r fit, echo = TRUE, results = 'hide', cache = FALSE}
 # create folder for saved output:
-dir.create(paste0(here("species_specific_code", "GOA", "Gadus_macrocephalus", "index_comparison")), showWarnings = FALSE)
+dir.create(paste0(here("species_specific_code", "GOA", species, 
+                       "index_comparison")), showWarnings = FALSE)
 
-f <- here("species_specific_code", "GOA", "Gadus_macrocephalus", "index_comparison", "VASTfit.RDS")
+f <- here("species_specific_code", "GOA", species, "index_comparison", "VASTfit.RDS")
 if (!file.exists(f)) {
   fit <- fit_model(
     settings = settings,
@@ -92,7 +95,7 @@ if (!file.exists(f)) {
     a_i = dat_ll[, "effort"],
     input_grid = input_grid, 
     working_dir = paste0(here("species_specific_code", "GOA", 
-                              "Gadus_macrocephalus", "index_comparison"), "/")
+                              species, "index_comparison"), "/")
   )
   saveRDS(fit, file = f)
 } else {
@@ -121,7 +124,7 @@ dat <- as.data.frame(spTransform(dat, CRS("+proj=utm +zone=3")))
 dat$X <- dat$coords.x1 / 1000
 dat$Y <- dat$coords.x2 / 1000
 
-f1 <- here("species_specific_code", "GOA", "Gadus_macrocephalus", 
+f1 <- here("species_specific_code", "GOA", species, 
            "index_comparison", "fit_sdmTMB.RDS")
 if (!file.exists(f1)) {
 # make mesh and fit model
@@ -143,7 +146,7 @@ fit_sdmTMB <- sdmTMB(
 )
 fit_sdmTMB
 saveRDS(fit_sdmTMB, file = here("species_specific_code", "GOA", 
-                                "Gadus_macrocephalus", "index_comparison", 
+                                species, "index_comparison", 
                                 "fit_sdmTMB.RDS"))
 } else {
 fit_sdmTMB <- readRDS(f1)
@@ -221,20 +224,20 @@ pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
 pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
 
 # make predictions and get index
-f2 <- here("species_specific_code", "GOA", "Gadus_macrocephalus", 
+f2 <- here("species_specific_code", "GOA", species, 
            "index_comparison", "predictions.RDS")
 if (!file.exists(f2)) {
 p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
-saveRDS(p, file = here("species_specific_code", "GOA", "Gadus_macrocephalus", "index_comparison", "predictions.RDS"))
+saveRDS(p, file = here("species_specific_code", "GOA", species, "index_comparison", "predictions.RDS"))
 } else {
 p <- readRDS(f2)
 }
 
-f3 <- here("species_specific_code", "GOA", "Gadus_macrocephalus", 
+f3 <- here("species_specific_code", "GOA", species, 
            "index_comparison", "index.RDS")
 if (!file.exists(f3)) {
 ind <- get_index(p, bias_correct = TRUE, area = p$data$area_km2)
-saveRDS(ind, file = here("species_specific_code", "GOA", "Gadus_macrocephalus", "index_comparison", "index.RDS"))
+saveRDS(ind, file = here("species_specific_code", "GOA", species, "index_comparison", "index.RDS"))
 } else {
 ind <- readRDS(f3)
 }
@@ -243,7 +246,7 @@ ind <- readRDS(f3)
 Now, we can compare the indices. 
 
 ```{r index-compare, message=FALSE, warning=FALSE}
-vast_i <- read.csv(here("species_specific_code", "GOA", "Gadus_macrocephalus", "index_comparison", "Index.csv")) %>%
+vast_i <- read.csv(here("species_specific_code", "GOA", species, "index_comparison", "Index.csv")) %>%
   mutate(index = "VAST", year = as.numeric(Time), est = Estimate, 
     se = Std..Error.for.ln.Estimate.) %>% 
   select(index, year, est, se) %>% 
@@ -256,6 +259,7 @@ ggplot(both_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) +
   geom_ribbon(alpha = 0.1) +
   geom_line(alpha = 0.8) + 
   ylim(0, max(both_i$upr)) +
+  title(species) +
   coord_cartesian(expand = FALSE)
 ```
 
