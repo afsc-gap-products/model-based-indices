@@ -28,7 +28,7 @@ library(dplyr)
 library(ggplot2)
 library(here)
 
-species <- species
+species <- "Gadus_macrocephalus"
 ```
 
 We will fit geostatistical spatiotemporal models with VAST and sdmTMB for the purposes of index standardization and compare the outputs given the same data. We will use `species` data from the GOA AFSC GAP bottom trawl survey. The density units are kg/km^2^. 
@@ -83,7 +83,7 @@ Next we will fit a GLMM (generalized linear mixed effects model).
 # create folder for saved output:
 dir.create(paste0(here("species_specific_code", "GOA", species, 
                        "index_comparison")), showWarnings = FALSE)
-
+    
 f <- here("species_specific_code", "GOA", species, "index_comparison", "VASTfit.RDS")
 if (!file.exists(f)) {
   fit <- fit_model(
