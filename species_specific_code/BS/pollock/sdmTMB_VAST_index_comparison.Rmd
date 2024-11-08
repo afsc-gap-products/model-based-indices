@@ -120,7 +120,7 @@ if (!file.exists(f)) {
   saveRDS(fit, file = f)
 } else {
   fit <- readRDS(f)
-  fit <- reload_model(f)
+  fit <- reload_model(fit)
 }
 ```
 
