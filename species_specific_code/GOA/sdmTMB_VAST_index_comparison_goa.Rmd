@@ -31,7 +31,7 @@ library(here)
 species <- "Gadus_macrocephalus"
 ```
 
-We will fit geostatistical spatiotemporal models with VAST and sdmTMB for the purposes of index standardization and compare the outputs given the same data. We will use `species` data from the GOA AFSC GAP bottom trawl survey. The density units are kg/km^2^. 
+We will fit geostatistical spatiotemporal models with VAST and sdmTMB for the purposes of index standardization and compare the outputs given the same data. We will use data from the GOA AFSC GAP bottom trawl survey for the species specified above. The density units are kg/km^2^. 
 
 ```{r data, echo = TRUE}
 dat_ll <- readRDS(here("species_specific_code", "GOA", species, 
@@ -100,6 +100,7 @@ if (!file.exists(f)) {
   saveRDS(fit, file = f)
 } else {
   fit <- readRDS(f)
+  fit <- reload_model(fit)
 }
 ```
 
@@ -259,7 +260,7 @@ ggplot(both_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) +
   geom_ribbon(alpha = 0.1) +
   geom_line(alpha = 0.8) + 
   ylim(0, max(both_i$upr)) +
-  title(species) +
+  ggtitle(species) +
   coord_cartesian(expand = FALSE)
 ```
 
