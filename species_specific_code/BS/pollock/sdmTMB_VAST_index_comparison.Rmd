@@ -147,28 +147,28 @@ dat$Y <- dat$coords.x2 / 1000
 
 f1 <- here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB.RDS")
 if (!file.exists(f1)) {
-# make mesh and fit model
-mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$anisotropic_mesh) #pass same mesh as VAST model
-#mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 50, type = "kmeans") #coarser mesh for experimentation
-
-fit_sdmTMB <- sdmTMB( 
-  cpue_kg_km2 ~ 0 + year_f,
-  spatial_varying = ~ cpe,
-  data = dat, 
-  mesh = mesh,
-  family = delta_gamma(type = "poisson-link"), 
-  time = "year", 
-  spatial = "on",
-  spatiotemporal = "ar1",
-  extra_time = 2020L,
-  silent = FALSE,
-  anisotropy = TRUE,
-  do_fit = TRUE
-)
-fit_sdmTMB
-saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB.RDS"))
+  # make mesh and fit model
+  mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$anisotropic_mesh) #pass same mesh as VAST model
+  #mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 50, type = "kmeans") #coarser mesh for experimentation
+  
+  fit_sdmTMB <- sdmTMB( 
+    cpue_kg_km2 ~ 0 + year_f,
+    spatial_varying = ~ cpe,
+    data = dat, 
+    mesh = mesh,
+    family = delta_gamma(type = "poisson-link"), 
+    time = "year", 
+    spatial = "on",
+    spatiotemporal = "ar1",
+    extra_time = 2020L,
+    silent = FALSE,
+    anisotropy = TRUE,
+    do_fit = TRUE
+  )
+  fit_sdmTMB
+  saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB.RDS"))
 } else {
-fit_sdmTMB <- readRDS(f1)
+  fit_sdmTMB <- readRDS(f1)
 }
 
 # diagnose estimation issues due to model structure
@@ -309,20 +309,27 @@ if (!file.exists(f2)) {
   p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
     save(p, p_ebs, p_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "predictions.RData"))
 } else {
-load(f2)
+  load(f2)
 }
 
 # get indices for total area, and the two subareas of interest (EBS, NBS)
+# NOTE: if using get_index_split() rather than get_index() you need to pass the 
+# model object and new data (not prediction object, you can bypass that step)
 f3 <- here("species_specific_code", "BS", "pollock", 
            "index_comparison", "indices.RData")
 if (!file.exists(f3)) {
-  ind <- get_index_split(p, newdata = pred_grid, nsplit = 2, bias_correct = TRUE, area = p$data$area_in_survey_km2)
+  ind <- get_index_split(fit_sdmTMB, newdata = pred_grid, nsplit = 2, 
+                         bias_correct = TRUE, area = pred_grid$area_in_survey_km2)
   ind$stratum <- "Both"
-  ind_ebs <- get_index_split(p_ebs, newdata = pred_grid, nsplit = 2, bias_correct = TRUE, area = p_ebs$data$area_in_survey_km2)
+
+  ind_ebs <- get_index_split(fit_sdmTMB, newdata = pred_grid_ebs, nsplit = 2, 
+                             bias_correct = TRUE, area = pred_grid_ebs$area_in_survey_km2)
   ind_ebs$stratum <- "EBS"
-  ind_nbs <- get_index_split(p_nbs, newdata = pred_grid, nsplit = 2, bias_correct = TRUE, area = p_nbs$data$area_in_survey_km2)
+  
+  ind_nbs <- get_index_split(fit_sdmTMB, newdata = pred_grid_nbs, nsplit = 2, 
+                             bias_correct = TRUE, area = pred_grid_nbs$area_in_survey_km2)
   ind_nbs$stratum <- "NBS"
-    save(ind, ind_ebs, ind_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "indices.RData"))
+  save(ind, ind_ebs, ind_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "indices.RData"))
 } else {
 load(f3)
 }
