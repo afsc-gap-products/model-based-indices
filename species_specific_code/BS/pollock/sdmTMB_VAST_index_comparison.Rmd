@@ -300,22 +300,31 @@ pred_grid_nbs <- left_join(pred_grid_nbs, select(covariate_data, year, cpe), by 
 pred_grid <- left_join(pred_grid, select(covariate_data, year, cpe), by = "year")
 
 # get predictions for total area, and the two subareas of interest (EBS, NBS)
-p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
-p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
-p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
-save(p, p_ebs, p_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "predictions.RData"))
+f2 <- here("species_specific_code", "BS", "pollock", 
+           "index_comparison", "predictions.RDS")
+if (!file.exists(f2)) {
+  p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
+  p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
+  p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
+    save(p, p_ebs, p_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "predictions.RData"))
+} else {
+load(f2)
+}
 
 # get indices for total area, and the two subareas of interest (EBS, NBS)
-# ind <- get_index_split(p, nsplit = 2, bias_correct = TRUE, area = p$fake_nd$area_in_survey_km2)
-# ind_ebs <- get_index_split(p_ebs, nsplit = 2, bias_correct = TRUE, area = p_ebs$fake_nd$area_in_survey_km2)
-# ind_nbs <- get_index_split(p_nbs, nsplit = 2, bias_correct = TRUE, area = p_nbs$fake_nd$area_in_survey_km2)
-ind <- get_index_split(p, nsplit = 2, bias_correct = TRUE, area = p$data$area_in_survey_km2)
-ind$stratum <- "Both"
-ind_ebs <- get_index_split(p_ebs, nsplit = 2, bias_correct = TRUE, area = p_ebs$data$area_in_survey_km2)
-ind_ebs$stratum <- "EBS"
-ind_nbs <- get_index_split(p_nbs, nsplit = 2, bias_correct = TRUE, area = p_nbs$data$area_in_survey_km2)
-ind_nbs$stratum <- "NBS"
-save(ind, ind_ebs, ind_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "indices.RData"))
+f3 <- here("species_specific_code", "BS", "pollock", 
+           "index_comparison", "indices.RData")
+if (!file.exists(f3)) {
+  ind <- get_index_split(p, newdata = pred_grid, nsplit = 2, bias_correct = TRUE, area = p$data$area_in_survey_km2)
+  ind$stratum <- "Both"
+  ind_ebs <- get_index_split(p_ebs, newdata = pred_grid, nsplit = 2, bias_correct = TRUE, area = p_ebs$data$area_in_survey_km2)
+  ind_ebs$stratum <- "EBS"
+  ind_nbs <- get_index_split(p_nbs, newdata = pred_grid, nsplit = 2, bias_correct = TRUE, area = p_nbs$data$area_in_survey_km2)
+  ind_nbs$stratum <- "NBS"
+    save(ind, ind_ebs, ind_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "indices.RData"))
+} else {
+load(f3)
+}
 ```
 
 Now, we can compare the indices. 
