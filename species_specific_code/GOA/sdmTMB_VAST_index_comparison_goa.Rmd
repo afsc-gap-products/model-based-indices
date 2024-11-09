@@ -28,7 +28,7 @@ library(dplyr)
 library(ggplot2)
 library(here)
 
-species <- "Sebastes_alutus" # Sebastes_polyspinis Sebastes_variabilis
+species <- "Gadus_macrocephalus" # Sebastes_polyspinis Sebastes_variabilis Sebastes_alutus
 ```
 
 We will fit geostatistical spatiotemporal models with VAST and sdmTMB for the purposes of index standardization and compare the outputs given the same data. We will use data from the GOA AFSC GAP bottom trawl survey for the species specified above. The density units are kg/km^2^. 
@@ -112,7 +112,7 @@ fit$parameter_estimates$diagnostics
 
 Now we fit the same model in sdmTMB:
 
-```{r sdmTMB-example, echo = TRUE}
+```{r sdmTMB-example, echo = TRUE, results = 'hide', messages = FALSE}
 dat <- dat_ll %>% 
   rename(X = lon, Y = lat)
   
@@ -247,13 +247,14 @@ ind <- readRDS(f3)
 Now, we can compare the indices. 
 
 ```{r index-compare, message=FALSE, warning=FALSE}
+sdm_i <- ind %>% mutate(index = "sdmTMB")
 vast_i <- read.csv(here("species_specific_code", "GOA", species, "index_comparison", "Index.csv")) %>%
   mutate(index = "VAST", year = as.numeric(Time), est = Estimate, 
     se = Std..Error.for.ln.Estimate.) %>% 
   select(index, year, est, se) %>% 
+  filter(year %in% unique(sdm_i$year)) %>%
   mutate(lwr = exp(log(est) + qnorm(0.025) * se)) %>% 
   mutate(upr = exp(log(est) + qnorm(0.975) * se))
-sdm_i <- ind %>% mutate(index = "sdmTMB")
 both_i <- bind_rows(sdm_i, vast_i) %>% filter(est > 0)
 
 ggplot(both_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
