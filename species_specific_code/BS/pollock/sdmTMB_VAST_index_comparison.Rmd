@@ -24,6 +24,7 @@ knitr::opts_chunk$set(
 library(VAST)
 library(sp)
 #pak::pak("pbs-assess/sdmTMB@index-split") 
+#pak::pak("pbs-assess/sdmTMB") 
 library(sdmTMB)
 library(dplyr)
 library(ggplot2)
@@ -214,6 +215,7 @@ We wrote some custom code to extract comparable parameters (not shown above). He
 par(mfrow = c(2, 1), cex = 0.8, mar = c(1.5, 1, 1, 1), oma = c(2, 3, 1, 1))
 plot_betas(fit, fit_sdmTMB, "beta1_ft", sdmTMB_pars = 1)
 plot_betas(fit, fit_sdmTMB, "beta2_ft", sdmTMB_pars = 2)
+rm(fit)
 ```
 
 While making custom plots of individual elements would require considerable additional code to extract and reformat the necessary components of each output, VAST has a wrapper function that generates the typical plots one may want. Here we stick with the default set of plots (`plot_set = 3`); however, one can specify different standard plots to make by changing the setting of this argument (see `?FishStatsUtils::plot_maps` and `?FishStatsUtils::plot_results`).
@@ -302,7 +304,7 @@ pred_grid <- left_join(pred_grid, select(covariate_data, year, cpe), by = "year"
 
 # get predictions for total area, and the two subareas of interest (EBS, NBS)
 f2 <- here("species_specific_code", "BS", "pollock", 
-           "index_comparison", "predictions.RDS")
+           "index_comparison", "predictions.RData")
 if (!file.exists(f2)) {
   p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
   p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
@@ -315,19 +317,29 @@ if (!file.exists(f2)) {
 # get indices for total area, and the two subareas of interest (EBS, NBS)
 # NOTE: if using get_index_split() rather than get_index() you need to pass the 
 # model object and new data (not prediction object, you can bypass that step)
+# TO DO: fix get_index_split to avoid error: saying area should be same length as nrow(newdata)
 f3 <- here("species_specific_code", "BS", "pollock", 
            "index_comparison", "indices.RData")
 if (!file.exists(f3)) {
-  ind <- get_index_split(fit_sdmTMB, newdata = pred_grid, nsplit = 2, 
-                         bias_correct = TRUE, area = pred_grid$area_in_survey_km2)
+  gc()
+  # ind <- get_index_split(fit_sdmTMB, newdata = pred_grid, nsplit = 2, 
+  #                        bias_correct = TRUE, area = pred_grid$area_in_survey_km2)
+  # ind$stratum <- "Both"
+  # 
+  # ind_ebs <- get_index_split(fit_sdmTMB, newdata = pred_grid_ebs, nsplit = 2, 
+  #                            bias_correct = TRUE, area = pred_grid_ebs$area_in_survey_km2)
+  # ind_ebs$stratum <- "EBS"
+  # 
+  # ind_nbs <- get_index_split(fit_sdmTMB, newdata = pred_grid_nbs, nsplit = 2, 
+  #                            bias_correct = TRUE, area = pred_grid_nbs$area_in_survey_km2)
+  # ind_nbs$stratum <- "NBS"
+  ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_in_survey_km2)
   ind$stratum <- "Both"
 
-  ind_ebs <- get_index_split(fit_sdmTMB, newdata = pred_grid_ebs, nsplit = 2, 
-                             bias_correct = TRUE, area = pred_grid_ebs$area_in_survey_km2)
+  ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = pred_grid_ebs$area_in_survey_km2)
   ind_ebs$stratum <- "EBS"
   
-  ind_nbs <- get_index_split(fit_sdmTMB, newdata = pred_grid_nbs, nsplit = 2, 
-                             bias_correct = TRUE, area = pred_grid_nbs$area_in_survey_km2)
+  ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = pred_grid_nbs$area_in_survey_km2)
   ind_nbs$stratum <- "NBS"
   save(ind, ind_ebs, ind_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "indices.RData"))
 } else {
