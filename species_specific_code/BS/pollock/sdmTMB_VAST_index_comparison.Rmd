@@ -322,16 +322,16 @@ f3 <- here("species_specific_code", "BS", "pollock",
            "index_comparison", "indices.RData")
 if (!file.exists(f3)) {
   gc()
-  ind <- get_index_split(fit_sdmTMB, newdata = pred_grid, nsplit = 4,
-                         bias_correct = TRUE, area = pred_grid$area_in_survey_km2)
+  ind <- get_index_split(fit_sdmTMB, newdata = pred_grid, nsplit = 6,
+                         bias_correct = TRUE) #, area = pred_grid$area_in_survey_km2)
   ind$stratum <- "Both"
 
-  ind_ebs <- get_index_split(fit_sdmTMB, newdata = pred_grid_ebs, nsplit = 4,
-                             bias_correct = TRUE, area = pred_grid_ebs$area_in_survey_km2)
+  ind_ebs <- get_index_split(fit_sdmTMB, newdata = pred_grid_ebs, nsplit = 6,
+                             bias_correct = TRUE) #, area = pred_grid_ebs$area_in_survey_km2)
   ind_ebs$stratum <- "EBS"
 
-  ind_nbs <- get_index_split(fit_sdmTMB, newdata = pred_grid_nbs, nsplit = 4,
-                             bias_correct = TRUE, area = pred_grid_nbs$area_in_survey_km2)
+  ind_nbs <- get_index_split(fit_sdmTMB, newdata = pred_grid_nbs, nsplit = 6,
+                             bias_correct = TRUE) #, area = pred_grid_nbs$area_in_survey_km2)
   ind_nbs$stratum <- "NBS"
   # ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_in_survey_km2)
   # ind$stratum <- "Both"
