@@ -163,16 +163,17 @@ index_diff
 
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
-old_props <- read.csv(here(workDir, "results", "2023 Production", "Comps", "proportions.csv"))
+# old_props <- read.csv(here(workDir, "results", "2023 Production", "Comps", "proportions.csv"))
 new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
-# new_props_dg <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv"))
+tiny_dg <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv"))
+tiny_tweedie <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props.csv"))
 
-# # Update old_props to match tinyVAST test output
-# tiny_years <- c(1980:2019, 2021:2023)
-# old_props <- old_props %>% filter(Year %in% tiny_years & Region == "EBS")
+# # Update old_props to match tinyVAST test output - only EBS
+tiny_years <- c(1980:2019, 2021:this_year)
+new_props <- new_props %>% filter(Year %in% tiny_years & Region == "EBS")
 
 # Set names for old and new comps
-names_comps <- list(old = "2024 (no ages)", new = "2024 production")
+names_comps <- c("VAST", "delta-gamma", "Tweedie")
 
 ## Combine age comp models into one plot --------------------------------------
 compare_props <- function(props, names, last_year) {
@@ -195,13 +196,13 @@ compare_props <- function(props, names, last_year) {
   return(plot)
 }
 
-all_props <- compare_props(props = list(new_props, old_props),
-                           names = c(names_comps$new, names_comps$old))
+all_props <- compare_props(props = list(new_props, tiny_dg, tiny_tweedie),
+                           names = names_comps)
 all_props
 
 # Plot difference between two models ------------------------------------------
 comp_difference <- function(new, old, names, save_results = FALSE) {
-  new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
+  # new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
   
   # Get difference between new and old props
   check_props <- round(new[,1:15] - old[,1:15], 4)
@@ -234,8 +235,8 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
   return(plot)
 }
 
-comp_diff <- comp_difference(new = new_props, old = old_props,
-                             names = c(names_comps$new, names_comps$old),
+comp_diff <- comp_difference(new = tiny_tweedie, old = new_props,
+                             names = c(names_comps[1], names_comps[3]),
                              save_results = FALSE)
 comp_diff
 
