@@ -189,18 +189,31 @@ compare_props <- function(props, names, last_year) {
     df <- rbind.data.frame(df, prop)
   }
   
-  plot <- ggplot(df, aes(x = Age, y = Proportion, fill = version)) +
+  barplot <- ggplot(df, aes(x = Age, y = Proportion, fill = version)) +
     geom_bar(stat = "identity", position = "dodge") +
     scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
     scale_x_discrete(breaks = c(1, 5, 10, 15)) +
     ylab("Proportion-at-age") +
     facet_wrap(~ Year, ncol = 6, dir = "v") 
-  return(plot)
+  
+  boxplot <- ggplot(df, aes(x = Age, y = Proportion, color = version, fill = version)) +
+    geom_boxplot(alpha = 0.5) +
+    scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
+    scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
+    scale_x_discrete(breaks = c(1, 5, 10, 15)) +
+    ylab("Proportion-at-age") 
+
+  return(list(barplot = barplot, boxplot = boxplot))
 }
 
-all_props <- compare_props(props = list(new_props, tiny_dg, tiny_tweedie),
+comp_plots <- compare_props(props = list(new_props, tiny_dg, tiny_tweedie),
                            names = names_comps)
+
+all_props <- comp_plots$barplot
 all_props
+
+summary_props <- comp_plots$boxplot
+summary_props
 
 # Plot difference between two models ------------------------------------------
 comp_difference <- function(new, old, names, save_results = FALSE) {
@@ -278,7 +291,7 @@ comp_percent_diff <- function(new, old, names, save_results = FALSE) {
 }
 
 per_diff <- comp_percent_diff(new = tiny_tweedie, old = new_props,
-                              names = c(names_comps[1], names_comps[3]),
+                              names = c(names_comps[3], names_comps[1]),
                               save_results = FALSE)
 per_diff
 
@@ -320,8 +333,9 @@ comp_trends <- function(new, old, names) {
 }
 
 comp_trends <- comp_trends(new = tiny_tweedie, old = new_props,
-                           names = c(names_comps[1], names_comps[3]))
+                           names = c(names_comps[3], names_comps[1]))
 comp_trends
+
 
 # Save plots ------------------------------------------------------------------
 ggsave(index_comp, filename = here(workDir, "results", save_dir, "index_comparison.png"),
@@ -330,6 +344,8 @@ ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_differen
        width=170, height=120, units="mm", dpi=300)
 ggsave(all_props, filename = here(workDir, "results", save_dir, "age_comp_compare.png"),
        width=200, height=180, units="mm", dpi=300)
+ggsave(summary_props, filename = here(workDir, "results", save_dir, "age_comp_summary.png"),
+       width=200, height=120, units="mm", dpi=300)
 ggsave(comp_diff, filename = here(workDir, "results", save_dir, "age_comp_diff.png"),
        width=200, height=200, units="mm", dpi=300)
 ggsave(per_diff, filename = here(workDir, "results", save_dir, "age_comp_per_diff.png"),
