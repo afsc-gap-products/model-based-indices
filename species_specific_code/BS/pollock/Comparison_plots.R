@@ -251,7 +251,7 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
 }
 
 comp_diff <- comp_difference(new = tiny_tweedie, old = new_props,
-                             names = c(names_comps[1], names_comps[3]),
+                             names = c(names_comps[3], names_comps[1]),
                              save_results = FALSE)
 comp_diff
 
