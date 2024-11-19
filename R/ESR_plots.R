@@ -1,5 +1,5 @@
-# Script for plots of VAST model output for pollock that are used in the Bering 
-# Sea Ecosystem Status Reports
+# Standardized plots of center of gravity and effective area occupied produced
+# from the VAST models of abundance and age composition.
 # By: Sophia N. Wassermann
 # Contact: sophia.wassermann@noaa.gov
 # Date created: 2024.04.04
@@ -325,7 +325,7 @@ ggsave(cog_combined, filename = here("VAST_results", "BS", "COG_bs_all.png"),
 
 # Combine all EAO plots together ----------------------------------------------
 # Read in each species in the region and combine into a list
-bs_pol_fit <- readRDS(here("species_specific_code", "BS", "pollock", "results", "VAST Index", "VASTfit_full.RDS"))
+bs_pol_fit <- readRDS(here("species_specific_code", "BS", "pollock", "results", "VAST Index", "VASTfit.RDS"))
 bs_cod_fit <- readRDS(here("VAST_results", "BS", "pcod", "VASTfit.RDS"))
 bs_yel_fit <- readRDS(here("VAST_results", "BS", "yfs", "VASTfit.RDS"))
 bs_nrs_fit <- readRDS(here("VAST_results", "BS", "nrs", "VASTfit.RDS"))
