@@ -23,8 +23,7 @@ knitr::opts_chunk$set(
 #remotes::install_github("afsc-gap-products/coldpool")
 library(VAST)
 library(sp)
-pak::pak("pbs-assess/sdmTMB@index-split") 
-#pak::pak("pbs-assess/sdmTMB") 
+#pak::pak("pbs-assess/sdmTMB@index-split") #pak::pak("pbs-assess/sdmTMB") 
 library(sdmTMB)
 library(dplyr)
 library(ggplot2)
@@ -379,30 +378,19 @@ ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, ymax
   #ylim(0, max(both_i$upr)) +
   ggtitle("NBS") +
   coord_cartesian(expand = FALSE)
-
-ggplot(filter(both_i, stratum == "EBS"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
-  geom_ribbon(alpha = 0.1) +
-  geom_line(alpha = 0.8) + 
-  #ylim(0, max(both_i$upr)) +
-  ggtitle("EBS") +
-  coord_cartesian(expand = FALSE)
-
-ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
-  geom_ribbon(alpha = 0.1) +
-  geom_line(alpha = 0.8) + 
-  #ylim(0, max(both_i$upr)) +
-  ggtitle("NBS") +
-  coord_cartesian(expand = FALSE)
 ```
 
 ```{r}
-plot(ind$est, vast_i$est[vast_i$est != 0]);abline(0, 1)
-plot(ind$upr, vast_i$upr[vast_i$est != 0]);abline(0, 1)
-plot(ind$lwr, vast_i$lwr[vast_i$est != 0]);abline(0, 1)
+vast_both <- filter(vast_i, stratum == "Both")
+sdm_both <- filter(sdm_i, stratum == "Both")
 
-(ind$est - vast_i$est[vast_i$est != 0]) / vast_i$est[vast_i$est != 0]
-(ind$upr - vast_i$upr[vast_i$est != 0]) / vast_i$upr[vast_i$est != 0]
-(ind$lwr - vast_i$lwr[vast_i$est != 0]) / vast_i$lwr[vast_i$est != 0]
+plot(sdm_both$est, vast_both$est[vast_both$est != 0]);abline(0, 1)
+plot(sdm_both$upr, vast_both$upr[vast_both$est != 0]);abline(0, 1)
+plot(sdm_both$lwr, vast_both$lwr[vast_both$est != 0]);abline(0, 1)
+
+(sdm_both$est - vast_both$est[vast_both$est != 0]) / vast_both$est[vast_both$est != 0]
+(sdm_both$upr - vast_both$upr[vast_both$est != 0]) / vast_both$upr[vast_both$est != 0]
+(sdm_both$lwr - vast_both$lwr[vast_both$est != 0]) / vast_both$lwr[vast_both$est != 0]
 ```
 
 This document was built using:
