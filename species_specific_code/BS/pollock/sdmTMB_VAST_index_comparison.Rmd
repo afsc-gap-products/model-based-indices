@@ -353,6 +353,7 @@ vast_i <- read.csv(here("species_specific_code", "BS", "pollock", "index_compari
   mutate(index = "VAST", year = as.numeric(Time), est = Estimate, 
     se = Std..Error.for.ln.Estimate.) %>% 
   select(index, year, est, se, stratum = Stratum) %>% 
+  filter(year != 2020) %>%
   mutate(lwr = exp(log(est) + qnorm(0.025) * se)) %>% 
   mutate(upr = exp(log(est) + qnorm(0.975) * se))
 sdm_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "sdmTMB")
@@ -384,13 +385,13 @@ ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, ymax
 vast_both <- filter(vast_i, stratum == "Both")
 sdm_both <- filter(sdm_i, stratum == "Both")
 
-plot(sdm_both$est, vast_both$est[vast_both$est != 0]);abline(0, 1)
-plot(sdm_both$upr, vast_both$upr[vast_both$est != 0]);abline(0, 1)
-plot(sdm_both$lwr, vast_both$lwr[vast_both$est != 0]);abline(0, 1)
+plot(sdm_both$est, vast_both$est);abline(0, 1)
+plot(sdm_both$upr, vast_both$upr);abline(0, 1)
+plot(sdm_both$lwr, vast_both$lwr);abline(0, 1)
 
-(sdm_both$est - vast_both$est[vast_both$est != 0]) / vast_both$est[vast_both$est != 0]
-(sdm_both$upr - vast_both$upr[vast_both$est != 0]) / vast_both$upr[vast_both$est != 0]
-(sdm_both$lwr - vast_both$lwr[vast_both$est != 0]) / vast_both$lwr[vast_both$est != 0]
+(sdm_both$est - vast_both$est) / vast_both$est
+(sdm_both$upr - vast_both$upr) / vast_both$upr
+(sdm_both$lwr - vast_both$lwr) / vast_both$lwr
 ```
 
 This document was built using:
