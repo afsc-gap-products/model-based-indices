@@ -19,7 +19,9 @@ theme_set(theme_sleek())
 workDir <- here("species_specific_code", "BS", "pollock")
 this_year <- 2024
 
-save_dir <- paste0(this_year, " Production")
+# save_dir <- paste0(this_year, " Production")
+save_dir <- "tinyVAST"
+
 
 # Compare Indices of Abundance ------------------------------------------------
 # Read in indices & make sure columns for year = Time, Estimate, Error are named correctly
@@ -163,16 +165,17 @@ index_diff
 
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
-old_props <- read.csv(here(workDir, "results", "2023 Production", "Comps", "proportions.csv"))
+# old_props <- read.csv(here(workDir, "results", "2023 Production", "Comps", "proportions.csv"))
 new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
-# new_props_dg <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv"))
+tiny_dg <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv"))
+tiny_tweedie <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props.csv"))
 
-# # Update old_props to match tinyVAST test output
-# tiny_years <- c(1980:2019, 2021:2023)
-# old_props <- old_props %>% filter(Year %in% tiny_years & Region == "EBS")
+# # Update old_props to match tinyVAST test output - only EBS
+tiny_years <- c(1980:2019, 2021:this_year)
+new_props <- new_props %>% filter(Year %in% tiny_years & Region == "EBS")
 
 # Set names for old and new comps
-names_comps <- list(old = "2024 (no ages)", new = "2024 production")
+names_comps <- c("VAST", "tiny delta-gamma", "tiny Tweedie")
 
 ## Combine age comp models into one plot --------------------------------------
 compare_props <- function(props, names, last_year) {
@@ -186,27 +189,40 @@ compare_props <- function(props, names, last_year) {
     df <- rbind.data.frame(df, prop)
   }
   
-  plot <- ggplot(df, aes(x = Age, y = Proportion, fill = version)) +
+  barplot <- ggplot(df, aes(x = Age, y = Proportion, fill = version)) +
     geom_bar(stat = "identity", position = "dodge") +
     scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
     scale_x_discrete(breaks = c(1, 5, 10, 15)) +
     ylab("Proportion-at-age") +
-    facet_wrap(~ Year, ncol = 6) 
-  return(plot)
+    facet_wrap(~ Year, ncol = 6, dir = "v") 
+  
+  boxplot <- ggplot(df, aes(x = Age, y = Proportion, color = version, fill = version)) +
+    geom_boxplot(alpha = 0.5) +
+    scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
+    scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
+    scale_x_discrete(breaks = c(1, 5, 10, 15)) +
+    ylab("Proportion-at-age") 
+
+  return(list(barplot = barplot, boxplot = boxplot))
 }
 
-all_props <- compare_props(props = list(new_props, old_props),
-                           names = c(names_comps$new, names_comps$old))
+comp_plots <- compare_props(props = list(new_props, tiny_dg, tiny_tweedie),
+                           names = names_comps)
+
+all_props <- comp_plots$barplot
 all_props
+
+summary_props <- comp_plots$boxplot
+summary_props
 
 # Plot difference between two models ------------------------------------------
 comp_difference <- function(new, old, names, save_results = FALSE) {
-  new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
+  # new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
   
   # Get difference between new and old props
   check_props <- round(new[,1:15] - old[,1:15], 4)
   check_props_tab <- cbind(check_props, new[,16:17])
-  check_props_abs <- round(abs(new[,1:15] - old[,1:15]), 4)
+  check_props_abs <- abs(check_props)
   check_props_abs_tab <-  cbind(check_props_abs, new[,16:17])
   
   if(save_results == TRUE) {  # save to drive, if you want. Check file paths.
@@ -229,19 +245,59 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
     scale_fill_manual(values = c("cornflowerblue", "darkred")) +
     scale_x_discrete(breaks = c(1, 5, 10, 15)) +
     ylab(label) +
+    facet_wrap(~ Year, ncol = 6, dir = "v") 
+  
+  return(plot)
+}
+
+comp_diff <- comp_difference(new = tiny_tweedie, old = new_props,
+                             names = c(names_comps[3], names_comps[1]),
+                             save_results = FALSE)
+comp_diff
+
+# Percent difference
+comp_percent_diff <- function(new, old, names, save_results = FALSE) {
+  # new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
+  
+  # Get difference between new and old props
+  check_props <- round((((new[,1:15] - old[,1:15]) / old[,1:15]) *100), 4)
+  check_props_tab <- cbind(check_props, new[,16:17])
+  check_props_abs <- abs(check_props)
+  check_props_abs_tab <-  cbind(check_props_abs, new[,16:17])
+  
+  if(save_results == TRUE) {  # save to drive, if you want. Check file paths.
+    options(scipen=999)
+    write.csv(check_props_tab, here(results_dir, save_dir, "bridge_props.csv"))
+    write.csv(check_props_abs_tab, here(results_dir, save_dir, "bridge_props_abs.csv"))
+  }
+  
+  colnames(check_props_tab)[1:15] <- 1:15
+  props_plot <- melt(check_props_tab, id.vars = c("Year", "Region"), 
+                     variable.name = "Age", value.name = "Proportion") %>%
+    # add column for coloring the bars in the plot based on positive/negative
+    mutate(sign = case_when(Proportion >= 0 ~ "positive",
+                            Proportion < 0 ~ "negative"))
+  
+  # Plot both regions together and without 2020
+  label <- paste0("Percent difference between ", names[1], " and ", names[2])
+  plot <- ggplot(props_plot, aes(x = Age, y = Proportion, fill = sign)) +
+    geom_bar(stat = "identity", show.legend = FALSE) +
+    scale_fill_manual(values = c("cornflowerblue", "darkred")) +
+    scale_x_discrete(breaks = c(1, 5, 10, 15)) +
+    ylab(label) +
     facet_wrap(~ Year, ncol = 6) 
   
   return(plot)
 }
 
-comp_diff <- comp_difference(new = new_props, old = old_props,
-                             names = c(names_comps$new, names_comps$old),
-                             save_results = FALSE)
-comp_diff
+per_diff <- comp_percent_diff(new = tiny_tweedie, old = new_props,
+                              names = c(names_comps[3], names_comps[1]),
+                              save_results = FALSE)
+per_diff
 
 ## Check trends in difference between models by age & year
 comp_trends <- function(new, old, names) {
-  new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
+  # new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
   
   # Get difference between new and old props
   check_props <- round(new[,1:15] - old[,1:15], 4)
@@ -276,9 +332,10 @@ comp_trends <- function(new, old, names) {
   return(plot_both)
 }
 
-comp_trends <- comp_trends(new = new_props, old = old_props,
-                           names = c(names_comps$new, names_comps$old))
+comp_trends <- comp_trends(new = tiny_tweedie, old = new_props,
+                           names = c(names_comps[3], names_comps[1]))
 comp_trends
+
 
 # Save plots ------------------------------------------------------------------
 ggsave(index_comp, filename = here(workDir, "results", save_dir, "index_comparison.png"),
@@ -287,7 +344,11 @@ ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_differen
        width=170, height=120, units="mm", dpi=300)
 ggsave(all_props, filename = here(workDir, "results", save_dir, "age_comp_compare.png"),
        width=200, height=180, units="mm", dpi=300)
+ggsave(summary_props, filename = here(workDir, "results", save_dir, "age_comp_summary.png"),
+       width=200, height=120, units="mm", dpi=300)
 ggsave(comp_diff, filename = here(workDir, "results", save_dir, "age_comp_diff.png"),
+       width=200, height=200, units="mm", dpi=300)
+ggsave(per_diff, filename = here(workDir, "results", save_dir, "age_comp_per_diff.png"),
        width=200, height=200, units="mm", dpi=300)
 ggsave(comp_trends, filename = here(workDir, "results", save_dir, "age_comp_trends.png"),
        width=260, height=120, units="mm", dpi=300)
