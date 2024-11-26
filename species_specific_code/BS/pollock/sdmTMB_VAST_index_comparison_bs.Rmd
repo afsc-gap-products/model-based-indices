@@ -175,8 +175,7 @@ Now we fit the same model in sdmTMB:
 
 ```{r sdmTMB-example, echo = TRUE}
 dat <- dat_ll %>% 
-  rename(X = lon, Y = lat) %>%
-  filter(year != 2020)
+  rename(X = lon, Y = lat) #%>% filter(year != 2020) #drop dummy 2020 data
   
 dat$year_f <- as.factor(dat$year)
 
@@ -202,7 +201,7 @@ if (!file.exists(f1)) {
     time = "year", 
     spatial = "on",
     spatiotemporal = "ar1",
-    extra_time = 2020L, 
+    extra_time = 2020L, #omit if dummy 2020 included in data
     silent = FALSE,
     anisotropy = TRUE,
     do_fit = TRUE
