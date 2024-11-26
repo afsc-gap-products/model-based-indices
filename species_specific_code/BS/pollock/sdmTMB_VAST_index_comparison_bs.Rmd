@@ -42,7 +42,7 @@ dat_ll <- readRDS(here("species_specific_code", "BS", species, "production",
 
 if(species == "pacific_cod"){
   dat_ll <-  dplyr::transmute(dat_ll,
-                         cpue_kg_km2 = Catch_N / AreaSwept_km2, #note last cod model used catch ~ effort
+                         cpue = Catch_N / AreaSwept_km2, #note last cod model used catch ~ effort
                          year = as.integer(year),
                          vessel = "missing",
                          effort = 1, # area swept is 1 when using CPUE instead of observed weight
@@ -53,7 +53,7 @@ if(species == "pacific_cod"){
 }
 if(species == "pollock"){
     dat_ll <-  dplyr::transmute(dat_ll,
-                         cpue_kg_km2 = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
+                         cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
                          year = as.integer(year),
                          vessel = "missing",
                          effort = 1, # area swept is 1 when using CPUE instead of observed weight
@@ -64,7 +64,7 @@ if(species == "pollock"){
 }
 if(species == "yellowfin_sole"){
     dat_ll <-  dplyr::transmute(dat_ll,
-                         cpue_kg_km2 = Catch_KG / AreaSwept_km2,
+                         cpue = Catch_KG / AreaSwept_km2,
                          year = as.integer(year),
                          vessel = "missing",
                          effort = 1, # area swept is 1 when using CPUE instead of observed weight
@@ -146,7 +146,7 @@ if (!file.exists(f)) {
     Lat_i = dat_ll[, "lat"],
     Lon_i = dat_ll[, "lon"],
     t_i = dat_ll[, "year"],
-    b_i = dat_ll[, "cpue_kg_km2"],
+    b_i = dat_ll[, "cpue"],
     a_i = dat_ll[, "effort"],
     create_strata_per_region = TRUE,
     getJointPrecision = TRUE,
@@ -193,7 +193,7 @@ if (!file.exists(f1)) {
   #mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 50, type = "kmeans") #coarser mesh for experimentation
   
   fit_sdmTMB <- sdmTMB( 
-    cpue_kg_km2 ~ 0 + year_f,
+    cpue ~ 0 + year_f,
     spatial_varying = ~ env,
     data = dat, 
     mesh = mesh,
