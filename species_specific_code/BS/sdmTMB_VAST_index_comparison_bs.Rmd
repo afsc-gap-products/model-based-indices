@@ -29,7 +29,7 @@ library(dplyr)
 library(ggplot2)
 library(here)
 
-species <- "pollock" 
+species <- "yellowfin_sole" 
 #pollock pacific_cod yellowfin_sole ...
 ```
 
@@ -293,6 +293,7 @@ if (file.exists(here("species_specific_code", "BS", species, "index_comparison",
 We can compare the index we would get using sdmTMB. 
 
 ```{r sdmTMB-index, echo=TRUE}
+# TODO: save grid so it can be loaded to make prediction grid replicated for each year with covariate data
 # prep prediction grids (all, EBS, NBS) and transform to UTM projection
 load(here("extrapolation_grids", "eastern_bering_sea_grid.rda"))
 load(here("extrapolation_grids", "northern_bering_sea_grid.rda"))
