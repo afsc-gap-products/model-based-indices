@@ -1,10 +1,21 @@
-library(TMB)
-library(devtools)
-library(dplyr)
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Project:       Gulf of Alaska Batch Data Pull
+## Description:   Pull catch and effort data for Gulf of Alaska ModSquad species
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# devtools::install_github(repo = "afsc-gap-products/gapindex@v3.0.0", dependencies = TRUE)
+library(gapindex)
+
 
 current_end_year <- 2023
 requested_start_year <- 1990
-species_code <- c(21720,30152,30150,310)[2:3]#[4]#[1]#[2:3] #c(P.cod, dusky rockfish, dusky and dark rockfishes unid.)
+species_code <- c(10110, ## arrowtooth flounder
+                  21720, ## Pacific cod
+                  21740, ## walleye pollock
+                  30152, ## 
+                  30150, ## 
+                  310 ## Pacific spiny dogfish
+                  )#[4]#[1]#[2:3] #c(P.cod, dusky rockfish, dusky and dark rockfishes unid.)
 #310 Squalus suckleyi spiny dogfish
 #species_code <- c(30420,30060,21740,10110,10261,10262,10130)[2] #c(northern rockfish, POP, pollock, arrowtooth, northern rock sole, southern rock sole, flathead sole)
 #species_code <- 10260 ## rock sole unidentified.
