@@ -37,13 +37,9 @@ We will fit geostatistical spatiotemporal models with VAST and sdmTMB for the pu
 
 ```{r data, echo = TRUE}
 # TODO: standardize names better
-dat_ll <- readRDS(here("species_specific_code", "BS", species, "production", 
-                       "data", "data_geostat_biomass_index.RDS")) # yellowfin
-#dat_ll <- readRDS(here("species_specific_code", "BS", species, "production", 
-#                       "data", "data_geostat_numerical_index.RDS")) # cod
-#dat_ll <- read.csv(here("species_specific_code", "BS", species, "VAST_ddc_all_2023.csv")) # pollock
-
 if(species == "pacific_cod"){
+  dat_ll <- readRDS(here("species_specific_code", "BS", species, "production", 
+                        "data", "data_geostat_numerical_index.RDS"))
   dat_ll <-  dplyr::transmute(dat_ll,
                          cpue = Catch_N / AreaSwept_km2, #note last cod model used catch ~ effort
                          year = as.integer(Year),
@@ -55,7 +51,8 @@ if(species == "pacific_cod"){
                 as.data.frame() # ensure not a tibble
 }
 if(species == "pollock"){
-    dat_ll <-  dplyr::transmute(dat_ll,
+  dat_ll <- read.csv(here("species_specific_code", "BS", species, "VAST_ddc_all_2023.csv"))  
+  dat_ll <-  dplyr::transmute(dat_ll,
                          cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
                          year = as.integer(year),
                          vessel = "missing",
@@ -66,7 +63,9 @@ if(species == "pollock"){
                 as.data.frame() # ensure not a tibble
 }
 if(species == "yellowfin_sole"){
-    dat_ll <-  dplyr::transmute(dat_ll,
+  dat_ll <- readRDS(here("species_specific_code", "BS", species, "production", 
+                       "data", "data_geostat_biomass_index.RDS"))  
+  dat_ll <-  dplyr::transmute(dat_ll,
                          cpue = Catch_KG / AreaSwept_km2,
                          year = as.integer(Year),
                          vessel = "missing",
