@@ -36,8 +36,11 @@ species <- "yellowfin_sole"
 We will fit geostatistical spatiotemporal models with VAST and sdmTMB for the purposes of index standardization and compare the outputs given the same data. We will use data from the EBS/NBS AFSC GAP bottom trawl surveys. The density units we will work in are either kg/km^2^ or n/km^2^, for biomass or numerical abundance. 
 
 ```{r data, echo = TRUE}
-dat_ll <- readRDS(paste0(here("species_specific_code", "BS", species, "production", 
-                       "data", "Data_Geostat_", species, ".RDS"))) # TODO: standardize names better
+# TODO: standardize names better
+dat_ll <- readRDS(here("species_specific_code", "BS", species, "production", 
+                       "data", "data_geostat_biomass_index.RDS")) # yellowfin
+#dat_ll <- readRDS(here("species_specific_code", "BS", species, "production", 
+#                       "data", "data_geostat_numerical_index.RDS")) # cod
 #dat_ll <- read.csv(here("species_specific_code", "BS", species, "VAST_ddc_all_2023.csv")) # pollock
 
 if(species == "pacific_cod"){
@@ -293,7 +296,7 @@ if (file.exists(here("species_specific_code", "BS", species, "index_comparison",
 We can compare the index we would get using sdmTMB. 
 
 ```{r sdmTMB-index, echo=TRUE}
-# TODO: save grid so it can be loaded to make prediction grid replicated for each year with covariate data
+# TODO: save grid so it can be loaded to make prediction grid replicated for each year with covariate
 # prep prediction grids (all, EBS, NBS) and transform to UTM projection
 load(here("extrapolation_grids", "eastern_bering_sea_grid.rda"))
 load(here("extrapolation_grids", "northern_bering_sea_grid.rda"))
