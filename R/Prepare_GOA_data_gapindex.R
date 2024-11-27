@@ -18,6 +18,7 @@ library(here)
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Connect to Oracle. Make sure you're on the VPN/network. 
 ##   Set up constants
+##   Double-check how dusky rockfish is pulled...
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 channel <- gapindex::get_connected(check_access = F)
 
