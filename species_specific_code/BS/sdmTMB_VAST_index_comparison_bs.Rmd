@@ -46,11 +46,11 @@ dat_ll <- readRDS(here("species_specific_code", "BS", species, "production",
 if(species == "pacific_cod"){
   dat_ll <-  dplyr::transmute(dat_ll,
                          cpue = Catch_N / AreaSwept_km2, #note last cod model used catch ~ effort
-                         year = as.integer(year),
+                         year = as.integer(Year),
                          vessel = "missing",
                          effort = 1, # area swept is 1 when using CPUE instead of observed weight
-                         lat = start_latitude,
-                         lon = start_longitude,
+                         lat = Lat,
+                         lon = Lon,
                          pass = 0) %>% 
                 as.data.frame() # ensure not a tibble
 }
@@ -68,11 +68,11 @@ if(species == "pollock"){
 if(species == "yellowfin_sole"){
     dat_ll <-  dplyr::transmute(dat_ll,
                          cpue = Catch_KG / AreaSwept_km2,
-                         year = as.integer(year),
+                         year = as.integer(Year),
                          vessel = "missing",
                          effort = 1, # area swept is 1 when using CPUE instead of observed weight
-                         lat = start_latitude,
-                         lon = start_longitude,
+                         lat = Lat,
+                         lon = Lon,
                          pass = 0) %>% 
                 as.data.frame() # ensure not a tibble
 }
