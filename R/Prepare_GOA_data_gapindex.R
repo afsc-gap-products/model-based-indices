@@ -6,9 +6,9 @@
 rm(list = ls())
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Import Libraries, using gapindex version 3.0.0
+##   Import Libraries, using gapindex version 3.0.2
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# devtools::install_github(repo = "afsc-gap-products/gapindex@v3.0.0", dependencies = TRUE)
+devtools::install_github(repo = "afsc-gap-products/gapindex@v3.0.2", dependencies = TRUE)
 library(gapindex)
 library(sf)
 library(sdmTMB)
