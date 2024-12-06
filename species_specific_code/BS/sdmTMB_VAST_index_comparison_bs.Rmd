@@ -1,5 +1,5 @@
 ---
-title: "Comparing VAST and sdmTMB pollock indices"
+title: "Comparing VAST and sdmTMB Bering indices"
 output:
   bookdown::pdf_document2:
     highlight: pygments
@@ -23,21 +23,37 @@ knitr::opts_chunk$set(
 #remotes::install_github("afsc-gap-products/coldpool")
 library(VAST)
 library(sp)
-pak::pak("pbs-assess/sdmTMB@index-split") 
-#pak::pak("pbs-assess/sdmTMB") 
+#pak::pak("pbs-assess/sdmTMB@index-split") #pak::pak("pbs-assess/sdmTMB") 
 library(sdmTMB)
 library(dplyr)
 library(ggplot2)
 library(here)
+
+species <- "pollock" 
+#pollock pacific_cod yellowfin_sole ...
 ```
 
-We will fit geostatistical spatiotemporal models with VAST and sdmTMB for the purposes of index standardization and compare the outputs given the same data. We will use pollock data from the EBS/NBS AFSC GAP bottom trawl surveys. The density units are converted from kg/ha to kg/km^2^. 
+We will fit geostatistical spatiotemporal models with VAST and sdmTMB for the purposes of index standardization and compare the outputs given the same data. We will use data from the EBS/NBS AFSC GAP bottom trawl surveys. The density units we will work in are either kg/km^2^ or n/km^2^, for biomass or numerical abundance. 
 
 ```{r data, echo = TRUE}
-dat_ll <- read.csv(here("species_specific_code", "BS", "pollock", "VAST_ddc_all_2023.csv"))
-
-dat_ll <-  dplyr::transmute(dat_ll,
-                         cpue_kg_km2 = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
+# TODO: standardize names better
+if(species == "pacific_cod"){
+  dat_ll <- readRDS(here("species_specific_code", "BS", species, "production", 
+                        "data", "data_geostat_numerical_index.RDS"))
+  dat_ll <-  dplyr::transmute(dat_ll,
+                         cpue = Catch_N / AreaSwept_km2, #note last cod model used catch ~ effort
+                         year = as.integer(Year),
+                         vessel = "missing",
+                         effort = 1, # area swept is 1 when using CPUE instead of observed weight
+                         lat = Lat,
+                         lon = Lon,
+                         pass = 0) %>% 
+                as.data.frame() # ensure not a tibble
+}
+if(species == "pollock"){
+  dat_ll <- read.csv(here("species_specific_code", "BS", species, "VAST_ddc_all_2023.csv"))  
+  dat_ll <-  dplyr::transmute(dat_ll,
+                         cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
                          year = as.integer(year),
                          vessel = "missing",
                          effort = 1, # area swept is 1 when using CPUE instead of observed weight
@@ -45,19 +61,40 @@ dat_ll <-  dplyr::transmute(dat_ll,
                          lon = start_longitude,
                          pass = 0) %>% 
                 as.data.frame() # ensure not a tibble
+}
+if(species == "yellowfin_sole"){
+  dat_ll <- readRDS(here("species_specific_code", "BS", species, "production", 
+                       "data", "data_geostat_biomass_index.RDS"))  
+  dat_ll <-  dplyr::transmute(dat_ll,
+                         cpue = Catch_KG / AreaSwept_km2,
+                         year = as.integer(Year),
+                         vessel = "missing",
+                         effort = 1, # area swept is 1 when using CPUE instead of observed weight
+                         lat = Lat,
+                         lon = Lon,
+                         pass = 0) %>% 
+                as.data.frame() # ensure not a tibble
+}
 ```
 
-We also need to pull in the cold pool extent, as that is used as a spatially varying covariate in AFSC GAP Bering Sea shelf indices. The cold pool is defined here as the areal extent (in km^2^) of seawater equal to or colder than 2 degrees Celsius near the seafloor, calculated from observations from the AFSC GAP EBS/NBS bottom trawl survey. We center and scale this for inclusion as a covariate.
+We also need to pull in the appropriate environmental covariate as this is used as a spatially varying covariate in AFSC GAP Bering Sea indices. For yellowfin sole, this is the mean bottom temperature in waters less than 100m. For other species, this is the cold pool extent. The cold pool is defined here as the areal extent (in km^2^) of seawater equal to or colder than 2 degrees Celsius near the seafloor, calculated from observations from the AFSC GAP EBS/NBS bottom trawl survey. We center and scale this for inclusion as a covariate.
 
-```{r coldpool, echo = TRUE}
-cpe <- scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)
+```{r covariate, echo = TRUE}
+if(species == "yellowfin_sole"){
+  env <- scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)
+} else {
+  env <- scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)
+}
 
-covariate_data <- data.frame(year = as.integer(c(coldpool:::cold_pool_index$YEAR, 2020)),
-                             lat = mean(dat_ll$lat),
-                             lon = mean(dat_ll$lon), 
-                             cpe = c(cpe, 0))
+# TODO: drop below inclusion of missing year for sdmTMB? Or remove extra_year argument in sdmTMB()
+covariate_data <- data.frame(Year = as.integer(c(coldpool:::cold_pool_index$YEAR, 2020)), 
+                             Lat = mean(dat_ll$lat),
+                             Lon = mean(dat_ll$lon), 
+                             env = c(env, 0)) 
 
-dat_ll <- left_join(dat_ll, select(covariate_data, year, cpe), by = "year")
+# TODO: replace "select(covariate_data, year, env)" with just "env" for sdmTMB
+env_join <- covariate_data %>% select(year = Year, env)
+dat_ll <- left_join(dat_ll, env_join, by = "year") 
 ```
 
 We begin by specifying the VAST model. To specify the mesh used to approximate the spatial process, which is used in the SPDE calculations, we use the k-means method in VAST. Rather than specifying the cutoff distance, meshes in VAST are typically generated by specifying only the number of knots, which we will later pass, along with other model settings to the function make_settings. We will use 750 knots, the same number in the mesh created in the existing production VAST index for this stock and region.
@@ -70,9 +107,15 @@ RhoConfig <- c("Beta1" = 0, "Beta2" = 0, "Epsilon1" = 4, "Epsilon2" = 4)
 OverdispersionConfig <- c("Eta1"=0, "Eta2"=0)
 ```
 
-Unlike in sdmTMB, the fitting and predicting steps are all accomplished with the function `fit_model()` and thus we need to specify the prediction grid (referred to as the "extrapolation grid" in VAST). Here, X and Y are coordinates in UTM zone 3.
+Unlike in sdmTMB, the fitting and predicting steps are all accomplished with the function `fit_model()` and thus we need to specify the prediction grid (referred to as the "extrapolation grid" in VAST). Here, X and Y are coordinates in UTM zone 2.
 
 ```{r settings, echo = TRUE}
+if(species == "pacific_cod"){
+  ObsModel = c(2, 4)
+} else {
+  ObsModel = c(2, 1)
+}
+
 settings <- make_settings(
   n_x = 750, # number of vertices in the SPDE mesh
   Region = c("Eastern_Bering_Sea", "Northern_Bering_Sea"),
@@ -84,7 +127,7 @@ settings <- make_settings(
   OverdispersionConfig = c("Eta1" = 0, "Eta2" = 0),
   Options = c("Calculate_Range" = TRUE, "Calculate_effective_area" = TRUE, 
               "treat_nonencounter_as_zero" = FALSE),
-  ObsModel = c(2, 1), # conventional logit-linked delta-Gamma; (2,4) if there are years with 100% encounter rate; (10, 2) for Tweedie
+  ObsModel = ObsModel, #delta-Gamma; (2,4) if there are years with 100% encounter rate; (10, 2) for Tweedie
   bias.correct = TRUE,
   use_anisotropy = TRUE,
   max_cells = Inf, # use all grid cells from the extrapolation grid, production model used 2000
@@ -97,26 +140,26 @@ Next we will fit a GLMM (generalized linear mixed effects model).
 
 ```{r fit, echo = TRUE, results = 'hide', cache = FALSE}
 # create folder for saved output:
-dir.create(paste0(here("species_specific_code", "BS", "pollock", "index_comparison")), showWarnings = FALSE)
+dir.create(here("species_specific_code", "BS", species, "index_comparison"), showWarnings = FALSE)
 
-f <- here("species_specific_code", "BS", "pollock", "index_comparison", "VASTfit_full.RDS")
+f <- here("species_specific_code", "BS", species, "index_comparison", "VASTfit_full.RDS")
 if (!file.exists(f)) {
   fit <- fit_model(
     settings = settings,
     Lat_i = dat_ll[, "lat"],
     Lon_i = dat_ll[, "lon"],
     t_i = dat_ll[, "year"],
-    b_i = dat_ll[, "cpue_kg_km2"],
+    b_i = dat_ll[, "cpue"],
     a_i = dat_ll[, "effort"],
     create_strata_per_region = TRUE,
     getJointPrecision = TRUE,
     getReportCovariance = TRUE,
-    X1_formula = ~ cpe,
-    X2_formula = ~ cpe,
+    X1_formula = ~ env,
+    X2_formula = ~ env,
     X1config_cp = as.matrix(2),
     X2config_cp = as.matrix(2),
     covariate_data = covariate_data,
-    working_dir = paste0(here("species_specific_code", "BS", "pollock", "index_comparison"), "/")
+    working_dir = paste0(here("species_specific_code", "BS", species, "index_comparison"), "/")
   )
   saveRDS(fit, file = f)
 } else {
@@ -135,7 +178,7 @@ Now we fit the same model in sdmTMB:
 
 ```{r sdmTMB-example, echo = TRUE}
 dat <- dat_ll %>% 
-  rename(X = lon, Y = lat)
+  rename(X = lon, Y = lat) #%>% filter(year != 2020) #drop dummy 2020 data
   
 dat$year_f <- as.factor(dat$year)
 
@@ -146,28 +189,28 @@ dat <- as.data.frame(spTransform(dat, CRS("+proj=utm +zone=2")))
 dat$X <- dat$coords.x1 / 1000
 dat$Y <- dat$coords.x2 / 1000
 
-f1 <- here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB.RDS")
+f1 <- here("species_specific_code", "BS", species, "index_comparison", "fit_sdmTMB.RDS")
 if (!file.exists(f1)) {
   # make mesh and fit model
-  mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$anisotropic_mesh) #pass same mesh as VAST model
+  mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$anisotropic_mesh) #pass same mesh as VAST model...TODO: save this object for each species so it can be loaded without the full model object
   #mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 50, type = "kmeans") #coarser mesh for experimentation
   
   fit_sdmTMB <- sdmTMB( 
-    cpue_kg_km2 ~ 0 + year_f,
-    spatial_varying = ~ cpe,
+    cpue ~ 0 + year_f,
+    spatial_varying = ~ env,
     data = dat, 
     mesh = mesh,
     family = delta_gamma(type = "poisson-link"), 
     time = "year", 
     spatial = "on",
     spatiotemporal = "ar1",
-    extra_time = 2020L,
+    extra_time = 2020L, #omit if dummy 2020 included in data
     silent = FALSE,
     anisotropy = TRUE,
     do_fit = TRUE
   )
   fit_sdmTMB
-  saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", "pollock", "index_comparison", "fit_sdmTMB.RDS"))
+  saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", species, "index_comparison", "fit_sdmTMB.RDS"))
 } else {
   fit_sdmTMB <- readRDS(f1)
 }
@@ -221,11 +264,11 @@ rm(fit)
 While making custom plots of individual elements would require considerable additional code to extract and reformat the necessary components of each output, VAST has a wrapper function that generates the typical plots one may want. Here we stick with the default set of plots (`plot_set = 3`); however, one can specify different standard plots to make by changing the setting of this argument (see `?FishStatsUtils::plot_maps` and `?FishStatsUtils::plot_results`).
 
 ```{r save-plots, echo = TRUE, warning = FALSE, cache=TRUE}
-if(!file.exists(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "Data_and_knots.png"))) {
+if(!file.exists(here("species_specific_code", "BS", species, "index_comparison", "plots", "Data_and_knots.png"))) {
   plot(
     fit,
     check_residuals = FALSE,
-    working_dir = paste0(here("species_specific_code", "BS", "pollock", "index_comparison", "plots"), "/")
+    working_dir = paste0(here("species_specific_code", "BS", species, "index_comparison", "plots"), "/")
   )
 }
 ```
@@ -233,26 +276,27 @@ if(!file.exists(here("species_specific_code", "BS", "pollock", "index_comparison
 Here we will read in some key plots. We can start by looking at the location of samples and knots.
 
 ```{r plot-knots, echo = TRUE, out.width="6in"}
-knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "Data_and_knots.png"))
+knitr::include_graphics(here("species_specific_code", "BS", species, "index_comparison", "plots", "Data_and_knots.png"))
 ```
 
 Then we can look at maps of the predicted population densities (here on the log scale).
 
 ```{r plot-density, echo = TRUE, out.width="6in"}
-knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "ln_density-predicted.png"))
+knitr::include_graphics(here("species_specific_code", "BS", species, "index_comparison", "plots", "ln_density-predicted.png"))
 ```
 
-And finally the biomass index.
+And finally the index.
 
 ```{r plot-index, echo = TRUE, out.width="3in"}
-if (file.exists(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "Index.png"))) {
-  knitr::include_graphics(here("species_specific_code", "BS", "pollock", "index_comparison", "plots", "Index.png"))
+if (file.exists(here("species_specific_code", "BS", species, "index_comparison", "plots", "Index.png"))) {
+  knitr::include_graphics(here("species_specific_code", "BS", species, "index_comparison", "plots", "Index.png"))
 }
 ```
 
 We can compare the index we would get using sdmTMB. 
 
 ```{r sdmTMB-index, echo=TRUE}
+# TODO: save grid so it can be loaded to make prediction grid replicated for each year with covariate
 # prep prediction grids (all, EBS, NBS) and transform to UTM projection
 load(here("extrapolation_grids", "eastern_bering_sea_grid.rda"))
 load(here("extrapolation_grids", "northern_bering_sea_grid.rda"))
@@ -297,19 +341,19 @@ pred_grid_ebs$year <- as.integer(as.character(factor(pred_grid_ebs$year_f)))
 pred_grid_nbs$year <- as.integer(as.character(factor(pred_grid_nbs$year_f)))
 pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
 
-# join in cold pool covariate
-pred_grid_ebs <- left_join(pred_grid_ebs, select(covariate_data, year, cpe), by = "year")
-pred_grid_nbs <- left_join(pred_grid_nbs, select(covariate_data, year, cpe), by = "year")
-pred_grid <- left_join(pred_grid, select(covariate_data, year, cpe), by = "year")
+# join in environmental covariate (cold pool or mean bottom temperature)
+pred_grid_ebs <- left_join(pred_grid_ebs, env_join, by = "year")
+pred_grid_nbs <- left_join(pred_grid_nbs, env_join, by = "year")
+pred_grid <- left_join(pred_grid, env_join, by = "year")
 
 # get predictions for total area, and the two subareas of interest (EBS, NBS)
-# f2 <- here("species_specific_code", "BS", "pollock", 
+# f2 <- here("species_specific_code", "BS", species, 
 #            "index_comparison", "predictions.RData")
 # if (!file.exists(f2)) {
 #   p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
 #   p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
 #   p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
-#     save(p, p_ebs, p_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "predictions.RData"))
+#     save(p, p_ebs, p_nbs, file = here("species_specific_code", "BS", species, "index_comparison", "predictions.RData"))
 # } else {
 #   load(f2)
 # }
@@ -318,20 +362,20 @@ pred_grid <- left_join(pred_grid, select(covariate_data, year, cpe), by = "year"
 # NOTE: if using get_index_split() rather than get_index() you need to pass the 
 # model object and new data (not prediction object, you can bypass that step)
 # TO DO: fix get_index_split to avoid error: saying area should be same length as nrow(newdata)
-f3 <- here("species_specific_code", "BS", "pollock", 
+f3 <- here("species_specific_code", "BS", species, 
            "index_comparison", "indices.RData")
 if (!file.exists(f3)) {
   gc()
-  ind <- get_index_split(fit_sdmTMB, newdata = pred_grid, nsplit = 6,
-                         bias_correct = TRUE) #, area = pred_grid$area_in_survey_km2)
+  ind <- get_index_split(fit_sdmTMB, newdata = pred_grid, nsplit = 2,
+                         bias_correct = TRUE, area = pred_grid$area_in_survey_km2)
   ind$stratum <- "Both"
 
-  ind_ebs <- get_index_split(fit_sdmTMB, newdata = pred_grid_ebs, nsplit = 6,
-                             bias_correct = TRUE) #, area = pred_grid_ebs$area_in_survey_km2)
+  ind_ebs <- get_index_split(fit_sdmTMB, newdata = pred_grid_ebs, nsplit = 2,
+                             bias_correct = TRUE, area = pred_grid_ebs$area_in_survey_km2)
   ind_ebs$stratum <- "EBS"
 
-  ind_nbs <- get_index_split(fit_sdmTMB, newdata = pred_grid_nbs, nsplit = 6,
-                             bias_correct = TRUE) #, area = pred_grid_nbs$area_in_survey_km2)
+  ind_nbs <- get_index_split(fit_sdmTMB, newdata = pred_grid_nbs, nsplit = 2,
+                             bias_correct = TRUE, area = pred_grid_nbs$area_in_survey_km2)
   ind_nbs$stratum <- "NBS"
   # ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_in_survey_km2)
   # ind$stratum <- "Both"
@@ -341,7 +385,7 @@ if (!file.exists(f3)) {
   # 
   # ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = pred_grid_nbs$area_in_survey_km2)
   # ind_nbs$stratum <- "NBS"
-  save(ind, ind_ebs, ind_nbs, file = here("species_specific_code", "BS", "pollock", "index_comparison", "indices.RData"))
+  save(ind, ind_ebs, ind_nbs, file = here("species_specific_code", "BS", species, "index_comparison", "indices.RData"))
 } else {
 load(f3)
 }
@@ -350,10 +394,11 @@ load(f3)
 Now, we can compare the indices. 
 
 ```{r index-compare, message=FALSE, warning=FALSE}
-vast_i <- read.csv(here("species_specific_code", "BS", "pollock", "index_comparison", "Index.csv")) %>%
+vast_i <- read.csv(here("species_specific_code", "BS", species, "index_comparison", "Index.csv")) %>%
   mutate(index = "VAST", year = as.numeric(Time), est = Estimate, 
     se = Std..Error.for.ln.Estimate.) %>% 
   select(index, year, est, se, stratum = Stratum) %>% 
+  filter(year != 2020) %>%
   mutate(lwr = exp(log(est) + qnorm(0.025) * se)) %>% 
   mutate(upr = exp(log(est) + qnorm(0.975) * se))
 sdm_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "sdmTMB")
@@ -379,30 +424,19 @@ ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, ymax
   #ylim(0, max(both_i$upr)) +
   ggtitle("NBS") +
   coord_cartesian(expand = FALSE)
-
-ggplot(filter(both_i, stratum == "EBS"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
-  geom_ribbon(alpha = 0.1) +
-  geom_line(alpha = 0.8) + 
-  #ylim(0, max(both_i$upr)) +
-  ggtitle("EBS") +
-  coord_cartesian(expand = FALSE)
-
-ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
-  geom_ribbon(alpha = 0.1) +
-  geom_line(alpha = 0.8) + 
-  #ylim(0, max(both_i$upr)) +
-  ggtitle("NBS") +
-  coord_cartesian(expand = FALSE)
 ```
 
 ```{r}
-plot(ind$est, vast_i$est[vast_i$est != 0]);abline(0, 1)
-plot(ind$upr, vast_i$upr[vast_i$est != 0]);abline(0, 1)
-plot(ind$lwr, vast_i$lwr[vast_i$est != 0]);abline(0, 1)
+vast_both <- filter(vast_i, stratum == "Both")
+sdm_both <- filter(sdm_i, stratum == "Both")
 
-(ind$est - vast_i$est[vast_i$est != 0]) / vast_i$est[vast_i$est != 0]
-(ind$upr - vast_i$upr[vast_i$est != 0]) / vast_i$upr[vast_i$est != 0]
-(ind$lwr - vast_i$lwr[vast_i$est != 0]) / vast_i$lwr[vast_i$est != 0]
+plot(sdm_both$est, vast_both$est);abline(0, 1)
+plot(sdm_both$upr, vast_both$upr);abline(0, 1)
+plot(sdm_both$lwr, vast_both$lwr);abline(0, 1)
+
+(sdm_both$est - vast_both$est) / vast_both$est
+(sdm_both$upr - vast_both$upr) / vast_both$upr
+(sdm_both$lwr - vast_both$lwr) / vast_both$lwr
 ```
 
 This document was built using:
