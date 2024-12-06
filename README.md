@@ -24,9 +24,9 @@ Provide VAST estimates of abundance and their standard error from GAP survey dat
 
 # General Production Timeline Estimate
 **March - April is the time window for any model exploration/iteration, as requested**
-  - December - ModSquad leadership meets/communicates to prioritize species + research plans
+  - December - ModSquad leadership meets to prioritize species + research plans
   - January 15 - Deadline for SAFE authors to submit product requests
-  - late January - ModSquad planning meeting with program leads as needed
+  - late January - ModSquad planning meeting with program leads
   - February 15 - SAFE author's revised requests given ModSquad capacity and discussion from REFM meeting
   - March 15 - TOR memo finalized and posted on the web
   - April 1 - Crab hindcasts completed
