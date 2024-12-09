@@ -28,15 +28,24 @@ library(dplyr)
 library(ggplot2)
 library(here)
 
-species <- "Sebastes_polyspinis" 
-#Gadus_macrocephalus Sebastes_alutus Sebastes_polyspinis Sebastes_variabilis
+species <- "Gadus_macrocephalus" 
+
+phase <- c("hindcast", "production")[1]
 ```
 
 We will fit geostatistical spatiotemporal models with VAST and sdmTMB for the purposes of index standardization and compare the outputs given the same data. We will use data from the GOA AFSC GAP bottom trawl survey for the species specified above. The density units are kg/km^2^. 
 
 ```{r data, echo = TRUE}
-dat_ll <- readRDS(here("species_specific_code", "GOA", species, "production", 
-                       "data", paste0("Data_Geostat_", species, ".rds")))
+species_df <- data.frame(
+  species_code = c(310, 10110, 21720, 21740, 30060, 30420, 30150, 30152),
+  species = c("Squalus_suckleyi", "Atheresthes_stomias", "Gadus_macrocephalus", 
+              "Gadus_chalcogrammus_140W", "Sebastes_alutus", 
+              "Sebastes_polyspinis", "Sebastes_variabilis", 
+              "Sebastes_variabilis")
+)
+
+dat_ll <- readRDS(here::here(paste0("data/GOA/", phase, "/dat_allspp.RDS"))) %>%
+  filter(species_code == species_df$species_code[species_df$species==species]) 
 
 dat_ll <-  dplyr::transmute(dat_ll,
                          catch_kg = Catch_KG,
