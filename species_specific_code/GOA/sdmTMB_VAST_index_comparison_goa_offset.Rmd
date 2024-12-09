@@ -47,13 +47,14 @@ species_df <- data.frame(
 dat_ll <- readRDS(here::here(paste0("data/GOA/", phase, "/dat_allspp.RDS"))) %>%
   filter(species_code == species_df$species_code[species_df$species==species]) 
 
+#TODO: update as needed given new data pull script
 dat_ll <-  dplyr::transmute(dat_ll,
-                         catch_kg = Catch_KG,
-                         year = as.integer(Year),
+                         catch_kg, #TODO: match data pull name
+                         year = as.integer(year),
                          vessel = "missing",
-                         effort = AreaSwept_km2,
-                         lat = Lat,
-                         lon = Lon,
+                         effort = AreaSwept_km2, #TODO: match data pull name
+                         lat = X,
+                         lon = Y,
                          pass = 0) %>% 
                 as.data.frame() # ensure not a tibble
 ```
