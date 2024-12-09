@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 
 ```{r packages, message=FALSE, warning=FALSE, cache=FALSE}
 #pak::pak("pbs-assess/sdmTMB")
-#remotes::install_github("afsc-gap-products/coldpool")
+#pak::pak("afsc-gap-products/coldpool")
 library(VAST)
 library(sp)
 library(sdmTMB)
@@ -30,7 +30,7 @@ library(ggplot2)
 library(here)
 
 species <- "pollock" 
-#pollock pacific_cod yellowfin_sole ...
+#pollock pacific_cod yellowfin_sole
 ```
 
 We will fit geostatistical spatiotemporal models with VAST and sdmTMB for the purposes of index standardization and compare the outputs given the same data. We will use data from the EBS/NBS AFSC GAP bottom trawl surveys. The density units we will work in are either kg/km^2^ or n/km^2^, for biomass or numerical abundance. 
@@ -418,14 +418,12 @@ ggplot(filter(both_i, stratum == "Both"), aes(x = year, y = est, ymin = lwr, yma
 ggplot(filter(both_i, stratum == "EBS"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
   geom_ribbon(alpha = 0.1) +
   geom_line(alpha = 0.8) + 
-  #ylim(0, max(both_i$upr)) +
   ggtitle("EBS") +
   coord_cartesian(expand = FALSE)
 
 ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
   geom_ribbon(alpha = 0.1) +
   geom_line(alpha = 0.8) + 
-  #ylim(0, max(both_i$upr)) +
   ggtitle("NBS") +
   coord_cartesian(expand = FALSE)
 ```
