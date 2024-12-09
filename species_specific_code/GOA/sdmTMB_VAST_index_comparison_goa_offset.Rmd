@@ -28,7 +28,7 @@ library(dplyr)
 library(ggplot2)
 library(here)
 
-species <- "Sebastes_alutus" 
+species <- "Sebastes_polyspinis" 
 #Gadus_macrocephalus Sebastes_alutus Sebastes_polyspinis Sebastes_variabilis
 ```
 
