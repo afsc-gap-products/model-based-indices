@@ -8,7 +8,8 @@ rm(list = ls())
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Import Libraries, using gapindex version 3.0.2
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-devtools::install_github(repo = "afsc-gap-products/gapindex@v3.0.2", dependencies = TRUE)
+devtools::install_github(repo = "afsc-gap-products/gapindex@v3.0.2", 
+                         dependencies = TRUE)
 library(gapindex)
 library(sf)
 library(sdmTMB)
@@ -20,6 +21,9 @@ library(here)
 ##   Double-check how dusky rockfish is pulled...
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 channel <- gapindex::get_connected(check_access = F)
+
+## specify whether hindcast or production phase
+phase <- c("hindcast", "production")[1]
 
 species_df <- data.frame(
   SPECIES_CODE = c(310, 10110, 21720, 21740, 30060, 30420, 30150, 30152),
@@ -61,20 +65,17 @@ dat_allspp <- with(gapindex_cpue, data.frame(hauljoin = HAULJOIN,
                                              X = E_km_z5,
                                              Y = N_km_z5))
 
+saveRDS(dat_allspp, file = paste0("data/GOA/", phase, "/", "dat_allspp.RDS"))
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Format mesh
-##   I downloaded the mesh from a 2023 GOA PCod production VAST fit, not 
-##   sure how we standardize this bit...
+##   Pass mesh from prior model (download to location below from Google Drive)
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# goa_cod_vast_fit <- readRDS(file = "C:/Users/zack.oyafuso/Downloads/Gadus_macrocephalus_VASTfit.RDS")
-# goa_vast_mesh <- goa_cod_vast_fit$spatial_list$MeshList$anisotropic_mesh
-# saveRDS(object = goa_vast_mesh, file = "extrapolation_grids/goa_vast_mesh.RDS")
-goa_vast_mesh <- readRDS(file = "extrapolation_grids/goa_vast_mesh.RDS")
+goa_vast_mesh <- readRDS(file = "meshes/goa_vast_mesh.RDS")
 
 goa_sdmtmb_mesh <- sdmTMB::make_mesh(data = dat_allspp, 
                                      xy_cols = c("X", "Y"), 
-                                     mesh = goa_vast_mesh) #pass same mesh as VAST model
+                                     mesh = goa_vast_mesh)
 
+saveRDS(goa_sdmtmb_mesh, file = "meshes/goa_sdmtmb_mesh.RDS")
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Format prediction grid
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -92,9 +93,4 @@ goa_grid[, c("X", "Y")] <- sf::st_coordinates(x = sf_grid)
 
 goa_sdmtmb_grid <- goa_grid[, c("Lon", "Lat", "X", "Y", "Area_km2")]
 
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Save data objects somewhere...
-##   Things to consider: where do these data objects live? Which, if not all,
-##   get pushed to GitHub? Should we save dat_allspp itself or loop through
-##   and subset and save individual species cpue records? 
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+saveRDS(goa_sdmtmb_grid, file = "extrapolation_grids/goa_sdmtmb_grid.RDS")
