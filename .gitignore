@@ -9,12 +9,10 @@
 *.png
 *.gif
 *.csv
-data/
 results/
 results_age/
 testing/
 presentation/
-/data/
 /results/**/*.RDS
 /results/**/*.RData
 /results/**/*.dll
