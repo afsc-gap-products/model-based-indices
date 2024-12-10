@@ -80,11 +80,12 @@ dat$year_f <- as.factor(dat$Year)
 # sp::proj4string(dat) <- sp::CRS("+proj=longlat +datum=WGS84")
 # dat <- as.data.frame(spTransform(dat, CRS("+proj=utm +zone=2")))
 # scale to km so values don't get too large
-dat$X <- dat$coords.x1 / 1000
-dat$Y <- dat$coords.x2 / 1000
+# dat$X <- dat$coords.x1 / 1000
+# dat$Y <- dat$coords.x2 / 1000
 
 mesh_sdmtmb <- sdmTMB::make_mesh(dat, xy_cols = c("X", "Y"), 
-                                 mesh = VASTfit_age$spatial_list$MeshList$anisotropic_mesh)
+                                 mesh = VASTfit_age$spatial_list$MeshList$anisotropic_mesh,
+                                 fmesher_func = fm_mesh_2d())
 
 # TinyVAST mesh
 mesh <- fm_mesh_2d(loc = Data[,c("X","Y")],
@@ -137,7 +138,7 @@ saveRDS(myfit, here(workDir, "results", "tinyVAST_fit_mesh.RDS"))
 
 #' ----------------------------------------------------------------------------
 # Load back fit object if needed
-# myfit <- readRDS(here(workDir, "results", "tinyVAST_fit.RDS"))
+myfit <- readRDS(here(workDir, "results", "tinyVAST_fit_mesh.RDS"))
 # Get shapefile for survey extent
 data(bering_sea)
 
