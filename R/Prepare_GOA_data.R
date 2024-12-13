@@ -75,17 +75,17 @@ gapindex_cpue[, c("E_km_z5", "N_km_z5")] <-
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 dat_allspp <- with(gapindex_cpue, data.frame(hauljoin = HAULJOIN,
                                              year = as.integer(YEAR),
-                                             lon_dd = LONGITUDE_DD_START,
-                                             lat_dd = LATITUDE_DD_START,
+                                             lon = LONGITUDE_DD_START,
+                                             lat = LATITUDE_DD_START,
                                              X = E_km_z5,
                                              Y = N_km_z5,
                                              species_code = SPECIES_CODE,
                                              species = SPECIES_NAME,
                                              catch_kg = WEIGHT_KG, 
-                                             count = COUNT,
+                                             catch_n = COUNT,
                                              effort_km2 = AREA_SWEPT_KM2,
                                              cpue_kg_km2 = CPUE_KGKM2,
-                                             cpue_no_km2 = CPUE_NOKM2))
+                                             cpue_n_km2 = CPUE_NOKM2))
 
 ## Save catch and effort data
 saveRDS(dat_allspp, file = paste0(data_dir, "dat_allspp.RDS"))
@@ -107,20 +107,19 @@ saveRDS(goa_sdmtmb_mesh, file = "meshes/goa_sdmtmb_mesh.RDS")
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 goa_grid <- read.csv(file = here("extrapolation_grids", 
                                  "GOAThorsonGrid_Less700m.csv"))
-goa_grid <- data.frame(Lat=goa_grid$Latitude, 
-                       Lon=goa_grid$Longitude,
-                       Area_km2=goa_grid$Shape_Area/1000000)
+goa_grid <- data.frame(lat = goa_grid$Latitude, 
+                       lon = goa_grid$Longitude,
+                       area_km2 = goa_grid$Shape_Area/1000000)
 
 ## Turn the goa grid df into a lat/lon spatial object 
 sf_grid <- sf::st_as_sf(x = goa_grid,
-                        coords = c("Lon", "Lat"),
-                        crs = "+proj=longlat +datum=WGS84"
-)
+                        coords = c("lon", "lat"),
+                        crs = "+proj=longlat +datum=WGS84")
 
 ## Transform the grid to UTM (Zone 5)
 sf_grid <- sf::st_transform(sf_grid, crs = "+proj=utm +zone=5 +units=km")
 goa_grid[, c("X", "Y")] <- sf::st_coordinates(x = sf_grid)
 
 ## Collate relevant fields and save
-goa_sdmtmb_grid <- goa_grid[, c("Lon", "Lat", "X", "Y", "Area_km2")]
+goa_sdmtmb_grid <- goa_grid[, c("lon", "lat", "X", "Y", "area_km2")]
 saveRDS(goa_sdmtmb_grid, file = "extrapolation_grids/goa_sdmtmb_grid.RDS")
