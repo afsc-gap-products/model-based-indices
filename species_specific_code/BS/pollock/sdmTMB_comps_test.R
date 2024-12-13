@@ -31,7 +31,8 @@ dat <-  transmute(Data,
                   Y = Lat,
                   X = Lon,
                   pass = 0) %>% 
-  as.data.frame() # ensure not a tibble #%>% filter(year != 2020) #drop dummy 2020 data
+  as.data.frame() %>%  # ensure not a tibble
+  filter(year != 2020)  # drop dummy 2020 data
 
 dat$year_f <- as.factor(dat$year)
 
@@ -44,7 +45,7 @@ dat$X <- dat$coords.x1 / 1000
 dat$Y <- dat$coords.x2 / 1000
 
 # Read in VAST fit object to use mesh
-VASTfit <- readRDS(here("VAST_results", "BS", "pollock", "VASTfit.RDS"))
+VASTfit <- readRDS(here("VAST_results", "BS", "pollock", "VASTfit_age.RDS"))
 mesh <- make_mesh(dat, xy_cols = c("X", "Y"), mesh = VASTfit$spatial_list$MeshList$anisotropic_mesh)
 
 # Fit sdmTMB model ------------------------------------------------------------
@@ -63,4 +64,4 @@ fit_sdmTMB <- sdmTMB(
   do_fit = TRUE
 )
 fit_sdmTMB
-saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", species, "index_comparison", "fit_sdmTMB.RDS"))
+saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", Species, "results", "fit_sdmTMB_age.RDS"))
