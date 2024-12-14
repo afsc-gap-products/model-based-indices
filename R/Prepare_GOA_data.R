@@ -91,18 +91,6 @@ dat_allspp <- with(gapindex_cpue, data.frame(hauljoin = HAULJOIN,
 saveRDS(dat_allspp, file = paste0(data_dir, "dat_allspp.RDS"))
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Pass mesh from prior model (download to location below from Google Drive)
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-goa_vast_mesh <- readRDS(file = "meshes/goa_vast_mesh.RDS")
-
-goa_sdmtmb_mesh <- sdmTMB::make_mesh(data = dat_allspp, 
-                                     xy_cols = c("X", "Y"), 
-                                     mesh = goa_vast_mesh)
-
-## Save mesh
-saveRDS(goa_sdmtmb_mesh, file = "meshes/goa_sdmtmb_mesh.RDS")
-
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Format prediction grid
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 goa_grid <- read.csv(file = here("extrapolation_grids", 
