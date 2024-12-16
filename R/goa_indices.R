@@ -142,6 +142,7 @@ for(i in species_list){
     ylim(0, max(both_i$upr)) +
     ggtitle(species) +
     coord_cartesian(expand = FALSE) + 
+    ylab("Biomass (kg)") +
     theme_bw()
   ggsave(file = here("species_specific_code", "GOA", species, phase, 
                      "index_comparison.pdf"), 
