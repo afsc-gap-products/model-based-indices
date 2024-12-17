@@ -177,7 +177,7 @@ tiny_dg_bc <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_prop
 
 # # Update old_props to match tinyVAST test output - only EBS
 tiny_years <- c(1980:2019, 2021:this_year)
-new_props <- new_props %>% filter(Year %in% tiny_years & Region == "EBS")
+new_props <- new_props %>% filter(Year %in% tiny_years & Region == "Both")
 
 # Set names for old and new comps
 # names_comps <- c("original", "original", "original", "VAST mesh", "VAST mesh", "original", "bias correction", "bias correction")
@@ -224,8 +224,8 @@ summary_props_all
 
 sum_props_tweedie <- compare_props(props = list(new_props, tiny_tweedie, 
                                                 tiny_mesh, tiny_bc),
-                                   names = c("VAST", "tiny Tweedie", 
-                                             "old mesh", "bias correction"))
+                                   names = c("VAST", "1 - tiny Tweedie", 
+                                             "3 - old mesh", "2 - bias correction"))
 sum_tweedie_all <- sum_props_tweedie$barplot
 sum_tweedie_all
 
