@@ -14,13 +14,9 @@ library(here)
 
 #' To start, we load sampling data that has undergone first-stage expansion. 
 #' This arises when each primary sampling unit includes secondary subsampling 
-#' of ages, and the subsampled proporrtion-at-age in each primary unit has been 
+#' of ages, and the subsampled proportion-at-age in each primary unit has been 
 #' expanded to the total abundance in that primary sample:
 #' ----------------------------------------------------------------------------
-# data( bering_sea_pollock_ages )
-# 
-# Data = bering_sea_pollock_ages  # SNW: rename, as we're no longer subsampling the years
-
 species <- 21740
 this_year <- lubridate::year(Sys.Date())
 # this_year <- 2022  # different year for debugging
@@ -30,7 +26,7 @@ workDir <- here::here("species_specific_code", "BS", Species)
 Data <- read.csv(here("species_specific_code", "BS", Species, "data", 
                       paste0("VAST_ddc_alk_", this_year, ".csv")))
 
-# Add Year-_Age interaction
+# Add Year-Age interaction
 Data$Age <- factor(paste0("Age_", Data$Age))
 Data$Year_Age <- interaction(Data$Year, Data$Age)
 
@@ -68,25 +64,6 @@ dsem <- "
   Age_15 -> Age_15, 1, lag1
 "
 
-# VAST mesh
-VASTfit_age <- readRDS(here("VAST_results", "BS", "pollock", "VASTfit_age.RDS"))
-mesh_vast <- VASTfit_age$spatial_list$MeshList$anisotropic_mesh
-
-# sdmTMB mesh
-dat <- Data 
-dat$year_f <- as.factor(dat$Year)
-
-# sp::coordinates(dat) <- ~ X + Y
-# sp::proj4string(dat) <- sp::CRS("+proj=longlat +datum=WGS84")
-# dat <- as.data.frame(spTransform(dat, CRS("+proj=utm +zone=2")))
-# scale to km so values don't get too large
-# dat$X <- dat$coords.x1 / 1000
-# dat$Y <- dat$coords.x2 / 1000
-
-mesh_sdmtmb <- sdmTMB::make_mesh(dat, xy_cols = c("X", "Y"), 
-                                 mesh = VASTfit_age$spatial_list$MeshList$anisotropic_mesh,
-                                 fmesher_func = fm_mesh_2d())
-
 # TinyVAST mesh
 mesh <- fm_mesh_2d(loc = Data[,c("X","Y")],
                    cutoff = 50)
@@ -94,6 +71,16 @@ mesh <- fm_mesh_2d(loc = Data[,c("X","Y")],
 control <- tinyVASTcontrol(getsd = FALSE,
                            profile = c("alpha_j"),  
                            trace = 0)
+
+# SNW: use mesh from the VAST model for bridging ------------------------------
+# Read in VAST model & get mesh
+VASTfit_age <- readRDS(here("VAST_results", "BS", "pollock", "VASTfit_age.RDS"))
+mesh_vast <- VASTfit_age$spatial_list$MeshList$anisotropic_mesh
+
+# Format mesh for tinyVAST (using a function from sdmTMB; same method as sdmTMB index bridging)
+old_mesh <- sdmTMB::make_mesh(dat, xy_cols = c("X", "Y"), 
+                              mesh = VASTfit_age$spatial_list$MeshList$anisotropic_mesh,
+                              fmesher_func = fm_mesh_2d())
 
 #' We could run the model with a log-linked Tweedie distribution and a single 
 #' linear predictor:
@@ -128,7 +115,7 @@ myfit <- tinyVAST(
   variable_column = "Age",
   time_column = "Year",
   distribution_column = "Age",
-  spatial_graph = mesh_sdmtmb,
+  spatial_graph = old_mesh,
   control = control
 )
 stop.time <- Sys.time()
@@ -137,7 +124,11 @@ stop.time <- Sys.time()
 saveRDS(myfit, here(workDir, "results", "tinyVAST_fit_mesh.RDS"))
 
 #' ----------------------------------------------------------------------------
-# Load back fit object if needed
+#' SNW: this step takes longer than the model fitting and is memory-intensive. 
+#' It's a good idea to re-start R before this point. You'll need to re-run lines
+#' 10-40, too.
+
+# Load back fit object if you restarted R
 myfit <- readRDS(here(workDir, "results", "tinyVAST_fit_mesh.RDS"))
 # Get shapefile for survey extent
 data(bering_sea)
