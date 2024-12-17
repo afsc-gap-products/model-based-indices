@@ -166,16 +166,21 @@ index_diff
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
 # old_props <- read.csv(here(workDir, "results", "2023 Production", "Comps", "proportions.csv"))
-new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
-tiny_dg <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv"))
-tiny_tweedie <- read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props.csv"))
+new_props <- cbind(read.csv(here(workDir, "results", "Comps", "proportions.csv")), distribution = "VAST")
+tiny_tweedie <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props.csv")), distribution = "Tweedie")
+tiny_dg <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv")), distribution = "Delta Gamma")
+tiny_mesh <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_mesh.csv")), distribution = "Tweedie")
+tiny_mesh_dg <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_mesh_dg.csv")), distribution = "Delta Gamma")
+tiny_logn <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_logn.csv")), distribution = "Lognormal")
+tiny_bc <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_bc.csv")), distribution = "Tweedie")
+tiny_dg_bc <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg_bc.csv")), distribution = "Delta Gamma")
 
 # # Update old_props to match tinyVAST test output - only EBS
 tiny_years <- c(1980:2019, 2021:this_year)
 new_props <- new_props %>% filter(Year %in% tiny_years & Region == "EBS")
 
 # Set names for old and new comps
-names_comps <- c("VAST", "tiny delta-gamma", "tiny Tweedie")
+# names_comps <- c("original", "original", "original", "VAST mesh", "VAST mesh", "original", "bias correction", "bias correction")
 
 ## Combine age comp models into one plot --------------------------------------
 compare_props <- function(props, names, last_year) {
@@ -183,7 +188,7 @@ compare_props <- function(props, names, last_year) {
   for(i in 1:length(props)) {
     prop <- props[[i]]
     colnames(prop)[1:15] <- 1:15
-    prop <- melt(prop, id.vars = c("Year", "Region"),
+    prop <- melt(prop, id.vars = c("Year", "Region", "distribution"),
                  variable.name = "Age", value.name = "Proportion")
     prop$version <- names[i]
     df <- rbind.data.frame(df, prop)
@@ -194,7 +199,7 @@ compare_props <- function(props, names, last_year) {
     scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
     scale_x_discrete(breaks = c(1, 5, 10, 15)) +
     ylab("Proportion-at-age") +
-    facet_wrap(~ Year, ncol = 6, dir = "v") 
+    facet_wrap(~ Year, ncol = 6, dir = "v")
   
   boxplot <- ggplot(df, aes(x = Age, y = Proportion, color = version, fill = version)) +
     geom_boxplot(alpha = 0.5) +
@@ -206,14 +211,26 @@ compare_props <- function(props, names, last_year) {
   return(list(barplot = barplot, boxplot = boxplot))
 }
 
-comp_plots <- compare_props(props = list(new_props, tiny_dg, tiny_tweedie),
-                           names = names_comps)
+comp_all_plots <- compare_props(props = list(new_props, tiny_tweedie, tiny_dg, 
+                                             tiny_mesh, tiny_mesh_dg, tiny_logn, 
+                                             tiny_bc, tiny_dg_bc),
+                                names = c("VAST", "original", "original", 
+                                          "VAST mesh", "VAST mesh", "original", 
+                                          "bias correction", "bias correction"))
 
-all_props <- comp_plots$barplot
-all_props
+summary_props_all <- comp_all_plots$boxplot + 
+  facet_wrap(~ distribution)
+summary_props_all
 
-summary_props <- comp_plots$boxplot
-summary_props
+sum_props_tweedie <- compare_props(props = list(new_props, tiny_tweedie, 
+                                                tiny_mesh, tiny_bc),
+                                   names = c("VAST", "tiny Tweedie", 
+                                             "old mesh", "bias correction"))
+sum_tweedie_all <- sum_props_tweedie$barplot
+sum_tweedie_all
+
+sum_tweedie_sum <- sum_props_tweedie$boxplot
+sum_tweedie_sum
 
 # Plot difference between two models ------------------------------------------
 comp_difference <- function(new, old, names, save_results = FALSE) {
@@ -250,8 +267,8 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
   return(plot)
 }
 
-comp_diff <- comp_difference(new = tiny_tweedie, old = new_props,
-                             names = c(names_comps[3], names_comps[1]),
+comp_diff <- comp_difference(new = tiny_mesh, old = new_props,
+                             names = c("Tweedie/old mesh", "VAST"),
                              save_results = FALSE)
 comp_diff
 
@@ -290,8 +307,8 @@ comp_percent_diff <- function(new, old, names, save_results = FALSE) {
   return(plot)
 }
 
-per_diff <- comp_percent_diff(new = tiny_tweedie, old = new_props,
-                              names = c(names_comps[3], names_comps[1]),
+per_diff <- comp_percent_diff(new = tiny_mesh, old = new_props,
+                              names = c("Tweedie/old mesh", "VAST"),
                               save_results = FALSE)
 per_diff
 
@@ -332,23 +349,36 @@ comp_trends <- function(new, old, names) {
   return(plot_both)
 }
 
-comp_trends <- comp_trends(new = tiny_tweedie, old = new_props,
-                           names = c(names_comps[3], names_comps[1]))
+comp_trends <- comp_trends(new = tiny_mesh, old = new_props,
+                           names = c("Tweedie/old mesh", "VAST"))
 comp_trends
 
+# tinyVAST plots save ---------------------------------------------------------
+ggsave(summary_props_all, filename = here(workDir, "results", save_dir, "tiny_summary.png"),
+       width=180, height=120, units="mm", dpi=300)
+ggsave(sum_tweedie_all, filename = here(workDir, "results", save_dir, "tweedie_compare.png"),
+       width=200, height=180, units="mm", dpi=300)
+ggsave(sum_tweedie_sum, filename = here(workDir, "results", save_dir, "tweedie_summary.png"),
+       width=200, height=120, units="mm", dpi=300)
+ggsave(comp_diff, filename = here(workDir, "results", save_dir, "tweedie_mesh_diff.png"),
+       width=200, height=200, units="mm", dpi=300)
+ggsave(per_diff, filename = here(workDir, "results", save_dir, "tweedie_mesh_per_diff.png"),
+       width=200, height=200, units="mm", dpi=300)
+ggsave(comp_trends, filename = here(workDir, "results", save_dir, "tweedie_mesh_trends.png"),
+       width=260, height=120, units="mm", dpi=300)
 
 # Save plots ------------------------------------------------------------------
-ggsave(index_comp, filename = here(workDir, "results", save_dir, "index_comparison.png"),
-       width=170, height=120, units="mm", dpi=300)
-ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_difference.png"),
-       width=170, height=120, units="mm", dpi=300)
-ggsave(all_props, filename = here(workDir, "results", save_dir, "age_comp_compare.png"),
-       width=200, height=180, units="mm", dpi=300)
-ggsave(summary_props, filename = here(workDir, "results", save_dir, "age_comp_summary.png"),
-       width=200, height=120, units="mm", dpi=300)
-ggsave(comp_diff, filename = here(workDir, "results", save_dir, "age_comp_diff.png"),
-       width=200, height=200, units="mm", dpi=300)
-ggsave(per_diff, filename = here(workDir, "results", save_dir, "age_comp_per_diff.png"),
-       width=200, height=200, units="mm", dpi=300)
-ggsave(comp_trends, filename = here(workDir, "results", save_dir, "age_comp_trends.png"),
-       width=260, height=120, units="mm", dpi=300)
+# ggsave(index_comp, filename = here(workDir, "results", save_dir, "index_comparison.png"),
+#        width=170, height=120, units="mm", dpi=300)
+# ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_difference.png"),
+#        width=170, height=120, units="mm", dpi=300)
+# ggsave(all_props, filename = here(workDir, "results", save_dir, "age_comp_compare.png"),
+#        width=200, height=180, units="mm", dpi=300)
+# ggsave(summary_props, filename = here(workDir, "results", save_dir, "age_comp_summary.png"),
+#        width=200, height=120, units="mm", dpi=300)
+# ggsave(comp_diff, filename = here(workDir, "results", save_dir, "age_comp_diff.png"),
+#        width=200, height=200, units="mm", dpi=300)
+# ggsave(per_diff, filename = here(workDir, "results", save_dir, "age_comp_per_diff.png"),
+#        width=200, height=200, units="mm", dpi=300)
+# ggsave(comp_trends, filename = here(workDir, "results", save_dir, "age_comp_trends.png"),
+#        width=260, height=120, units="mm", dpi=300)
