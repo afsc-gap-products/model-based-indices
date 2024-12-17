@@ -65,3 +65,54 @@ fit_sdmTMB <- sdmTMB(
 )
 fit_sdmTMB
 saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", Species, "results", "fit_sdmTMB_age.RDS"))
+
+# Get abundance density indices for each year-age combination -----------------
+fit_sdmTMB <- readRDS(here("species_specific_code", "BS", Species, "results", "fit_sdmTMB_age.RDS"))
+
+# Load in grids
+load(here("extrapolation_grids", "eastern_bering_sea_grid.rda"))
+load(here("extrapolation_grids", "northern_bering_sea_grid.rda"))
+
+# EBS grid
+grid_ll_ebs <- as.data.frame(eastern_bering_sea_grid)
+names(grid_ll_ebs) <- tolower(names(grid_ll_ebs))
+grid_ll_ebs <- grid_ll_ebs %>% 
+  rename(X = lon, Y = lat)
+coordinates(grid_ll_ebs) <- ~ X + Y
+proj4string(grid_ll_ebs) <- CRS("+proj=longlat +datum=WGS84")
+grid_ebs <- as.data.frame(spTransform(grid_ll_ebs, CRS("+proj=utm +zone=2")))
+grid_ebs$X <- grid_ebs$coords.x1 / 1000 # scale to km to work with smaller numbers
+grid_ebs$Y <- grid_ebs$coords.x2 / 1000 
+
+# NBS grid
+grid_ll_nbs <- as.data.frame(northern_bering_sea_grid)
+names(grid_ll_nbs) <- tolower(names(grid_ll_nbs))
+grid_ll_nbs <- grid_ll_nbs %>% 
+  rename(X = lon, Y = lat)
+coordinates(grid_ll_nbs) <- ~ X + Y
+proj4string(grid_ll_nbs) <- CRS("+proj=longlat +datum=WGS84")
+grid_nbs <- as.data.frame(spTransform(grid_ll_nbs, CRS("+proj=utm +zone=2")))
+grid_nbs$X <- grid_nbs$coords.x1 / 1000 # scale to km to work with smaller numbers
+grid_nbs$Y <- grid_nbs$coords.x2 / 1000 
+
+# Combined grid
+grid <- bind_rows(grid_nbs, grid_ebs)
+
+# replicate extrapolation grids for each year in data
+pred_grid_ebs <- replicate_df(grid_ebs, "year_f", unique(dat$year_f))
+pred_grid_nbs <- replicate_df(grid_nbs, "year_f", unique(dat$year_f))
+pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
+pred_grid_ebs$year <- as.integer(as.character(factor(pred_grid_ebs$year_f)))
+pred_grid_nbs$year <- as.integer(as.character(factor(pred_grid_nbs$year_f)))
+pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
+
+# Loop over ages - getting an index for each age
+ages <- unique(dat$age)
+ind_list <- lapply(ages, \(a) {
+  print(a)
+  pred_grid_ebs$age <- a
+  pred <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
+  ind <- get_index(pred)  # SNW: not specifying the 'area' term here?
+  data.frame(ind, Age = a)
+})
+ind <- do.call(rbind, ind_list)
