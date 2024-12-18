@@ -9,12 +9,10 @@
 *.png
 *.gif
 *.csv
-data/
 results/
 results_age/
 testing/
 presentation/
-/data/
 /results/**/*.RDS
 /results/**/*.RData
 /results/**/*.dll
@@ -30,3 +28,6 @@ VAST_results/
 /species_specific_code/BS/yellowfin-sole/production/
 /species_specific_code/BS/yellowfin_sole/production
 /dev/
+
+!meshes/*
+!extrapolation_grids/*

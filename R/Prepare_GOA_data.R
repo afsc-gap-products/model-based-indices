@@ -1,196 +1,113 @@
-library(TMB)
-library(devtools)
-library(dplyr)
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Compare GOA VAST input to output from the gapindex R package
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-current_end_year <- 2023
-requested_start_year <- 1990
-species_code <- c(21720,30152,30150,310)[2:3]#[4]#[1]#[2:3] #c(P.cod, dusky rockfish, dusky and dark rockfishes unid.)
-#310 Squalus suckleyi spiny dogfish
-#species_code <- c(30420,30060,21740,10110,10261,10262,10130)[2] #c(northern rockfish, POP, pollock, arrowtooth, northern rock sole, southern rock sole, flathead sole)
-#species_code <- 10260 ## rock sole unidentified.
-#species_code <- 23041 # capelin
+## Restart R Session before running
+rm(list = ls())
 
-PKG <- c("RODBC")
-for (p in PKG) {
-  if(!require(p,character.only = TRUE)) {  
-    install.packages(p)
-    require(p,character.only = TRUE)}
-}
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Import Libraries, using gapindex version 3.0.2
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+devtools::install_github(repo = "afsc-gap-products/gapindex@v3.0.2", 
+                         dependencies = TRUE)
+library(gapindex)
+library(sf)
+library(sdmTMB)
+library(here)
 
-# channel<-odbcConnect(dsn = "AFSC",
-#                      uid = " ", # change
-#                      pwd = " ", #change
-#                      believeNRows = FALSE)
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Connect to Oracle. Make sure you're on the VPN/network. 
+##   Set up constants
+##   Double-check how dusky rockfish is pulled...
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+channel <- gapindex::get_connected(check_access = F)
 
-# odbcGetInfo(channel)
-source("R/get_connected.R")
+## specify whether hindcast or production phase, create data folder
+phase <- c("hindcast", "production")[1]
+data_dir <- paste0("data/GOA/", phase, "/")
+if (!dir.exists(paths = data_dir)) dir.create(path = data_dir, recursive = TRUE)
 
-##need to connect to VPN for this to work
-cruise <- RODBC::sqlQuery(channel, "SELECT * FROM RACEBASE.CRUISE")
-cruise$YEAR = as.numeric(substring(cruise$START_DATE, 8,9))
-cruise$YEAR <- ifelse(cruise$YEAR < 21, cruise$YEAR + 2000, cruise$YEAR + 1900)
-cruise = cruise[which(cruise$YEAR >= requested_start_year),]
-#cruise = cruise[which(cruise$YEAR >= 1984),]
-#cruise = cruise[which(cruise$YEAR >= 1996),]
-#cruise = cruise[which(cruise$YEAR >= 1990),]
-
-haul <- RODBC::sqlQuery(channel, "SELECT * FROM RACEBASE.HAUL")
-haul = haul[which(haul$REGION =='GOA'),]
-haul = haul[which(haul$ABUNDANCE_HAUL=='Y'),]
-haul = haul[which(haul$HAUL_TYPE == 3),]
-haul = haul[which(haul$PERFORMANCE >= 0),]
-haul$YEAR = as.numeric(substring(haul$START_TIME, 1,4))
-haul = haul[which(haul$YEAR >= requested_start_year),]
-#haul = haul[which(haul$YEAR >= 1984),]
-#haul = haul[which(haul$YEAR >= 1996),]
-#haul = haul[which(haul$YEAR >= 1990),]
-
-catch <- RODBC::sqlQuery(channel, "SELECT * FROM RACEBASE.CATCH")
-catch = catch[which(catch$REGION == "GOA"),]
-
-#dplyr::filter(COMMON_NAME %in% c("dusky and dark rockfishes unid.", "dusky rockfish"))
-if(species_code == 310){
-  species_name <- "Squalus suckleyi"  #spiny dogfish
-}
-if(species_code == 21720){
-  species_name <- "Gadus_macrocephalus"  #Pcod
-}
-if(species_code == 30152){
-  species_name <- "Sebastes_variabilis" #dusky (and dark_ rockfish)
-}
-if(species_code == 30150){
-  species_name <- "Sebastes_variabilis" #dusky and dark rockfish
-}
-if(species_code == 30420){
-  species_name <- "Sebastes_polyspinis" #northern rockfish
-}
-if(species_code == 30060){
-  species_name <- "Sebastes_alutus" #POP
-}
-if(species_code == 21740){
-  species_name <- "Gadus_chalcogrammus" #pollock
-}
-if(species_code == 10110){
-  species_name <- "Atheresthes_stomias" #arrowtooth
-}
-if(species_code == 10261){
-  species_name <- "Lepidopsetta_polyxystra" #northern rock sole
-}
-if(species_code == 10262){
-  species_name <- "Lepidopsetta_bilineata" #southern rock sole
-}
-if(species_code == 10130){
-  species_name <- "Hippoglossoides_elassodon" #flathead sole
-}
-if(species_code == 10260){
-  species_name <- "Lepidopsetta_sp." #rock sole unid.
-}
-if(species_code == 23041){
-  species_name <- "capelin" 
-}
-
-# Set up folder to store species specific results
-folder <- paste0(getwd(),"/species_specific_code/GOA/",species_name)
-dir.create(folder)
-folder <- paste0(getwd(),"/species_specific_code/GOA/",species_name,"/data")
-dir.create(folder)
-folder <- paste0(getwd(),"/species_specific_code/GOA/",species_name,"/results")
-dir.create(folder)
-
-##for rock sole unidentified (fill in zeros only for years that there is positive catch for this specific species)
-if(species_code == 10260){
-  catch_by_species <- subset(catch, catch$SPECIES_CODE==species_code)
-  catch_by_species <- data.frame(HAULJOIN = catch_by_species$HAULJOIN,
-                                 CRUISEJOIN = catch_by_species$CRUISEJOIN,
-                                 WEIGHT = catch_by_species$WEIGHT,
-                                 NUMBER_FISH = catch_by_species$NUMBER_FISH,
-                                 SPECIES_CODE = catch_by_species$SPECIES_CODE,
-                                 CATCHJOIN = catch_by_species$CATCHJOIN,
-                                 SUBSAMPLE_CODE = catch_by_species$SUBSAMPLE_CODE,
-                                 VOUCHER = catch_by_species$VOUCHER)
-  data_sub <- left_join(haul, catch_by_species)
-  positive_catch_years <- unique(data_sub$YEAR[which(data_sub$WEIGHT != 0)]) ##IDs years with positive catch (for design-based unidenf. rock sole )
-  data_sub <- data_sub[which(data_sub$YEAR %in% positive_catch_years),]##subset to only include years with positive catch
-}
-
-
-##for everything that isn't duskies/dark rockfish
-if(species_code == 23041 | species_code == 310 | species_code == 21720 | species_code == 30420 | species_code == 30060 | species_code == 21740 | species_code == 10110| species_code == 10261 | species_code == 10262| species_code == 10130 )
-{
-  catch_by_species <- subset(catch, catch$SPECIES_CODE==species_code)
-  catch_by_species <- data.frame(HAULJOIN = catch_by_species$HAULJOIN,
-                                 CRUISEJOIN = catch_by_species$CRUISEJOIN,
-                                 WEIGHT = catch_by_species$WEIGHT, 
-                                 NUMBER_FISH = catch_by_species$NUMBER_FISH,
-                                 SPECIES_CODE = catch_by_species$SPECIES_CODE,
-                                 CATCHJOIN = catch_by_species$CATCHJOIN,
-                                 SUBSAMPLE_CODE = catch_by_species$SUBSAMPLE_CODE,
-                                 VOUCHER = catch_by_species$VOUCHER)
-  data_sub <- merge(haul, catch_by_species, by="HAULJOIN", all.x=TRUE)
-}
-
-if(species_code == 30152 | species_code == 30150){  #this bit deals with duskies & dark
-  catch_by_species1 <- subset(catch, catch$SPECIES_CODE==species_code[1])
-  catch_by_species2 <- subset(catch, catch$SPECIES_CODE==species_code[2])
-  
-  catch_by_species1 <- data.frame(HAULJOIN = catch_by_species1$HAULJOIN,
-                                  CRUISEJOIN = catch_by_species1$CRUISEJOIN,
-                                  WEIGHT = catch_by_species1$WEIGHT, 
-                                  NUMBER_FISH = catch_by_species1$NUMBER_FISH,
-                                  SPECIES_CODE = catch_by_species1$SPECIES_CODE,
-                                  CATCHJOIN = catch_by_species1$CATCHJOIN,
-                                  SUBSAMPLE_CODE = catch_by_species1$SUBSAMPLE_CODE,
-                                  VOUCHER = catch_by_species1$VOUCHER)
-  
-  
-  catch_by_species2 <- data.frame(HAULJOIN = catch_by_species2$HAULJOIN,
-                                  CRUISEJOIN = catch_by_species2$CRUISEJOIN,
-                                  WEIGHT = catch_by_species2$WEIGHT, 
-                                  NUMBER_FISH = catch_by_species2$NUMBER_FISH,
-                                  SPECIES_CODE = catch_by_species2$SPECIES_CODE,
-                                  CATCHJOIN = catch_by_species2$CATCHJOIN,
-                                  SUBSAMPLE_CODE = catch_by_species2$SUBSAMPLE_CODE,
-                                  VOUCHER = catch_by_species2$VOUCHER)
-  # ##merge dark and dusky data
-  data_sub1 <- merge(haul[which(haul$YEAR %in% c(1990, 1996:current_end_year)),], catch_by_species1, by="HAULJOIN", all.x=TRUE)
-  data_sub1$SPECIES_CODE[which(is.na(data_sub1$SPECIES_CODE))] <- 30152
-  data_sub1$WEIGHT[which(is.na(data_sub1$WEIGHT))] <- 0
-  data_sub2 <- merge(haul[which(haul$YEAR %in% c(1984, 1987, 1990, 1993)),], catch_by_species2, by="HAULJOIN", all.x=TRUE)
-  data_sub2$SPECIES_CODE[which(is.na(data_sub2$SPECIES_CODE))] <- 30150
-  data_sub2$WEIGHT[which(is.na(data_sub2$WEIGHT))] <- 0
-  
-  
-  data_sub <-  rbind(data_sub1, data_sub2)
-}
-
-################################################################################################################
-# ##fill in NA's with zeros
-data_sub$WEIGHT[which(is.na(data_sub$WEIGHT))] <- 0
-data_sub$NUMBER_FISH[which(is.na(data_sub$NUMBER_FISH))] <- 0
-nrow(data_sub[which(data_sub$WEIGHT == 0),])
-nrow(data_sub[which(data_sub$NUMBER_FISH == 0),])
-
-# ##calculate effort and CPUE
-data_sub2 <- data_sub %>% 
-  dplyr::mutate(EFFORT = DISTANCE_FISHED * (NET_WIDTH * 0.001) * 100) %>% 
-  dplyr::mutate(wCPUE = WEIGHT/EFFORT,
-                nCPUE = NUMBER_FISH/EFFORT)
-
-################################################################################################################
-GOA_DF <- data_sub2
-
-Data_Geostat <-  transmute(GOA_DF,
-                           Hauljoin = HAULJOIN,
-                           Stratum = STRATUM,
-                           Catch_KG = wCPUE*100, # sumfish calculates CPUE in kg/ha this converts it to kg/km^2
-                           Year = YEAR,
-                           Vessel = "missing",
-                           AreaSwept_km2 = 1, # area swept is 1 when using CPUE instead of observed weight
-                           Lat = START_LATITUDE,
-                           Lon = START_LONGITUDE,
-                           Pass = 0
+species_df <- data.frame(
+  SPECIES_CODE = c(310, 10110, 21720, 21740, 30060, 30420, 30150, 30152),
+  GROUP_CODE =   c(310, 10110, 21720, 21740, 30060, 30420, 30152, 30152)
 )
 
-Data_Geostat$Catch_KG[which(is.na(Data_Geostat$Catch_KG))] <- 0
+year_start <- 1990
+year_end <- 2023
 
-saveRDS(Data_Geostat,paste0(getwd(),"/species_specific_code/GOA/",species_name,"/data/Data_Geostat_",species_name,".rds"))
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Pull catch and effort data and calculate CPUE (zero-filled)
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+gapindex_data <- 
+  gapindex::get_data(survey_set = "GOA",
+                     year_set = year_start:year_end,
+                     spp_codes = species_df,
+                     pull_lengths = FALSE,
+                     taxonomic_source = "GAP_PRODUCTS.TAXONOMIC_CLASSIFICATION",
+                     channel = channel)
+
+gapindex_cpue <- as.data.frame(gapindex::calc_cpue(gapdata = gapindex_data))
+
+## Merge the species name from gapindex_data$species to gapindex_cpue using
+## the SPECIES_CODE field. gapindex_data$species contains a complex of the 
+## Sebastes sp. (dusky/dark) and dusky RF species codes, so the workaround is 
+## only subsetting for species-level records in gapindex$species. Note: we
+## may need a more elegant solution if we include more complexes... 
+gapindex_cpue <- merge(x = gapindex_cpue,
+                       y = subset(x = gapindex_data$species,
+                                  subset = ID_RANK == "species",
+                                  select = c(SPECIES_CODE, SPECIES_NAME)),
+                       by = "SPECIES_CODE")
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Create a lat/lon spatial object of the station locations 
+##   Tranform station spatial object to UTM (zone 5)
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cpue_sf <- sf::st_as_sf(x = gapindex_cpue, 
+                        coords = c("LONGITUDE_DD_START", "LATITUDE_DD_START"), 
+                        crs = "+proj=longlat +datum=WGS84")
+gapindex_cpue[, c("E_km_z5", "N_km_z5")] <-
+  sf::st_coordinates(sf::st_transform(x = cpue_sf, 
+                                      crs = "+proj=utm +zone=5 +units=km")) 
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Format CPUE data for sdmTMB() and save
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+dat_allspp <- with(gapindex_cpue, data.frame(hauljoin = HAULJOIN,
+                                             year = as.integer(YEAR),
+                                             lon = LONGITUDE_DD_START,
+                                             lat = LATITUDE_DD_START,
+                                             X = E_km_z5,
+                                             Y = N_km_z5,
+                                             species_code = SPECIES_CODE,
+                                             species = SPECIES_NAME,
+                                             catch_kg = WEIGHT_KG, 
+                                             catch_n = COUNT,
+                                             effort_km2 = AREA_SWEPT_KM2,
+                                             cpue_kg_km2 = CPUE_KGKM2,
+                                             cpue_n_km2 = CPUE_NOKM2))
+
+## Save catch and effort data
+saveRDS(dat_allspp, file = paste0(data_dir, "dat_allspp.RDS"))
+
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##   Format prediction grid
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+goa_grid <- read.csv(file = here("extrapolation_grids", 
+                                 "GOAThorsonGrid_Less700m.csv"))
+goa_grid <- data.frame(lat = goa_grid$Latitude, 
+                       lon = goa_grid$Longitude,
+                       area_km2 = goa_grid$Shape_Area/1000000)
+
+## Turn the goa grid df into a lat/lon spatial object 
+sf_grid <- sf::st_as_sf(x = goa_grid,
+                        coords = c("lon", "lat"),
+                        crs = "+proj=longlat +datum=WGS84")
+
+## Transform the grid to UTM (Zone 5)
+sf_grid <- sf::st_transform(sf_grid, crs = "+proj=utm +zone=5 +units=km")
+goa_grid[, c("X", "Y")] <- sf::st_coordinates(x = sf_grid)
+
+## Collate relevant fields and save
+goa_sdmtmb_grid <- goa_grid[, c("lon", "lat", "X", "Y", "area_km2")]
+saveRDS(goa_sdmtmb_grid, file = "extrapolation_grids/goa_sdmtmb_grid.RDS")

@@ -14,9 +14,11 @@ sql_channel <- gapindex::get_connected()
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Species-Specific Constants. Toggle species row
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-species_info <- data.frame(species_name = c("yellowfin_sole", "Pacific_cod",
-                                            "pollock"),
-                           species_code = c(10210, 21720, 21720),
+## specify whether hindcast or production phase
+phase <- c("hindcast", "production")[1]
+
+species_info <- data.frame(species_name = c("yellowfin_sole", "Pacific_cod"),
+                           species_code = c(10210, 21720),
                            start_year = 1982,
                            current_year = 2024,
                            plus_group = c(20, 12, 15), 
@@ -473,9 +475,9 @@ if (start_year != start_year_age) {
 }
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Save output. Set dir_out to the appropriate directory. 
+##   Save output
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dir_out <- paste0("code/modsquad_bridge/bering_sea/", species_name, "_gp/")
+dir_out <- paste0("species_specific_code/BS/", species_name, phase, "/data/")
 if (!dir.exists(paths = dir_out)) dir.create(path = dir_out, recursive = T)
 for (ifile in c("data_geostat_biomass_index", 
                 "data_geostat_numerical_index",
