@@ -1,0 +1,118 @@
+#' Test of an age composition model using sdmTMB, following a vignette for 
+#' multispecies models: https://github.com/pbs-assess/sdmTMB/blob/main/vignettes/web_only/multispecies.Rmd
+#' and a population composition example: https://github.com/pbs-assess/sdmTMB/blob/comps/scratch/composition-example.R
+# By: Sophia N. Wassermann
+# Contact: sophia.wassermann@noaa.gov
+# Date created: 2024.12.09
+
+library(here)
+library(sdmTMB)
+library(dplyr)
+library(sp)
+
+# Set species -----------------------------------------------------------------
+species <- 21740
+this_year <- lubridate::year(Sys.Date())
+# this_year <- 2022  # different year for debugging
+Species <- "pollock"
+speciesName <- paste0("Walleye_Pollock_age_", as.character(this_year), "_EBS-NBS")
+workDir <- here::here("species_specific_code", "BS", Species)
+Data <- read.csv(here("species_specific_code", "BS", Species, "data", 
+                      paste0("VAST_ddc_alk_", this_year, ".csv")))
+
+# Set up sdmTMB model ---------------------------------------------------------
+# Re-format data for sdmTMB
+dat <-  transmute(Data,
+                  cpue = CPUE_num, # converts cpue from kg/ha to kg/km^2
+                  year = as.integer(Year),
+                  age = as.integer(Age),
+                  vessel = "missing",
+                  effort = 1, # area swept is 1 when using CPUE instead of observed weight
+                  Y = Lat,
+                  X = Lon,
+                  pass = 0) %>% 
+  as.data.frame() %>%  # ensure not a tibble
+  filter(year != 2020)  # drop dummy 2020 data
+
+dat$year_f <- as.factor(dat$year)
+
+# Transform lat & lon to UTM
+coordinates(dat) <- ~ X + Y
+proj4string(dat) <- CRS("+proj=longlat +datum=WGS84")
+dat <- as.data.frame(spTransform(dat, CRS("+proj=utm +zone=2")))
+# scale to km so values don't get too large
+dat$X <- dat$coords.x1 / 1000
+dat$Y <- dat$coords.x2 / 1000
+
+# Read in VAST fit object to use mesh
+VASTfit <- readRDS(here("VAST_results", "BS", "pollock", "VASTfit_age.RDS"))
+mesh <- make_mesh(dat, xy_cols = c("X", "Y"), mesh = VASTfit$spatial_list$MeshList$anisotropic_mesh)
+
+# Fit sdmTMB model ------------------------------------------------------------
+fit_sdmTMB <- sdmTMB( 
+  cpue ~ year_f * age,
+  spatial_varying = ~ 0 + factor(age),
+  data = dat, 
+  mesh = mesh,
+  family = delta_gamma(type = "poisson-link"), 
+  time = "year", 
+  spatial = "off",
+  spatiotemporal = "iid",
+  extra_time = 2020L, #  omit if dummy 2020 included in data
+  silent = FALSE,
+  anisotropy = TRUE,
+  do_fit = TRUE
+)
+fit_sdmTMB
+saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", Species, "results", "fit_sdmTMB_age.RDS"))
+
+# Get abundance density indices for each year-age combination -----------------
+fit_sdmTMB <- readRDS(here("species_specific_code", "BS", Species, "results", "fit_sdmTMB_age.RDS"))
+
+# Load in grids
+load(here("extrapolation_grids", "eastern_bering_sea_grid.rda"))
+load(here("extrapolation_grids", "northern_bering_sea_grid.rda"))
+
+# EBS grid
+grid_ll_ebs <- as.data.frame(eastern_bering_sea_grid)
+names(grid_ll_ebs) <- tolower(names(grid_ll_ebs))
+grid_ll_ebs <- grid_ll_ebs %>% 
+  rename(X = lon, Y = lat)
+coordinates(grid_ll_ebs) <- ~ X + Y
+proj4string(grid_ll_ebs) <- CRS("+proj=longlat +datum=WGS84")
+grid_ebs <- as.data.frame(spTransform(grid_ll_ebs, CRS("+proj=utm +zone=2")))
+grid_ebs$X <- grid_ebs$coords.x1 / 1000 # scale to km to work with smaller numbers
+grid_ebs$Y <- grid_ebs$coords.x2 / 1000 
+
+# NBS grid
+grid_ll_nbs <- as.data.frame(northern_bering_sea_grid)
+names(grid_ll_nbs) <- tolower(names(grid_ll_nbs))
+grid_ll_nbs <- grid_ll_nbs %>% 
+  rename(X = lon, Y = lat)
+coordinates(grid_ll_nbs) <- ~ X + Y
+proj4string(grid_ll_nbs) <- CRS("+proj=longlat +datum=WGS84")
+grid_nbs <- as.data.frame(spTransform(grid_ll_nbs, CRS("+proj=utm +zone=2")))
+grid_nbs$X <- grid_nbs$coords.x1 / 1000 # scale to km to work with smaller numbers
+grid_nbs$Y <- grid_nbs$coords.x2 / 1000 
+
+# Combined grid
+grid <- bind_rows(grid_nbs, grid_ebs)
+
+# replicate extrapolation grids for each year in data
+pred_grid_ebs <- replicate_df(grid_ebs, "year_f", unique(dat$year_f))
+pred_grid_nbs <- replicate_df(grid_nbs, "year_f", unique(dat$year_f))
+pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
+pred_grid_ebs$year <- as.integer(as.character(factor(pred_grid_ebs$year_f)))
+pred_grid_nbs$year <- as.integer(as.character(factor(pred_grid_nbs$year_f)))
+pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
+
+# Loop over ages - getting an index for each age
+ages <- unique(dat$age)
+ind_list <- lapply(ages, \(a) {
+  print(a)
+  pred_grid_ebs$age <- a
+  pred <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
+  ind <- get_index(pred)  # SNW: not specifying the 'area' term here?
+  data.frame(ind, Age = a)
+})
+ind <- do.call(rbind, ind_list)
