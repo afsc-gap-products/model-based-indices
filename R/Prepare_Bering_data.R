@@ -522,7 +522,7 @@ if (start_year != start_year_age) {
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Save output
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dir_out <- paste0("species_specific_code/BS/", species_name, phase, "/data/")
+dir_out <- paste0("species_specific_code/BS/", species_name, "/", phase, "/data/")
 if (!dir.exists(paths = dir_out)) dir.create(path = dir_out, recursive = T)
 for (ifile in c("data_geostat_biomass_index", 
                 "data_geostat_numerical_index",
