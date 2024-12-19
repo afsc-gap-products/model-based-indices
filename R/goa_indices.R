@@ -150,4 +150,15 @@ for(i in species_list){
   
   #TODO: Diagnostic and other plots...
   
+  
+  # ESP products ----
+  # TODO: check if there is different trend without bias correction
+  cog <- get_cog(p, bias_correct = FALSE, 
+                 area = p$data$area_km2, format = "wide")
+  saveRDS(cog, file = here("species_specific_code", "GOA", 
+                           species, phase, "cog.RDS"))
+  
+  eao <- get_eao(p, bias_correct = FALSE, area = p$data$area_km2)
+  saveRDS(eao, file = here("species_specific_code", "GOA", 
+                           species, phase, "area_occupied.RDS"))
 }
