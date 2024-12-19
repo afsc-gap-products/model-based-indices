@@ -9,6 +9,11 @@ library(here)
 library(sdmTMB)
 library(dplyr)
 library(sp)
+library(ggplot2)
+library(viridis)
+# devtools::install_github("seananderson/ggsidekick")
+library(ggsidekick)
+theme_set(theme_sleek())
 
 # Set species -----------------------------------------------------------------
 species <- 21740
@@ -116,3 +121,80 @@ ind_list <- lapply(ages, \(a) {
   data.frame(ind, Age = a)
 })
 ind <- do.call(rbind, ind_list)
+
+# Plot age-structured abundance (index)
+ggplot(ind, aes(year, est)) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "gray") +
+  geom_line() +
+  facet_wrap(~Age, scales = "fixed")
+
+write.csv(ind, here(workDir, "results", "sdmTMB_age_abundance.csv"))
+
+# Calculate proportion-at-age -------------------------------------------------
+prop <- ind %>% 
+  group_by(year) %>%
+  mutate(total = sum(est)) %>%
+  ungroup() %>%
+  group_by(year, Age) %>%
+  summarize(proportion = est / total)
+
+# Add column for cohort colors 
+colors <- rep(1:16, length(1982:2024))
+prop$color <- colors[1:nrow(prop)]
+
+ggplot(prop, aes(x = Age, y = proportion, fill = color)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_viridis(option = "turbo") +
+  scale_x_discrete(breaks = c(1, 5, 10, 15)) +
+  scale_y_continuous(limits = c(0, 0.5), breaks = c(0, 0.2, 0.4)) +
+  ylab("Proportion") + 
+  guides(fill = "none") +
+  facet_wrap(~ year, ncol = 4, dir = "v") +
+  theme(strip.text.x = element_blank()) +
+  geom_text(x = 13, y = 0.45, aes(label = year), color = "grey30", size = 2.8)
+
+write.csv(prop, here(workDir, "results", "sdmTMB_age_prop.csv"))
+
+# Compare to production VAST model --------------------------------------------
+# Read in and reshape VAST comps
+vast_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
+colnames(vast_props)[1:15] <- 1:15
+vast_props <- reshape2::melt(vast_props, id.vars = c("Year", "Region"),
+                             variable.name = "Age", value.name = "Proportion") %>%
+  filter(Region == "Both") 
+
+# Combine with sdmTMB comps
+all_props <- rbind(cbind(year = vast_props$Year, 
+                         age = vast_props$Age, 
+                         proportion = vast_props$Proportion, 
+                         model = "VAST"),
+                   cbind(year = prop$year, 
+                         age = prop$Age, 
+                         proportion = prop$proportion, 
+                         model = "sdmTMB")) 
+all_props <- data.frame(all_props) %>%
+  mutate(year = as.integer(year),
+         age = factor(as.integer(age)),
+         proportion = as.numeric(proportion),
+         model = factor(model))
+
+props_compare <- ggplot(all_props, aes(x = age, y = proportion, fill = model)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
+  scale_x_discrete(breaks = c(1, 5, 10, 15)) +
+  ylab("Proportion-at-age") +
+  facet_wrap(~ year, ncol = 6, dir = "v")
+props_compare
+
+props_summary <- ggplot(all_props, aes(x = age, y = proportion, color = model, fill = model)) +
+  geom_boxplot(alpha = 0.5) +
+  scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
+  scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
+  scale_x_discrete(breaks = c(1, 5, 10, 15)) +
+  ylab("Proportion-at-age") 
+props_summary
+
+ggsave(props_compare, filename = here(workDir, "results", "sdmTMB_compare.png"),
+       width=200, height=180, units="mm", dpi=300)
+ggsave(props_summary, filename = here(workDir, "results", "sdmTMB_summary.png"),
+       width=200, height=120, units="mm", dpi=300)
