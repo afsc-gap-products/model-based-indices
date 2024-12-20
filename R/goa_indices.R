@@ -8,14 +8,14 @@ library(here)
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
 
-channel <- gapindex::get_connected() # enter credentials in pop-out window
+channel <- gapindex::get_connected(check_access = FALSE) # enter credentials in pop-out window
 
 species_list <- c("Gadus_macrocephalus", 
                   "Sebastes_alutus", "Sebastes_polyspinis", 
                   "Sebastes_variabilis", "Squalus_suckleyi",
                   "Atheresthes_stomias")
 
-for(i in species_list){
+for (i in species_list){
   species <- i
   
   dir <- here("species_specific_code", "GOA", species, phase, "/")
@@ -81,45 +81,22 @@ for(i in species_list){
   }
   
   # compare indices plot (change loading of old index after hindcast) ----
-  
   # query db index
-  query <- paste0("
-  WITH FILTERED_STRATA AS (
-  SELECT AREA_ID, DESCRIPTION FROM GAP_PRODUCTS.AKFIN_AREA
-  WHERE AREA_TYPE = 'REGION'
-  AND SURVEY_DEFINITION_ID = 47)
-  
-  -- Select columns for output data
+  query <- paste0('
   SELECT 
-  BIOMASS_MT,
-  BIOMASS_VAR,
-  YEAR
+  \'db\' AS "index",
+  YEAR AS "year",
+  BIOMASS_MT * 1000 AS "est",
+  (BIOMASS_MT - SQRT(BIOMASS_VAR) * (1.959964)) * 1000 as "lwr", -- qnorm(0.025) in R
+  (BIOMASS_MT + SQRT(BIOMASS_VAR) * (1.959964)) * 1000 as "upr" -- qnorm(0.975) in R
   
   -- Identify what tables to pull data from
-  FROM GAP_PRODUCTS.AKFIN_BIOMASS BIOMASS
-  JOIN FILTERED_STRATA STRATA 
-  ON STRATA.AREA_ID = BIOMASS.AREA_ID
-  
-  -- Filter data results
-  WHERE BIOMASS.SPECIES_CODE = ",
-                  unique(dat$species_code)
+  FROM GAP_PRODUCTS.BIOMASS
+  WHERE AREA_ID = 99903 -- GOA REGION
+  AND YEAR < 2025 -- REMOVE THIS LINE AFTER 2025 GOA MOCK DATA HAVE BEEN REMOVED
+  AND SPECIES_CODE = ', unique(dat$species_code)
   )
-  db <- RODBC::sqlQuery(channel = channel, query = query)
-  
-  # combine two models and design-based index
-  db_i <- db %>% 
-    mutate(se = sqrt(BIOMASS_VAR) * 1000, 
-           est = BIOMASS_MT * 1000,
-           index = "db") %>% 
-    mutate(lwr = est + qnorm(0.025) * se,
-           upr = est + qnorm(0.975) * se) %>%
-    select(index,
-           year = YEAR, 
-           est,
-           lwr,
-           upr) %>%
-    filter(year <= max(dat$year)) %>%
-    distinct()
+  db_i <- RODBC::sqlQuery(channel = channel, query = query)
   
   new_i <- ind %>% mutate(index = "new") %>% select(index, year, est, lwr, upr)
   old_i <- read.csv(here("species_specific_code", "GOA", species, 

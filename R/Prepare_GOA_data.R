@@ -8,8 +8,8 @@ rm(list = ls())
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Import Libraries, using gapindex version 3.0.2
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-devtools::install_github(repo = "afsc-gap-products/gapindex@v3.0.2", 
-                         dependencies = TRUE)
+# devtools::install_github(repo = "afsc-gap-products/gapindex@v3.0.2", 
+#                          dependencies = TRUE)
 library(gapindex)
 library(sf)
 library(sdmTMB)
@@ -27,13 +27,12 @@ phase <- c("hindcast", "production")[1]
 data_dir <- paste0("data/GOA/", phase, "/")
 if (!dir.exists(paths = data_dir)) dir.create(path = data_dir, recursive = TRUE)
 
-species_df <- data.frame(
-  SPECIES_CODE = c(310, 10110, 21720, 21740, 30060, 30420, 30150, 30152),
-  GROUP_CODE =   c(310, 10110, 21720, 21740, 30060, 30420, 30152, 30152)
-)
-
 year_start <- 1990
 year_end <- 2023
+
+species_df <- data.frame(SPECIES_CODE = c(310, 10110, 21720, 21740, 30060, 
+                                          30420, 30152),
+                         START_YEAR = c(rep(year_start, 6), 1996))
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Pull catch and effort data and calculate CPUE (zero-filled)
@@ -41,7 +40,7 @@ year_end <- 2023
 gapindex_data <- 
   gapindex::get_data(survey_set = "GOA",
                      year_set = year_start:year_end,
-                     spp_codes = species_df,
+                     spp_codes = species_df$SPECIES_CODE,
                      pull_lengths = FALSE,
                      taxonomic_source = "GAP_PRODUCTS.TAXONOMIC_CLASSIFICATION",
                      channel = channel)
@@ -58,6 +57,16 @@ gapindex_cpue <- merge(x = gapindex_cpue,
                                   subset = ID_RANK == "species",
                                   select = c(SPECIES_CODE, SPECIES_NAME)),
                        by = "SPECIES_CODE")
+
+## For species with later starting years (i.e., dusky rockfish), remove
+## records prior to the starting year for those species
+for (ispp in 1:nrow(x = species_df)) 
+  gapindex_cpue <-  
+  subset(x = gapindex_cpue, 
+         subset = !(SPECIES_CODE == species_df$SPECIES_CODE[ispp] &
+                      YEAR < species_df$START_YEAR[ispp]))
+
+table(gapindex_cpue$YEAR, gapindex_cpue$SPECIES_CODE)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Create a lat/lon spatial object of the station locations 
