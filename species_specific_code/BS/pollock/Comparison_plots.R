@@ -214,9 +214,9 @@ compare_props <- function(props, names, last_year) {
 comp_all_plots <- compare_props(props = list(new_props, tiny_tweedie, tiny_dg, 
                                              tiny_mesh, tiny_mesh_dg, tiny_logn, 
                                              tiny_bc, tiny_dg_bc),
-                                names = c("VAST", "original", "original", 
-                                          "VAST mesh", "VAST mesh", "original", 
-                                          "bias correction", "bias correction"))
+                                names = c("VAST", "1 - original", "1 - original", 
+                                          "3 - VAST mesh", "3 - VAST mesh", "1 - original", 
+                                          "2 - bias correction", "2 - bias correction"))
 
 summary_props_all <- comp_all_plots$boxplot + 
   facet_wrap(~ distribution)
