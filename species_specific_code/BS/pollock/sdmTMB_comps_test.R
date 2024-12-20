@@ -117,7 +117,7 @@ ind_list <- lapply(ages, \(a) {
   print(a)
   pred_grid_ebs$age <- a
   pred <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
-  ind <- get_index(pred)  # SNW: not specifying the 'area' term here?
+  ind <- get_index(obj = pred, area = pred_grid_ebs$area_in_survey_km2, bias_correct = TRUE)
   data.frame(ind, Age = a)
 })
 ind <- do.call(rbind, ind_list)
