@@ -21,6 +21,7 @@ knitr::opts_chunk$set(
 
 ```{r packages, message=FALSE, warning=FALSE, cache=FALSE}
 #pak::pak("pbs-assess/sdmTMB")
+#pak::pak("pbs-assess/sdmTMB@index-split")
 #pak::pak("afsc-gap-products/coldpool")
 library(VAST)
 library(sp)
@@ -29,7 +30,7 @@ library(dplyr)
 library(ggplot2)
 library(here)
 
-species <- "pollock" 
+species <- "yellowfin_sole" 
 #pollock pacific_cod yellowfin_sole
 ```
 
@@ -90,7 +91,8 @@ if(species == "yellowfin_sole"){
 covariate_data <- data.frame(Year = as.integer(c(coldpool:::cold_pool_index$YEAR, 2020)), 
                              Lat = mean(dat_ll$lat),
                              Lon = mean(dat_ll$lon), 
-                             env = c(env, 0)) 
+                             env = c(env, 0)) #%>%
+  #filter(Year != 2024) # for pollock with data through 2023
 
 # TODO: replace "select(covariate_data, year, env)" with just "env" for sdmTMB
 env_join <- covariate_data %>% select(year = Year, env)
@@ -342,57 +344,57 @@ pred_grid <- left_join(pred_grid, rename(env_join, cpe = env), by = "year")
 # so now rename if needed: from env_join to rename(env_join, cpe = env)
 
 # get predictions for total area, and the two subareas of interest (EBS, NBS)
-f2 <- here("species_specific_code", "BS", species,
-           "index_comparison", "predictions.RData")
-if (!file.exists(f2)) {
-  p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
-  p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
-  p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
-    save(p, p_ebs, p_nbs, file = f2)
-} else {
-  load(f2)
-}
+# f2 <- here("species_specific_code", "BS", species,
+#            "index_comparison", "predictions.RData")
+# if (!file.exists(f2)) {
+#   p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
+#   p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
+#   p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
+#     save(p, p_ebs, p_nbs, file = f2)
+# } else {
+#   load(f2)
+# }
 
 # get indices for total area, and the two subareas of interest (EBS, NBS)
-f3 <- here("species_specific_code", "BS", species, 
-           "index_comparison", "indices.RData")
-if (!file.exists(f3)) {
-  gc()
-  ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_in_survey_km2)
-  ind$stratum <- "Both"
-
-  ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = pred_grid_ebs$area_in_survey_km2)
-  ind_ebs$stratum <- "EBS"
-
-  ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = pred_grid_nbs$area_in_survey_km2)
-  ind_nbs$stratum <- "NBS"
-  save(ind, ind_ebs, ind_nbs, file = f3)
-} else {
-load(f3)
-}
-
-# NOTE: if using get_index_split() rather than get_index() you need to pass the 
-# model object and new data (not prediction object, you can bypass that step) and run:
 # f3 <- here("species_specific_code", "BS", species, 
 #            "index_comparison", "indices.RData")
 # if (!file.exists(f3)) {
 #   gc()
-#   ind <- get_index_split(fit_sdmTMB, newdata = pred_grid, nsplit = 6,
-#                          bias_correct = TRUE, area = pred_grid$area_in_survey_km2) 
-#   #if using offsets also include the argument predict_args = list(offset = fake_offset)
+#   ind <- get_index(p, bias_correct = FALSE, area = pred_grid$area_in_survey_km2)
 #   ind$stratum <- "Both"
 # 
-#   ind_ebs <- get_index_split(fit_sdmTMB, newdata = pred_grid_ebs, nsplit = 6,
-#                              bias_correct = TRUE, area = pred_grid_ebs$area_in_survey_km2)
+#   ind_ebs <- get_index(p_ebs, bias_correct = FALSE, area = pred_grid_ebs$area_in_survey_km2)
 #   ind_ebs$stratum <- "EBS"
 # 
-#   ind_nbs <- get_index_split(fit_sdmTMB, newdata = pred_grid_nbs, nsplit = 6,
-#                              bias_correct = TRUE, area = pred_grid_nbs$area_in_survey_km2)
+#   ind_nbs <- get_index(p_nbs, bias_correct = FALSE, area = pred_grid_nbs$area_in_survey_km2)
 #   ind_nbs$stratum <- "NBS"
-#   save(ind, ind_ebs, ind_nbs, file = here("species_specific_code", "BS", species, "index_comparison", "indices.RData"))
+#   save(ind, ind_ebs, ind_nbs, file = f3)
 # } else {
 # load(f3)
 # }
+
+# NOTE: if using get_index_split() rather than get_index() you need to pass the 
+# model object and new data (not prediction object, you can bypass that step) and run:
+f3 <- here("species_specific_code", "BS", species,
+           "index_comparison", "indices.RData")
+if (!file.exists(f3)) {
+  gc()
+  ind <- get_index_split(fit_sdmTMB, newdata = pred_grid, nsplit = 2, # may need 6 if have 64GB RAM
+                         bias_correct = TRUE, area = pred_grid$area_in_survey_km2)
+  #if using offsets also include the argument predict_args = list(offset = fake_offset)
+  ind$stratum <- "Both"
+
+  ind_ebs <- get_index_split(fit_sdmTMB, newdata = pred_grid_ebs, nsplit = 2,
+                             bias_correct = TRUE, area = pred_grid_ebs$area_in_survey_km2)
+  ind_ebs$stratum <- "EBS"
+
+  ind_nbs <- get_index_split(fit_sdmTMB, newdata = pred_grid_nbs, nsplit = 2,
+                             bias_correct = TRUE, area = pred_grid_nbs$area_in_survey_km2)
+  ind_nbs$stratum <- "NBS"
+  save(ind, ind_ebs, ind_nbs, file = here("species_specific_code", "BS", species, "index_comparison", "indices.RData"))
+} else {
+load(f3)
+}
 ```
 
 Now, we can compare the indices. 
