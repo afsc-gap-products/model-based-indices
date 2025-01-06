@@ -263,38 +263,6 @@ plot_betas(fit, fit_sdmTMB, "beta2_ft", sdmTMB_pars = 2)
 rm(fit)
 ```
 
-While making custom plots of individual elements would require considerable additional code to extract and reformat the necessary components of each output, VAST has a wrapper function that generates the typical plots one may want. Here we stick with the default set of plots (`plot_set = 3`); however, one can specify different standard plots to make by changing the setting of this argument (see `?FishStatsUtils::plot_maps` and `?FishStatsUtils::plot_results`).
-
-```{r save-plots, echo = TRUE, warning = FALSE, cache=TRUE}
-if(!file.exists(here("species_specific_code", "BS", species, "index_comparison", "plots", "Data_and_knots.png"))) {
-  plot(
-    fit,
-    check_residuals = FALSE,
-    working_dir = paste0(here("species_specific_code", "BS", species, "index_comparison", "plots"), "/")
-  )
-}
-```
-
-Here we will read in some key plots. We can start by looking at the location of samples and knots.
-
-```{r plot-knots, echo = TRUE, out.width="6in"}
-knitr::include_graphics(here("species_specific_code", "BS", species, "index_comparison", "plots", "Data_and_knots.png"))
-```
-
-Then we can look at maps of the predicted population densities (here on the log scale).
-
-```{r plot-density, echo = TRUE, out.width="6in"}
-knitr::include_graphics(here("species_specific_code", "BS", species, "index_comparison", "plots", "ln_density-predicted.png"))
-```
-
-And finally the index.
-
-```{r plot-index, echo = TRUE, out.width="3in"}
-if (file.exists(here("species_specific_code", "BS", species, "index_comparison", "plots", "Index.png"))) {
-  knitr::include_graphics(here("species_specific_code", "BS", species, "index_comparison", "plots", "Index.png"))
-}
-```
-
 We can compare the index we would get using sdmTMB. 
 
 ```{r sdmTMB-index, echo=TRUE}
