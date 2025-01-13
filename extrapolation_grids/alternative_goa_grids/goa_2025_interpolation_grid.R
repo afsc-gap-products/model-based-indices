@@ -25,11 +25,29 @@ goa_footprint_2025 <-
 goa_grid <- 
   ## Create a rectangular grid that overlaps with the 2025 GOA footprint
   sf::st_make_grid(x = goa_footprint_2025, 
-                             square = T, 
-                             cellsize = 3.704) |> 
+                   square = T, 
+                   cellsize = 3.704) |> 
   terra::vect() |> 
   ## Intersect with the footprint
   terra::intersect(goa_footprint_2025)
+
+goa_grid_df <- data.frame(terra::centroids(x = goa_grid) |> terra::crds()) 
+names(x = goa_grid_df) <- c("X", "Y")
+ 
+goa_grid_df[, c("lon", "lat")] <- 
+  terra::project(x = goa_grid, "+proj=longlat +datum=WGS84") |> 
+  terra::centroids() |> 
+  terra::crds()
+
+goa_grid_df$area_km2 <- terra::expanse(x = goa_grid) / 1e6
+
+goa_grid_df <- subset(x = goa_grid_df,
+                      subset = area_km2 >= 0.001)
+
+write.csv(x = goa_grid_df, 
+        file = paste0("extrapolation_grids/alternative_goa_grids/",
+                      "goa_2025_interpolation_grid.csv"), 
+        row.names = F)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Compare with prior interpolation grid
