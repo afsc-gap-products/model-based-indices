@@ -98,25 +98,3 @@ dat_allspp <- with(gapindex_cpue, data.frame(hauljoin = HAULJOIN,
 
 ## Save catch and effort data
 saveRDS(dat_allspp, file = paste0(data_dir, "dat_allspp.RDS"))
-
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Format prediction grid
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-goa_grid <- read.csv(file = here("extrapolation_grids", 
-                                 "GOAThorsonGrid_Less700m.csv"))
-goa_grid <- data.frame(lat = goa_grid$Latitude, 
-                       lon = goa_grid$Longitude,
-                       area_km2 = goa_grid$Shape_Area/1000000)
-
-## Turn the goa grid df into a lat/lon spatial object 
-sf_grid <- sf::st_as_sf(x = goa_grid,
-                        coords = c("lon", "lat"),
-                        crs = "+proj=longlat +datum=WGS84")
-
-## Transform the grid to UTM (Zone 5)
-sf_grid <- sf::st_transform(sf_grid, crs = "+proj=utm +zone=5 +units=km")
-goa_grid[, c("X", "Y")] <- sf::st_coordinates(x = sf_grid)
-
-## Collate relevant fields and save
-goa_sdmtmb_grid <- goa_grid[, c("lon", "lat", "X", "Y", "area_km2")]
-saveRDS(goa_sdmtmb_grid, file = "extrapolation_grids/goa_sdmtmb_grid.RDS")
