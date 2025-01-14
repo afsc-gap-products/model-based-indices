@@ -1,4 +1,4 @@
-## Scratch/draft script to run all GOA sdmTMB indices ----
+# Scratch/draft script to run all GOA sdmTMB indices ----
 
 #remotes::install_github("pbs-assess/sdmTMB", dependencies = TRUE)
 library(sdmTMB)
@@ -21,7 +21,7 @@ for (i in species_list){
   dir <- here("species_specific_code", "GOA", species, phase, "/")
   if (!dir.exists(paths = dir)) dir.create(path = dir, recursive = TRUE)
   
-  # load and process data ----
+  ## load and process data ----
   sp <- gsub("_", " ", species)
   dat <- readRDS(here(paste0("data/GOA/", phase, "/dat_allspp.RDS"))) %>%
     filter(species == sp)
@@ -56,12 +56,12 @@ for (i in species_list){
     fit_sdmTMB <- readRDS(f1)
   }
   
+  ## make predictions ----
   # load grid and process prediction grid for all years desired
   grid <- readRDS(file = "extrapolation_grids/goa_sdmtmb_grid.RDS")
   pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
   pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
-  
-  # make predictions ----
+
   f2 <- here("species_specific_code", "GOA", species, 
              "index_comparison", "predictions.RDS")
   if (!file.exists(f2)) {
@@ -71,7 +71,7 @@ for (i in species_list){
     p <- readRDS(f2)
   }
   
-  # Plot predicted density maps and fit diagnostics ----
+  ## Plot predicted density maps and fit diagnostics ----
   # q-q plot
   pdf(file = here("species_specific_code", "GOA", species, phase, "qq.pdf"), 
       width = 5, height = 5)
@@ -101,7 +101,7 @@ for (i in species_list){
                      "predictions_map.pdf"), 
          height = 9, width = 6, units = c("in"))
   
-  # compute index ----
+  ## compute index ----
   f3 <- here("species_specific_code", "GOA", species, 
              "index_comparison", "index.RDS")
   if (!file.exists(f3)) {
@@ -111,7 +111,7 @@ for (i in species_list){
     ind <- readRDS(f3)
   }
   
-  # compare indices plot (change loading of old index after hindcast) ----
+  ### compare indices plot (change loading of old index after hindcast) ----
   # query db index
   query <- paste0('
   SELECT 
@@ -156,7 +156,7 @@ for (i in species_list){
                      "index_comparison.pdf"), 
          height = 4, width = 6, units = c("in"))
   
-  # ESP products ----
+  #### ESP products ----
   # TODO: check if there is different trend without bias correction
   cog <- get_cog(p, bias_correct = FALSE, 
                  area = p$data$area_km2, format = "wide")
