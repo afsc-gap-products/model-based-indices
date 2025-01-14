@@ -1,6 +1,5 @@
 # Scratch/draft script to run all GOA sdmTMB indices ----
 
-#remotes::install_github("pbs-assess/sdmTMB", dependencies = TRUE)
 library(sdmTMB)
 library(dplyr)
 library(ggplot2)
@@ -8,7 +7,7 @@ library(here)
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
 
-channel <- gapindex::get_connected(check_access = FALSE) # enter credentials in pop-out window
+channel <- gapindex::get_connected(check_access = FALSE) # enter credentials 
 
 species_list <- c("Gadus_macrocephalus", 
                   "Sebastes_alutus", "Sebastes_polyspinis", 
@@ -28,8 +27,7 @@ for (i in species_list){
   dat$year_f <- as.factor(dat$year)
   
   # fit model ----
-  f1 <- here("species_specific_code", "GOA", species, 
-             "index_comparison", "fit_sdmTMB.RDS")
+  f1 <- here("species_specific_code", "GOA", species, phase, "fit_sdmTMB.RDS")
   if (!file.exists(f1)) {
     #pass same mesh as prior model
     mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
@@ -58,12 +56,11 @@ for (i in species_list){
   
   ## make predictions ----
   # load grid and process prediction grid for all years desired
-  grid <- readRDS(file = "extrapolation_grids/goa_sdmtmb_grid.RDS")
+  grid <- read.csv(file = "extrapolation_grids/goa_2025_interpolation_grid.csv")
   pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
   pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
 
-  f2 <- here("species_specific_code", "GOA", species, 
-             "index_comparison", "predictions.RDS")
+  f2 <- here("species_specific_code", "GOA", species, phase, "predictions.RDS")
   if (!file.exists(f2)) {
     p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
     saveRDS(p, file = f2)
@@ -102,8 +99,7 @@ for (i in species_list){
          height = 9, width = 6, units = c("in"))
   
   ## compute index ----
-  f3 <- here("species_specific_code", "GOA", species, 
-             "index_comparison", "index.RDS")
+  f3 <- here("species_specific_code", "GOA", species, phase, "index.RDS")
   if (!file.exists(f3)) {
     ind <- get_index(p, bias_correct = TRUE, area = p$data$area_km2)
     saveRDS(ind, file = f3)
@@ -130,8 +126,8 @@ for (i in species_list){
   db_i <- RODBC::sqlQuery(channel = channel, query = query)
   
   new_i <- ind %>% mutate(index = "new") %>% select(index, year, est, lwr, upr)
-  old_i <- read.csv(here("species_specific_code", "GOA", species, 
-                         "index_comparison", "Index.csv")) %>%
+  old_i <- read.csv(here("species_specific_code", "GOA", 
+                         species, phase, "Index.csv")) %>%
     mutate(index = "old", year = as.numeric(Time), est = Estimate, 
            se = Std..Error.for.ln.Estimate.) %>% 
     filter(year %in% unique(new_i$year)) %>%
@@ -140,7 +136,7 @@ for (i in species_list){
     select(index, year, est, lwr, upr)
   both_i <- bind_rows(new_i, old_i, db_i) %>% 
     filter(est > 0)
-  both_i[both_i<0] <- 0
+  both_i[both_i < 0] <- 0
     
   
   ggplot(both_i, aes(x = year, y = est, ymin = lwr, ymax = upr, 
