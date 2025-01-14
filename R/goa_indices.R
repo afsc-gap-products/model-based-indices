@@ -54,6 +54,8 @@ for (i in species_list){
     fit_sdmTMB <- readRDS(f1)
   }
   
+  sanity(fit_sdmTMB)
+  
   ## make predictions ----
   # load grid and process prediction grid for all years desired
   grid <- read.csv(file = "extrapolation_grids/goa_2025_interpolation_grid.csv")
@@ -81,7 +83,7 @@ for (i in species_list){
   ggplot(dat, aes(X, Y, col = resids)) + 
     scale_colour_gradient2() +
     geom_point() + 
-    facet_wrap(~year) + 
+    facet_wrap(~year, ncol = 2) + 
     coord_fixed()
   ggsave(file = here("species_specific_code", "GOA", species, phase, 
                      "residuals_map.pdf"), 
@@ -91,7 +93,7 @@ for (i in species_list){
   ggplot(p$data, aes(X, Y, fill = exp(est))) +
     geom_raster() +
     scale_fill_viridis_c(trans = "sqrt") +
-    facet_wrap(~year) +
+    facet_wrap(~year, ncol = 2) +
     coord_fixed() +
     ggtitle("Predicted densities")
   ggsave(file = here("species_specific_code", "GOA", species, phase, 
