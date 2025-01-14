@@ -61,7 +61,7 @@ for (i in species_list){
   pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
   pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
   
-  # make predictions and get index ----
+  # make predictions ----
   f2 <- here("species_specific_code", "GOA", species, 
              "index_comparison", "predictions.RDS")
   if (!file.exists(f2)) {
@@ -71,6 +71,37 @@ for (i in species_list){
     p <- readRDS(f2)
   }
   
+  # Plot predicted density maps and fit diagnostics ----
+  # q-q plot
+  pdf(file = here("species_specific_code", "GOA", species, phase, "qq.pdf"), 
+      width = 5, height = 5)
+    resids <- residuals(fit_sdmTMB, type ="mle-mvn") 
+    qqnorm(resids);abline(0, 1)
+  dev.off()
+  
+  # residuals on map plot, by year
+  dat$resids <- resids
+  ggplot(dat, aes(X, Y, col = resids)) + 
+    scale_colour_gradient2() +
+    geom_point() + 
+    facet_wrap(~year) + 
+    coord_fixed()
+  ggsave(file = here("species_specific_code", "GOA", species, phase, 
+                     "residuals_map.pdf"), 
+         height = 9, width = 6, units = c("in"))
+  
+  # predictions on map plot, by year
+  ggplot(p$data, aes(X, Y, fill = exp(est))) +
+    geom_raster() +
+    scale_fill_viridis_c(trans = "sqrt") +
+    facet_wrap(~year) +
+    coord_fixed() +
+    ggtitle("Predicted densities")
+  ggsave(file = here("species_specific_code", "GOA", species, phase, 
+                     "predictions_map.pdf"), 
+         height = 9, width = 6, units = c("in"))
+  
+  # compute index ----
   f3 <- here("species_specific_code", "GOA", species, 
              "index_comparison", "index.RDS")
   if (!file.exists(f3)) {
@@ -124,9 +155,6 @@ for (i in species_list){
   ggsave(file = here("species_specific_code", "GOA", species, phase, 
                      "index_comparison.pdf"), 
          height = 4, width = 6, units = c("in"))
-  
-  #TODO: Diagnostic and other plots...
-  
   
   # ESP products ----
   # TODO: check if there is different trend without bias correction
