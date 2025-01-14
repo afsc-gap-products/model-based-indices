@@ -75,14 +75,12 @@ for (i in species_list){
   # q-q plot
   pdf(file = here("species_specific_code", "GOA", species, phase, "qq.pdf"), 
       width = 5, height = 5)
-    #resids <- residuals(fit_sdmTMB, type ="mle-mvn") 
-    #qqnorm(resids);abline(0, 1)
-  simulate(fit_sdmTMB, nsim = 500, type = "mle-mvn") |>
-    dharma_residuals(fit_sdmTMB, test_uniformity = FALSE)
+    simulate(fit_sdmTMB, nsim = 500, type = "mle-mvn") |>
+      dharma_residuals(fit_sdmTMB, test_uniformity = FALSE)
   dev.off()
   
   # residuals on map plot, by year
-  dat$resids <- resids
+  dat$resids <- residuals(fit_sdmTMB, type ="mle-mvn") 
   ggplot(subset(dat, !is.na(resids)), aes(X, Y, col = resids)) + 
     scale_colour_gradient2(name = "residuals") +
     geom_point(size = 0.7) + 
@@ -161,12 +159,19 @@ for (i in species_list){
   
   #### ESP products ----
   # TODO: check if there is different trend without bias correction
-  cog <- get_cog(p, bias_correct = FALSE, 
-                 area = p$data$area_km2, format = "wide")
-  saveRDS(cog, file = here("species_specific_code", "GOA", 
-                           species, phase, "cog.RDS"))
+  f4 <- here("species_specific_code", "GOA", species, phase, "cog.RDS")
+  if (!file.exists(f4)) {
+    cog <- get_cog(p, bias_correct = FALSE, 
+                   area = p$data$area_km2, format = "wide")
+    saveRDS(cog, file = here("species_specific_code", "GOA", 
+                             species, phase, "cog.RDS"))
+  }
   
+  f5 <- here("species_specific_code", "GOA", species, phase, 
+             "area_occupied.RDS")
+  if (!file.exists(f5)) {
   eao <- get_eao(p, bias_correct = FALSE, area = p$data$area_km2)
   saveRDS(eao, file = here("species_specific_code", "GOA", 
                            species, phase, "area_occupied.RDS"))
+  }
 }
