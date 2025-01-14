@@ -87,12 +87,10 @@ if(species == "yellowfin_sole"){
   env <- scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)
 }
 
-# TODO: drop below inclusion of missing year for sdmTMB? Or remove extra_year argument in sdmTMB()
 covariate_data <- data.frame(Year = as.integer(c(coldpool:::cold_pool_index$YEAR, 2020)), 
                              Lat = mean(dat_ll$lat),
                              Lon = mean(dat_ll$lon), 
-                             env = c(env, 0)) #%>%
-  #filter(Year != 2024) # for pollock with data through 2023
+                             env = c(env, 0))
 
 # TODO: replace "select(covariate_data, year, env)" with just "env" for sdmTMB
 env_join <- covariate_data %>% select(year = Year, env)
@@ -180,10 +178,31 @@ Now we fit the same model in sdmTMB:
 
 ```{r sdmTMB-example, echo = TRUE}
 dat <- dat_ll %>% 
-  rename(X = lon, Y = lat) #%>% filter(year != 2020) #drop dummy 2020 data
+  rename(X = lon, Y = lat)
   
 dat$year_f <- as.factor(dat$year)
 
+# detect if any years have occurrences at every haul and fix params as needed
+mins <- dat %>% group_by(year) %>% summarize(min = min(Catch_N)) # TODO:standardize catch column name
+if(sum(mins$min) == 0){
+  control = sdmTMBcontrol()
+} else {
+  no_zero_yr <- as.integer(mins %>% filter(min > 0) %>% select(year))
+			# set up map and fix value of p(occurrence) to slightly less than 1:
+			yrs <- unique(dat$year)
+			.map <- seq_along(yrs)
+			.map[yrs %in% no_zero_yr] <- NA
+			.map <- factor(.map)
+			.start <- rep(0, length(yrs))
+			.start[yrs %in% no_zero_yr] <- 20
+
+			control =  sdmTMBcontrol(
+			      map = list(b_j = .map),
+			      start = list(b_j = .start)
+			    )
+}
+
+#project coordinates (could also use add_utm_columns())
 coordinates(dat) <- ~ X + Y
 proj4string(dat) <- CRS("+proj=longlat +datum=WGS84")
 dat <- as.data.frame(spTransform(dat, CRS("+proj=utm +zone=2")))
@@ -206,9 +225,10 @@ if (!file.exists(f1)) {
     time = "year", 
     spatial = "on",
     spatiotemporal = "ar1",
-    extra_time = 2020L, #omit if dummy 2020 included in data
+    extra_time = 2020L, 
     silent = FALSE,
     anisotropy = TRUE,
+    control = control,
     do_fit = TRUE
   )
   fit_sdmTMB
