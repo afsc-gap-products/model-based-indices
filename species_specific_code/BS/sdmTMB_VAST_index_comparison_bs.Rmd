@@ -179,11 +179,10 @@ Now we fit the same model in sdmTMB:
 ```{r sdmTMB-example, echo = TRUE}
 dat <- dat_ll %>% 
   rename(X = lon, Y = lat)
-  
 dat$year_f <- as.factor(dat$year)
 
 # detect if any years have occurrences at every haul and fix params as needed
-mins <- dat %>% group_by(year) %>% summarize(min = min(Catch_N)) # TODO:standardize catch column name
+mins <- dat %>% group_by(year) %>% summarize(min = min(cpue))
 if(sum(mins$min) == 0){
   control = sdmTMBcontrol()
 } else {
