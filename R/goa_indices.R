@@ -11,8 +11,8 @@ channel <- gapindex::get_connected(check_access = FALSE) # enter credentials
 
 species_list <- c("Gadus_macrocephalus", 
                   "Sebastes_alutus", "Sebastes_polyspinis", 
-                  "Sebastes_variabilis", "Squalus_suckleyi",
-                  "Atheresthes_stomias")
+                  "Squalus_suckleyi", "Atheresthes_stomias",
+                  "Sebastes_variabilis")
 
 for (i in species_list){
   species <- i
@@ -55,6 +55,7 @@ for (i in species_list){
   }
   
   sanity(fit_sdmTMB)
+  summary(fit_sdmTMB)
   
   ## make predictions ----
   # load grid and process prediction grid for all years desired
@@ -74,31 +75,35 @@ for (i in species_list){
   # q-q plot
   pdf(file = here("species_specific_code", "GOA", species, phase, "qq.pdf"), 
       width = 5, height = 5)
-    resids <- residuals(fit_sdmTMB, type ="mle-mvn") 
-    qqnorm(resids);abline(0, 1)
+    #resids <- residuals(fit_sdmTMB, type ="mle-mvn") 
+    #qqnorm(resids);abline(0, 1)
+  simulate(fit_sdmTMB, nsim = 500, type = "mle-mvn") |>
+    dharma_residuals(fit_sdmTMB, test_uniformity = FALSE)
   dev.off()
   
   # residuals on map plot, by year
   dat$resids <- resids
-  ggplot(dat, aes(X, Y, col = resids)) + 
-    scale_colour_gradient2() +
-    geom_point() + 
+  ggplot(subset(dat, !is.na(resids)), aes(X, Y, col = resids)) + 
+    scale_colour_gradient2(name = "residuals") +
+    geom_point(size = 0.7) + 
     facet_wrap(~year, ncol = 2) + 
-    coord_fixed()
+    coord_fixed() +
+    theme_bw()
   ggsave(file = here("species_specific_code", "GOA", species, phase, 
                      "residuals_map.pdf"), 
-         height = 9, width = 6, units = c("in"))
+         height = 9, width = 6.5, units = c("in"))
   
   # predictions on map plot, by year
-  ggplot(p$data, aes(X, Y, fill = exp(est))) +
-    geom_raster() +
-    scale_fill_viridis_c(trans = "sqrt") +
+  ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
+    geom_tile() +
+    scale_fill_viridis_c(trans = "sqrt", name = "") +
     facet_wrap(~year, ncol = 2) +
     coord_fixed() +
-    ggtitle("Predicted densities")
+    ggtitle("Predicted densities (kg / square km)") +
+    theme_bw()
   ggsave(file = here("species_specific_code", "GOA", species, phase, 
                      "predictions_map.pdf"), 
-         height = 9, width = 6, units = c("in"))
+         height = 9, width = 6.5, units = c("in"))
   
   ## compute index ----
   f3 <- here("species_specific_code", "GOA", species, phase, "index.RDS")
