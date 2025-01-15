@@ -174,6 +174,13 @@ tiny_mesh_dg <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_pr
 tiny_logn <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_logn.csv")), distribution = "Lognormal")
 tiny_bc <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_bc.csv")), distribution = "Tweedie")
 tiny_dg_bc <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg_bc.csv")), distribution = "Delta Gamma")
+sdm_props <- dcast(cbind(read.csv(here(workDir, "results", "sdmTMB_age_prop.csv"))[, 2:4]), formula = year ~ Age)
+
+# Reshape sdmTMB comps 
+colnames(sdm_props)[1] <- "Year"
+sdm_props$Region <- "EBS"
+sdm_props$distribution <- "sdmTMB"
+sdm_props <- sdm_props[, c(2:16, 1, 17, 18)]
 
 # # Update old_props to match tinyVAST test output - only EBS
 tiny_years <- c(1980:2019, 2021:this_year)
@@ -213,24 +220,19 @@ compare_props <- function(props, names, last_year) {
 
 comp_all_plots <- compare_props(props = list(new_props, tiny_tweedie, tiny_dg, 
                                              tiny_mesh, tiny_mesh_dg, tiny_logn, 
-                                             tiny_bc, tiny_dg_bc),
+                                             tiny_bc, tiny_dg_bc, sdm_props),
                                 names = c("VAST", "1 - original", "1 - original", 
                                           "3 - VAST mesh", "3 - VAST mesh", "1 - original", 
-                                          "2 - bias correction", "2 - bias correction"))
+                                          "2 - bias correction", "2 - bias correction", "sdmTMB"))
 
 summary_props_all <- comp_all_plots$boxplot + 
   facet_wrap(~ distribution)
 summary_props_all
 
-sum_props_tweedie <- compare_props(props = list(new_props, tiny_tweedie, 
-                                                tiny_mesh, tiny_bc),
-                                   names = c("VAST", "1 - tiny Tweedie", 
-                                             "3 - old mesh", "2 - bias correction"))
-sum_tweedie_all <- sum_props_tweedie$barplot
-sum_tweedie_all
-
-sum_tweedie_sum <- sum_props_tweedie$boxplot
-sum_tweedie_sum
+sum_props_sub <- compare_props(props = list(new_props, tiny_mesh, sdm_props),
+                               names = c("VAST", "tinyVAST (Tweedie)", "sdmTMB"))
+sum_props_sub$barplot
+sum_props_sub$boxplot
 
 # Plot difference between two models ------------------------------------------
 comp_difference <- function(new, old, names, save_results = FALSE) {
