@@ -18,8 +18,8 @@ library(here)
 #' expanded to the total abundance in that primary sample:
 #' ----------------------------------------------------------------------------
 species <- 21740
-this_year <- lubridate::year(Sys.Date())
-# this_year <- 2022  # different year for debugging
+# this_year <- lubridate::year(Sys.Date())
+this_year <- 2024  # different year for debugging
 Species <- "pollock"
 speciesName <- paste0("Walleye_Pollock_age_", as.character(this_year), "_EBS-NBS")
 workDir <- here::here("species_specific_code", "BS", Species)
@@ -38,6 +38,9 @@ Data <- st_transform(Data,
                      crs = st_crs("+proj=utm +zone=2 +units=km"))
 # Add UTM coordinates as columns X & Y
 Data <- cbind(st_drop_geometry(Data), st_coordinates(Data))
+
+# Set name for script output (related to model specification)
+name <- "mesh"
 
 #' Next, we construct the various inputs to tinyVAST
 #' ----------------------------------------------------------------------------
@@ -78,7 +81,7 @@ VASTfit_age <- readRDS(here("VAST_results", "BS", "pollock", "VASTfit_age.RDS"))
 mesh_vast <- VASTfit_age$spatial_list$MeshList$anisotropic_mesh
 
 # Format mesh for tinyVAST (using a function from sdmTMB; same method as sdmTMB index bridging)
-old_mesh <- sdmTMB::make_mesh(dat, xy_cols = c("X", "Y"), 
+old_mesh <- sdmTMB::make_mesh(Data, xy_cols = c("X", "Y"), 
                               mesh = VASTfit_age$spatial_list$MeshList$anisotropic_mesh,
                               fmesher_func = fm_mesh_2d())
 
@@ -121,15 +124,15 @@ myfit <- tinyVAST(
 stop.time <- Sys.time()
 
 # Save fit object
-saveRDS(myfit, here(workDir, "results", "tinyVAST_fit_mesh.RDS"))
+saveRDS(myfit, here(workDir, "results", paste0("tinyVAST_fit_", name, ".RDS")))
 
 #' ----------------------------------------------------------------------------
 #' SNW: this step takes longer than the model fitting and is memory-intensive. 
 #' It's a good idea to re-start R before this point. You'll need to re-run lines
-#' 10-40, too.
+#' 10-43, too.
 
 # Load back fit object if you restarted R
-myfit <- readRDS(here(workDir, "results", "tinyVAST_fit_mesh.RDS"))
+myfit <- readRDS(here(workDir, "results", paste0("tinyVAST_fit_", name, ".RDS")))
 # Get shapefile for survey extent
 data(bering_sea)
 
@@ -168,6 +171,7 @@ for(j in seq_len(nrow(N_jz))){
 N_ct <- array(N_jz$Biomass, dim=c(length(myfit$internal$variables),length(unique(Data$Year))),
               dimnames=list(myfit$internal$variables,sort(unique(Data$Year))))
 N_ct <- N_ct / outer(rep(1, nrow(N_ct)), colSums(N_ct))
+write.csv(N_ct, here(workDir, "results", paste0("tinyVAST_natage_", name, ".RDS")), row.names = FALSE)
 
 #' Finally, we can compare these estimates with those from package VAST. 
 #' Estimates differ somewhat because VAST used a delta-gamma distribution with 
@@ -203,4 +207,4 @@ colnames(tiny_out) <- c("age_1", "age_2", "age_3", "age_4", "age_5", "age_6",
                         "age_7", "age_8", "age_9", "age_10", "age_11", "age_12",
                         "age_13", "age_14", "age_15", "Year")
 tiny_out$Region <- "EBS"
-write.csv(tiny_out, here(workDir, "results", "tinyVAST_props.csv"), row.names = FALSE)
+write.csv(tiny_out, here(workDir, "results", paste0("tinyVAST_props_", name, ".RDS")), row.names = FALSE)
