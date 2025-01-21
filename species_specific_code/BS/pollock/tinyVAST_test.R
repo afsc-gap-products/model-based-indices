@@ -171,7 +171,7 @@ for(j in seq_len(nrow(N_jz))){
 N_ct <- array(N_jz$Biomass, dim=c(length(myfit$internal$variables),length(unique(Data$Year))),
               dimnames=list(myfit$internal$variables,sort(unique(Data$Year))))
 N_ct <- N_ct / outer(rep(1, nrow(N_ct)), colSums(N_ct))
-write.csv(N_ct, here(workDir, "results", paste0("tinyVAST_natage_", name, ".RDS")), row.names = FALSE)
+write.csv(N_ct, here(workDir, "results", paste0("tinyVAST_natage_", name, ".csv")), row.names = FALSE)
 
 #' Finally, we can compare these estimates with those from package VAST. 
 #' Estimates differ somewhat because VAST used a delta-gamma distribution with 
@@ -207,4 +207,4 @@ colnames(tiny_out) <- c("age_1", "age_2", "age_3", "age_4", "age_5", "age_6",
                         "age_7", "age_8", "age_9", "age_10", "age_11", "age_12",
                         "age_13", "age_14", "age_15", "Year")
 tiny_out$Region <- "EBS"
-write.csv(tiny_out, here(workDir, "results", paste0("tinyVAST_props_", name, ".RDS")), row.names = FALSE)
+write.csv(tiny_out, here(workDir, "results", paste0("tinyVAST_props_", name, ".csv")), row.names = FALSE)
