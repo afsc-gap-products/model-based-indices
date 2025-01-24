@@ -1,4 +1,4 @@
-# Scratch/draft script to run all GOA sdmTMB indices ----
+# Draft script to run all GOA sdmTMB indices ----
 
 library(sdmTMB)
 library(dplyr)
@@ -35,11 +35,17 @@ for (i in species_list){
     #or use coarser mesh for experimentation
     #mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 50) 
     
+    if(species == "Sebastes_polyspinis"){
+      family <- delta_lognormal(type = "poisson-link")
+    } else {
+      family <- delta_gamma(type = "poisson-link")
+      }
+    
     fit_sdmTMB <- sdmTMB( 
       cpue_kg_km2 ~ 0 + year_f,
       data = dat, 
       mesh = mesh,
-      family = delta_gamma(type = "poisson-link"), 
+      family = family, 
       time = "year", 
       spatial = "on",
       spatiotemporal = "iid",
