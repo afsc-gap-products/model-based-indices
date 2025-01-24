@@ -1,4 +1,4 @@
-*.Rproj
+model-based-indices.Rproj
 .Rproj.user
 .Rhistory
 .RData
@@ -28,6 +28,5 @@ VAST_results/
 /species_specific_code/BS/yellowfin-sole/production/
 /species_specific_code/BS/yellowfin_sole/production
 /dev/
-
 !meshes/*
 !extrapolation_grids/*
