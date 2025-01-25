@@ -35,44 +35,24 @@ species <- "yellowfin_sole"
 We will fit geostatistical spatiotemporal models with sdmTMB for the purposes of index standardization. We will use data from the EBS/NBS AFSC GAP bottom trawl surveys. The density units we will work in are either kg/km^2^ or n/km^2^, for biomass or numerical abundance. 
 
 ```{r data, echo = TRUE}
-# TODO: standardize names better
 if(species == "pacific_cod"){
-  dat_ll <- readRDS(here("species_specific_code", "BS", species, "production", 
+  dat <- readRDS(here("species_specific_code", "BS", species, "production", 
                         "data", "data_geostat_numerical_index.RDS"))
-  dat_ll <-  dplyr::transmute(dat_ll,
-                         cpue = Catch_N / AreaSwept_km2, #note last cod model used catch ~ effort
-                         year = as.integer(Year),
-                         vessel = "missing",
-                         effort = 1, # area swept is 1 when using CPUE instead of observed weight
-                         lat = Lat,
-                         lon = Lon,
-                         pass = 0) %>% 
-                as.data.frame() # ensure not a tibble
+  dat <-  rename(dat, cpue = cpue_n_km2)
 }
 if(species == "pollock"){
-  dat_ll <- read.csv(here("species_specific_code", "BS", species, "VAST_ddc_all_2023.csv"))  
-  dat_ll <-  dplyr::transmute(dat_ll,
+  dat <- read.csv(here("species_specific_code", "BS", species, "VAST_ddc_all_2023.csv"))  
+  dat <-  dplyr::transmute(dat,
                          cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
                          year = as.integer(year),
-                         vessel = "missing",
-                         effort = 1, # area swept is 1 when using CPUE instead of observed weight
                          lat = start_latitude,
-                         lon = start_longitude,
-                         pass = 0) %>% 
-                as.data.frame() # ensure not a tibble
+                         lon = start_longitude
+                         )
 }
 if(species == "yellowfin_sole"){
-  dat_ll <- readRDS(here("species_specific_code", "BS", species, "production", 
+  dat <- readRDS(here("species_specific_code", "BS", species, "production", 
                        "data", "data_geostat_biomass_index.RDS"))  
-  dat_ll <-  dplyr::transmute(dat_ll,
-                         cpue = Catch_KG / AreaSwept_km2,
-                         year = as.integer(Year),
-                         vessel = "missing",
-                         effort = 1, # area swept is 1 when using CPUE instead of observed weight
-                         lat = Lat,
-                         lon = Lon,
-                         pass = 0) %>% 
-                as.data.frame() # ensure not a tibble
+  dat <-  rename(dat, cpue = cpue_kg_km2)
 }
 ```
 
@@ -85,14 +65,14 @@ if(species == "yellowfin_sole"){
   env <- scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)
 }
 
-dat_ll <- left_join(dat_ll, env, by = "year") 
+dat <- left_join(dat, env, by = "year") 
 ```
 Now we fit the model in sdmTMB:
 
 ```{r sdmTMB-example, echo = TRUE}
-dat <- dat_ll %>% 
-  rename(X = lon, Y = lat)
 dat$year_f <- as.factor(dat$year)
+
+add_utm_columns(dat, ll_names = c("lon", "lat"), units = "km")
 
 # detect if any years have occurrences at every haul and fix params as needed
 mins <- dat %>% group_by(year) %>% summarize(min = min(cpue))
@@ -113,14 +93,6 @@ if(sum(mins$min) == 0){
 			      start = list(b_j = .start)
 			    )
 }
-
-#project coordinates (could also use add_utm_columns())
-coordinates(dat) <- ~ X + Y
-proj4string(dat) <- CRS("+proj=longlat +datum=WGS84")
-dat <- as.data.frame(spTransform(dat, CRS("+proj=utm +zone=2")))
-# scale to km so values don't get too large
-dat$X <- dat$coords.x1 / 1000
-dat$Y <- dat$coords.x2 / 1000
 
 f1 <- here("species_specific_code", "BS", species, "index_comparison", "fit_sdmTMB.RDS")
 if (!file.exists(f1)) {
@@ -164,26 +136,14 @@ load(here("extrapolation_grids", "eastern_bering_sea_grid.rda"))
 load(here("extrapolation_grids", "northern_bering_sea_grid.rda"))
 
 # EBS grid
-grid_ll_ebs <- as.data.frame(eastern_bering_sea_grid)
-names(grid_ll_ebs) <- tolower(names(grid_ll_ebs))
-grid_ll_ebs <- grid_ll_ebs %>% 
-  rename(X = lon, Y = lat)
-coordinates(grid_ll_ebs) <- ~ X + Y
-proj4string(grid_ll_ebs) <- CRS("+proj=longlat +datum=WGS84")
-grid_ebs <- as.data.frame(spTransform(grid_ll_ebs, CRS("+proj=utm +zone=2")))
-grid_ebs$X <- grid_ebs$coords.x1 / 1000 # scale to km to work with smaller numbers
-grid_ebs$Y <- grid_ebs$coords.x2 / 1000 
+grid_ebs <- as.data.frame(eastern_bering_sea_grid)
+names(grid_ebs) <- tolower(names(grid_ebs))
+add_utm_columns(grid_ebs, ll_names = c("lon", "lat"), units = "km")
 
 # NBS grid
-grid_ll_nbs <- as.data.frame(northern_bering_sea_grid)
-names(grid_ll_nbs) <- tolower(names(grid_ll_nbs))
-grid_ll_nbs <- grid_ll_nbs %>% 
-  rename(X = lon, Y = lat)
-coordinates(grid_ll_nbs) <- ~ X + Y
-proj4string(grid_ll_nbs) <- CRS("+proj=longlat +datum=WGS84")
-grid_nbs <- as.data.frame(spTransform(grid_ll_nbs, CRS("+proj=utm +zone=2")))
-grid_nbs$X <- grid_nbs$coords.x1 / 1000 # scale to km to work with smaller numbers
-grid_nbs$Y <- grid_nbs$coords.x2 / 1000 
+grid_nbs <- as.data.frame(northern_bering_sea_grid)
+names(grid_nbs) <- tolower(names(grid_nbs))
+add_utm_columns(grid_nbs, ll_names = c("lon", "lat"), units = "km")
 
 # Combined grid
 grid <- bind_rows(grid_nbs, grid_ebs)
@@ -258,6 +218,7 @@ load(f3)
 Now, we can compare the index to the prior model.
 
 ```{r index-compare, message=FALSE, warning=FALSE}
+#TODO: update below and incorporate design-based estimate like GOA script
 vast_i <- read.csv(here("species_specific_code", "BS", species, "index_comparison", "Index.csv")) %>%
   mutate(index = "VAST", year = as.numeric(Time), est = Estimate, 
     se = Std..Error.for.ln.Estimate.) %>% 
