@@ -124,8 +124,9 @@ dat$Y <- dat$coords.x2 / 1000
 
 f1 <- here("species_specific_code", "BS", species, "index_comparison", "fit_sdmTMB.RDS")
 if (!file.exists(f1)) {
-  # make mesh and fit model
-  mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$anisotropic_mesh) 
+  #pass same mesh as prior model
+  mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
+                     mesh = readRDS(file = here("meshes/bs_vast_mesh.RDS")))
   #mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 50, type = "kmeans") #coarser mesh for experimentation
   
   fit_sdmTMB <- sdmTMB( 
