@@ -69,7 +69,7 @@ table(gapindex_cpue$YEAR, gapindex_cpue$SPECIES_CODE)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Create a lat/lon spatial object of the station locations 
-##   Tranform station spatial object to UTM (zone 5)
+##   Transform station spatial object to UTM (zone 5)
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 cpue_sf <- sf::st_as_sf(x = gapindex_cpue, 
                         coords = c("LONGITUDE_DD_START", "LATITUDE_DD_START"), 
