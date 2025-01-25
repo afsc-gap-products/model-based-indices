@@ -478,41 +478,41 @@ age_cpue <- merge(x = every_combo_of_ages,
                   by = "HAULJOIN")
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Format VAST Data
+##   Format Data
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
 data_geostat_biomass_index <- with(ebs_nbs_cpue,
-                                   data.frame(Hauljoin = HAULJOIN,
-                                              Region = SURVEY,
-                                              Catch_KG = CPUE_KGKM2,
-                                              Year = YEAR,
-                                              Vessel = "missing", 
-                                              AreaSwept_km2 = 1,
-                                              Lat = LATITUDE_DD_START,
-                                              Lon = LONGITUDE_DD_START,
-                                              Pass = 0))
+                                   data.frame(region = SURVEY,
+                                              hauljoin = HAULJOIN,
+                                              year = as.integer(YEAR),
+                                              lon = LONGITUDE_DD_START,
+                                              lat = LATITUDE_DD_START,
+                                              catch_kg = WEIGHT_KG, 
+                                              catch_n = COUNT,
+                                              effort_km2 = AREA_SWEPT_KM2,
+                                              cpue_kg_km2 = CPUE_KGKM2,
+                                              cpue_n_km2 = CPUE_NOKM2))
 
 data_geostat_numerical_index <- with(ebs_nbs_cpue,
-                                     data.frame(Hauljoin = HAULJOIN,
-                                                Region = SURVEY,
-                                                Catch_N = CPUE_NOKM2,
-                                                Year = YEAR,
-                                                Vessel = "missing", 
-                                                AreaSwept_km2 = 1,
-                                                Lat = LATITUDE_DD_START,
-                                                Lon = LONGITUDE_DD_START,
-                                                Pass = 0))
+                                     data.frame(region = SURVEY,
+                                                hauljoin = HAULJOIN,
+                                                year = as.integer(YEAR),
+                                                lon = LONGITUDE_DD_START,
+                                                lat = LATITUDE_DD_START,
+                                                catch_kg = WEIGHT_KG, 
+                                                catch_n = COUNT,
+                                                effort_km2 = AREA_SWEPT_KM2,
+                                                cpue_kg_km2 = CPUE_KGKM2,
+                                                cpue_n_km2 = CPUE_NOKM2))
 
 data_geostat_agecomps <- with(age_cpue, 
-                              data.frame(Hauljoin = HAULJOIN,
-                                         Region = SURVEY,
-                                         Catch_N = AGE_CPUE_NOKM2,
-                                         Year = YEAR,
-                                         Vessel = "missing",
-                                         Age = AGE,
-                                         AreaSwept_km2 = 1,
-                                         Lat = LATITUDE_DD_START,
-                                         Lon = LONGITUDE_DD_START,
-                                         Pass = 0)) 
+                              data.frame(region = SURVEY,
+                                         hauljoin = HAULJOIN,
+                                         year = as.integer(YEAR),
+                                         lon = LONGITUDE_DD_START,
+                                         lat = LATITUDE_DD_START,
+                                         age = AGE,
+                                         cpue_n_km2 = AGE_CPUE_NOKM2,
+                                         effort_km2 = AREA_SWEPT_KM2)) 
 
 if (start_year != start_year_age) {
   data_geostat_agecomps <- subset(x = data_geostat_agecomps,
