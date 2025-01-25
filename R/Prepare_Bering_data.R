@@ -511,8 +511,7 @@ data_geostat_agecomps <- with(age_cpue,
                                          lon = LONGITUDE_DD_START,
                                          lat = LATITUDE_DD_START,
                                          age = AGE,
-                                         cpue_n_km2 = AGE_CPUE_NOKM2,
-                                         effort_km2 = AREA_SWEPT_KM2)) 
+                                         cpue_n_km2 = AGE_CPUE_NOKM2)) 
 
 if (start_year != start_year_age) {
   data_geostat_agecomps <- subset(x = data_geostat_agecomps,
