@@ -9,6 +9,7 @@ model-based-indices.Rproj
 *.png
 *.gif
 *.csv
+*.PDF
 results/
 results_age/
 testing/
