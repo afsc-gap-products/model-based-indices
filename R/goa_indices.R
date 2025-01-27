@@ -29,12 +29,7 @@ for (i in species_list){
   # fit model ----
   f1 <- here("species_specific_code", "GOA", species, phase, "fit.RDS")
   if (!file.exists(f1)) {
-    #pass same mesh as prior model
-    mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
-                       mesh = readRDS(file = here("meshes/goa_vast_mesh.RDS")))
-    #or use coarser mesh for experimentation
-    #mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 50) 
-    
+
     if(species == "Sebastes_polyspinis"){
       family <- delta_lognormal(type = "poisson-link")
     } else {
@@ -42,6 +37,9 @@ for (i in species_list){
     }
     
     if(species == "Gadus_macrocephalus"){
+      dat <- subset(dat, !is.na(cpue_n_km2))
+      mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
+                         mesh = readRDS(file = here("meshes/goa_vast_mesh.RDS")))
       fit <- sdmTMB( 
         cpue_n_km2 ~ 0 + year_f,
         data = dat, 
@@ -53,6 +51,8 @@ for (i in species_list){
         anisotropy = TRUE
       )
     } else {
+      mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
+                         mesh = readRDS(file = here("meshes/goa_vast_mesh.RDS")))
       fit <- sdmTMB( 
         cpue_kg_km2 ~ 0 + year_f,
         data = dat, 
