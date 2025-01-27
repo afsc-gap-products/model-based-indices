@@ -37,7 +37,7 @@ We will fit geostatistical spatiotemporal models with sdmTMB for the purposes of
 ```{r data, echo = TRUE}
 if(species == "pacific_cod"){
   dat <- readRDS(here("species_specific_code", "BS", species, "production", 
-                        "data", "data_geostat_numerical_index.RDS"))
+                        "data", "data_geostat_index.RDS"))
   dat <-  rename(dat, cpue = cpue_n_km2)
 }
 if(species == "pollock"){
@@ -51,7 +51,7 @@ if(species == "pollock"){
 }
 if(species == "yellowfin_sole"){
   dat <- readRDS(here("species_specific_code", "BS", species, "production", 
-                       "data", "data_geostat_biomass_index.RDS"))  
+                       "data", "data_geostat_index.RDS"))  
   dat <-  rename(dat, cpue = cpue_kg_km2)
 }
 ```
