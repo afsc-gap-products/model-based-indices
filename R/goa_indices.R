@@ -168,10 +168,10 @@ for (i in species_list){
   }
   db_i <- RODBC::sqlQuery(channel = channel, query = query)
   
-  new_i <- ind %>% mutate(index = "new") %>% select(index, year, est, lwr, upr)
+  new_i <- ind %>% mutate(index = "mb_new") %>% select(index, year, est, lwr, upr)
   old_i <- read.csv(here("species_specific_code", "GOA", 
                          species, phase, "Index.csv")) %>%
-    mutate(index = "old", year = as.numeric(Time), est = Estimate, 
+    mutate(index = "mb_old", year = as.numeric(Time), est = Estimate, 
            se = Std..Error.for.ln.Estimate.) %>% 
     filter(year %in% unique(new_i$year)) %>%
     mutate(lwr = exp(log(est) + qnorm(0.025) * se),
