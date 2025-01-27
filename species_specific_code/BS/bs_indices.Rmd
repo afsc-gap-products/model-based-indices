@@ -29,7 +29,7 @@ library(ggplot2)
 library(here)
 
 species <- "yellowfin_sole" 
-#pollock pacific_cod yellowfin_sole
+#pollock pacific_cod yellowfin_sole kamchatka_flounder
 ```
 
 We will fit geostatistical spatiotemporal models with sdmTMB for the purposes of index standardization. We will use data from the EBS/NBS AFSC GAP bottom trawl surveys. The density units we will work in are either kg/km^2^ or n/km^2^, for biomass or numerical abundance. 
@@ -49,7 +49,7 @@ if(species == "pollock"){
                          lon = start_longitude
                          )
 }
-if(species == "yellowfin_sole"){
+if(species %in% c("yellowfin_sole", "kamchatka_flounder")){
   dat <- readRDS(here("species_specific_code", "BS", species, "production", 
                        "data", "data_geostat_index.RDS"))  
   dat <-  rename(dat, cpue = cpue_kg_km2)
@@ -94,36 +94,55 @@ if(sum(mins$min) == 0){
 			    )
 }
 
-f1 <- here("species_specific_code", "BS", species, "index_comparison", "fit_sdmTMB.RDS")
+f1 <- here("species_specific_code", "BS", species, "index_comparison", "fit.RDS")
 if (!file.exists(f1)) {
-  #pass same mesh as prior model
-  mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
-                     mesh = readRDS(file = here("meshes/bs_vast_mesh.RDS")))
-  #mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 50, type = "kmeans") #coarser mesh for experimentation
   
-  fit_sdmTMB <- sdmTMB( 
-    cpue ~ 0 + year_f,
-    spatial_varying = ~ env,
-    data = dat, 
-    mesh = mesh,
-    family = delta_gamma(type = "poisson-link"), 
-    time = "year", 
-    spatial = "on",
-    spatiotemporal = "ar1",
-    extra_time = 2020L, 
-    silent = FALSE,
-    anisotropy = TRUE,
-    control = control,
-    do_fit = TRUE
-  )
-  fit_sdmTMB
-  saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", species, "index_comparison", "fit_sdmTMB.RDS"))
-} else {
-  fit_sdmTMB <- readRDS(f1)
+    if(species == "kamchatka_flounder"){
+      #make mesh just for EBS only
+      mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
+                         n_knots = 250, type = "kmeans")
+      #fit to EBS only, using IID spatiotemporal fields instead of "ar1"
+      fit <- sdmTMB( 
+        cpue ~ 0 + year_f,
+        spatial_varying = ~ env,
+        data = dat, 
+        mesh = mesh,
+        family = delta_gamma(type = "poisson-link"), 
+        time = "year", 
+        spatial = "on",
+        spatiotemporal = "iid",
+        silent = FALSE,
+        anisotropy = TRUE,
+        control = control
+      )
+    } else {
+        #pass same mesh as prior model
+        mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
+                     mesh = readRDS(file = here("meshes/bs_vast_mesh.RDS")))
+        fit <- sdmTMB( 
+          cpue ~ 0 + year_f,
+          spatial_varying = ~ env,
+          data = dat, 
+          mesh = mesh,
+          family = delta_gamma(type = "poisson-link"), 
+          time = "year", 
+          spatial = "on",
+          spatiotemporal = "ar1",
+          extra_time = 2020L, 
+          silent = FALSE,
+          anisotropy = TRUE,
+          control = control
+        )
+    }
+    saveRDS(fit, file = here("species_specific_code", "BS", species, "index_comparison", "fit.RDS"))
+  } else {
+    fit <- readRDS(f1)
 }
 
+sanity(fit)
+summary(fit)
 # diagnose estimation issues due to model structure
-#TMBhelper::check_estimability(fit_sdmTMB$tmb_obj)
+#TMBhelper::check_estimability(fit$tmb_obj)
 ```
 
 We can compare the index we would get using sdmTMB. 
@@ -165,9 +184,9 @@ pred_grid <- left_join(pred_grid, rename(env_join, cpe = env), by = "year")
 # f2 <- here("species_specific_code", "BS", species,
 #            "index_comparison", "predictions.RData")
 # if (!file.exists(f2)) {
-#   p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
-#   p_ebs <- predict(fit_sdmTMB, newdata = pred_grid_ebs, return_tmb_object = TRUE)
-#   p_nbs <- predict(fit_sdmTMB, newdata = pred_grid_nbs, return_tmb_object = TRUE)
+#   p <- predict(fit, newdata = pred_grid, return_tmb_object = TRUE)
+#   p_ebs <- predict(fit, newdata = pred_grid_ebs, return_tmb_object = TRUE)
+#   p_nbs <- predict(fit, newdata = pred_grid_nbs, return_tmb_object = TRUE)
 #     save(p, p_ebs, p_nbs, file = f2)
 # } else {
 #   load(f2)
@@ -197,19 +216,16 @@ f3 <- here("species_specific_code", "BS", species,
            "index_comparison", "indices.RData")
 if (!file.exists(f3)) {
   gc()
-  ind <- get_index_split(fit_sdmTMB, newdata = pred_grid, nsplit = 2, # may need 6 if have 64GB RAM
-                         bias_correct = TRUE, area = pred_grid$area_in_survey_km2)
-  #if using offsets also include the argument predict_args = list(offset = fake_offset)
-  ind$stratum <- "Both"
-
-  ind_ebs <- get_index_split(fit_sdmTMB, newdata = pred_grid_ebs, nsplit = 2,
-                             bias_correct = TRUE, area = pred_grid_ebs$area_in_survey_km2)
-  ind_ebs$stratum <- "EBS"
-
-  ind_nbs <- get_index_split(fit_sdmTMB, newdata = pred_grid_nbs, nsplit = 2,
-                             bias_correct = TRUE, area = pred_grid_nbs$area_in_survey_km2)
-  ind_nbs$stratum <- "NBS"
-  save(ind, ind_ebs, ind_nbs, file = here("species_specific_code", "BS", species, "index_comparison", "indices.RData"))
+  if(species == "kamchatka_flounder"){
+    ind <- get_index_split(fit, newdata = pred_grid_ebs, nsplit = 2,
+                           bias_correct = TRUE, 
+                           area = pred_grid_ebs$area_in_survey_km2)
+  } else {
+      ind <- get_index_split(fit, newdata = pred_grid, nsplit = 2, # may need 6 if have 64GB RAM
+                             bias_correct = TRUE, 
+                             area = pred_grid$area_in_survey_km2)
+  }
+  saveRDS(ind, file = here("species_specific_code", "BS", species, phase, "index.RDS"))
 } else {
 load(f3)
 }
@@ -218,41 +234,26 @@ load(f3)
 Now, we can compare the index to the prior model.
 
 ```{r index-compare, message=FALSE, warning=FALSE}
-#TODO: update below and incorporate design-based estimate like GOA script
-vast_i <- read.csv(here("species_specific_code", "BS", species, "index_comparison", "Index.csv")) %>%
-  mutate(index = "VAST", year = as.numeric(Time), est = Estimate, 
+#TODO: incorporate design-based estimate like GOA script
+  if(species == "kamchatka_flounder"){
+    stratum <- "EBS"
+  } else {
+    stratum <- "Both"
+  }
+
+old_i <- read.csv(here("species_specific_code", "BS", species, "index_comparison", "Index.csv")) %>%
+  mutate(index = "mb_old", year = as.numeric(Time), est = Estimate, 
     se = Std..Error.for.ln.Estimate.) %>% 
-  select(index, year, est, se, stratum = Stratum) %>% 
-  filter(year != 2020) %>%
+  filter(year != 2020, Stratum == stratum) %>%
+  select(index, year, est, se) %>% 
   mutate(lwr = exp(log(est) + qnorm(0.025) * se)) %>% 
   mutate(upr = exp(log(est) + qnorm(0.975) * se))
-sdm_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "sdmTMB")
-both_i <- bind_rows(sdm_i, vast_i) %>% filter(est > 0)
+new_i <- ind %>% mutate(index = "mb_new")
+both_i <- bind_rows(new_i, old_i) %>% filter(est > 0)
 
-ggplot(filter(both_i, stratum == "Both"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
+ggplot(both_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
   geom_ribbon(alpha = 0.1) +
   geom_line(alpha = 0.8) + 
   ylim(0, max(both_i$upr)) +
-  ggtitle("EBS + NBS") +
   coord_cartesian(expand = FALSE)
-
-ggplot(filter(both_i, stratum == "EBS"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
-  geom_ribbon(alpha = 0.1) +
-  geom_line(alpha = 0.8) + 
-  ggtitle("EBS") +
-  coord_cartesian(expand = FALSE)
-
-ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
-  geom_ribbon(alpha = 0.1) +
-  geom_line(alpha = 0.8) + 
-  ggtitle("NBS") +
-  coord_cartesian(expand = FALSE)
-```
-
-This document was built using:
-
-```{r, echo=TRUE}
-R.Version()$version.string
-packageVersion("VAST")
-packageVersion("FishStatsUtils")
 ```
