@@ -18,12 +18,12 @@ channel <- gapindex::get_connected(check_access = F)
 ## specify whether hindcast or production phase
 phase <- c("hindcast", "production")[1]
 
-species_info <- data.frame(species_name = c("yellowfin_sole", "Pacific_cod", "kamchatka_flounder"),
-                           species_code = c(10210, 21720, 10112),
-                           start_year = c(1982, 1982, 1991),
+species_info <- data.frame(species_name = c("yellowfin_sole", "Pacific_cod"),
+                           species_code = c(10210, 21720),
+                           start_year = 1982,
                            current_year = 2024,
-                           plus_group = c(20, 12, 25), 
-                           start_year_age = c(1982, 1994, 1991))[2, ]
+                           plus_group = c(20, 12), 
+                           start_year_age = c(1982, 1994))[2, ]
 
 ## Set constants
 start_year <- species_info$start_year
