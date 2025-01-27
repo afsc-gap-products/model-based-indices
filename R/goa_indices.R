@@ -27,7 +27,7 @@ for (i in species_list){
   dat$year_f <- as.factor(dat$year)
   
   # fit model ----
-  f1 <- here("species_specific_code", "GOA", species, phase, "fit_sdmTMB.RDS")
+  f1 <- here("species_specific_code", "GOA", species, phase, "fit.RDS")
   if (!file.exists(f1)) {
     #pass same mesh as prior model
     mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
@@ -39,29 +39,38 @@ for (i in species_list){
       family <- delta_lognormal(type = "poisson-link")
     } else {
       family <- delta_gamma(type = "poisson-link")
-      }
+    }
     
-    fit_sdmTMB <- sdmTMB( 
-      cpue_kg_km2 ~ 0 + year_f,
-      data = dat, 
-      mesh = mesh,
-      family = family, 
-      time = "year", 
-      spatial = "on",
-      spatiotemporal = "iid",
-      silent = FALSE,
-      anisotropy = TRUE,
-      do_fit = TRUE 
-      #, do_index = TRUE (to compute index at same time, requires passing args)
-    )
-    fit_sdmTMB
-    saveRDS(fit_sdmTMB, file = f1)
+    if(species == "Gadus_macrocephalus"){
+      fit <- sdmTMB( 
+        cpue_n_km2 ~ 0 + year_f,
+        data = dat, 
+        mesh = mesh,
+        family = family, 
+        time = "year", 
+        spatial = "on",
+        spatiotemporal = "iid",
+        anisotropy = TRUE
+      )
+    } else {
+      fit <- sdmTMB( 
+        cpue_kg_km2 ~ 0 + year_f,
+        data = dat, 
+        mesh = mesh,
+        family = family, 
+        time = "year", 
+        spatial = "on",
+        spatiotemporal = "iid",
+        anisotropy = TRUE
+      )
+    }
+    saveRDS(fit, file = f1)
   } else {
-    fit_sdmTMB <- readRDS(f1)
+    fit <- readRDS(f1)
   }
   
-  sanity(fit_sdmTMB)
-  summary(fit_sdmTMB)
+  sanity(fit)
+  summary(fit)
   
   ## make predictions ----
   # load grid and process prediction grid for all years desired
@@ -71,7 +80,7 @@ for (i in species_list){
 
   f2 <- here("species_specific_code", "GOA", species, phase, "predictions.RDS")
   if (!file.exists(f2)) {
-    p <- predict(fit_sdmTMB, newdata = pred_grid, return_tmb_object = TRUE)
+    p <- predict(fit, newdata = pred_grid, return_tmb_object = TRUE)
     saveRDS(p, file = f2)
   } else {
     p <- readRDS(f2)
@@ -81,12 +90,12 @@ for (i in species_list){
   # q-q plot
   pdf(file = here("species_specific_code", "GOA", species, phase, "qq.pdf"), 
       width = 5, height = 5)
-    simulate(fit_sdmTMB, nsim = 500, type = "mle-mvn") |>
-      dharma_residuals(fit_sdmTMB, test_uniformity = FALSE)
+    simulate(fit, nsim = 500, type = "mle-mvn") |>
+      dharma_residuals(fit, test_uniformity = FALSE)
   dev.off()
   
   # residuals on map plot, by year
-  dat$resids <- residuals(fit_sdmTMB, type ="mle-mvn") 
+  dat$resids <- residuals(fit, type ="mle-mvn") 
   ggplot(subset(dat, !is.na(resids)), aes(X, Y, col = resids)) + 
     scale_colour_gradient2(name = "residuals") +
     geom_point(size = 0.7) + 
@@ -98,12 +107,18 @@ for (i in species_list){
          height = 9, width = 6.5, units = c("in"))
   
   # predictions on map plot, by year
+  if(species == "Gadus_macrocephalus"){
+    title <- "Predicted densities (n / square km)"
+  } else {
+    title <- "Predicted densities (kg / square km)"
+  }
+  
   ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
     geom_tile() +
     scale_fill_viridis_c(trans = "sqrt", name = "") +
     facet_wrap(~year, ncol = 2) +
     coord_fixed() +
-    ggtitle("Predicted densities (kg / square km)") +
+    ggtitle(title) +
     theme_bw()
   ggsave(file = here("species_specific_code", "GOA", species, phase, 
                      "predictions_map.pdf"), 
@@ -120,20 +135,37 @@ for (i in species_list){
   
   ### compare indices plot (change loading of old index after hindcast) ----
   # query db index
-  query <- paste0('
-  SELECT 
-  \'db\' AS "index",
-  YEAR AS "year",
-  BIOMASS_MT * 1000 AS "est",
-  (BIOMASS_MT - SQRT(BIOMASS_VAR) * (1.959964)) * 1000 as "lwr", -- qnorm(0.025) in R
-  (BIOMASS_MT + SQRT(BIOMASS_VAR) * (1.959964)) * 1000 as "upr" -- qnorm(0.975) in R
-  
-  -- Identify what tables to pull data from
-  FROM GAP_PRODUCTS.BIOMASS
-  WHERE AREA_ID = 99903 -- GOA REGION
-  AND YEAR < 2025 -- REMOVE THIS LINE AFTER 2025 GOA MOCK DATA HAVE BEEN REMOVED
-  AND SPECIES_CODE = ', unique(dat$species_code)
-  )
+  if(species == "Gadus_macrocephalus"){
+    query <- paste0('
+      SELECT 
+      \'db\' AS "index",
+      YEAR AS "year",
+      POPULATION_COUNT AS "est",
+      (POPULATION_COUNT - SQRT(POPULATION_VAR) * (1.959964)) as "lwr", -- qnorm(0.025) in R
+      (POPULATION_COUNT + SQRT(POPULATION_VAR) * (1.959964)) as "upr" -- qnorm(0.975) in R
+      
+      -- Identify what tables to pull data from
+      FROM GAP_PRODUCTS.BIOMASS
+      WHERE AREA_ID = 99903 -- GOA REGION
+      AND YEAR < 2025 -- REMOVE THIS LINE AFTER 2025 GOA MOCK DATA HAVE BEEN REMOVED
+      AND SPECIES_CODE = ', unique(dat$species_code)
+    )
+  } else {
+    query <- paste0('
+      SELECT 
+      \'db\' AS "index",
+      YEAR AS "year",
+      BIOMASS_MT * 1000 AS "est",
+      (BIOMASS_MT - SQRT(BIOMASS_VAR) * (1.959964)) * 1000 as "lwr", -- qnorm(0.025) in R
+      (BIOMASS_MT + SQRT(BIOMASS_VAR) * (1.959964)) * 1000 as "upr" -- qnorm(0.975) in R
+      
+      -- Identify what tables to pull data from
+      FROM GAP_PRODUCTS.BIOMASS
+      WHERE AREA_ID = 99903 -- GOA REGION
+      AND YEAR < 2025 -- REMOVE THIS LINE AFTER 2025 GOA MOCK DATA HAVE BEEN REMOVED
+      AND SPECIES_CODE = ', unique(dat$species_code)
+    )
+  }
   db_i <- RODBC::sqlQuery(channel = channel, query = query)
   
   new_i <- ind %>% mutate(index = "new") %>% select(index, year, est, lwr, upr)
@@ -149,7 +181,11 @@ for (i in species_list){
     filter(est > 0)
   both_i[both_i < 0] <- 0
     
-  
+  if(species == "Gadus_macrocephalus"){
+    ylab <- "Abundance (n)"
+  } else {
+    ylab <- "Biomass (kg)"
+  }
   ggplot(both_i, aes(x = year, y = est, ymin = lwr, ymax = upr, 
                      colour = index)) + 
     geom_ribbon(alpha = 0.1) +
@@ -157,7 +193,7 @@ for (i in species_list){
     ylim(0, max(both_i$upr)) +
     ggtitle(species) +
     coord_cartesian(expand = FALSE) + 
-    ylab("Biomass (kg)") +
+    ylab(ylab) +
     theme_bw()
   ggsave(file = here("species_specific_code", "GOA", species, phase, 
                      "index_comparison.pdf"), 
