@@ -28,6 +28,7 @@ library(dplyr)
 library(ggplot2)
 library(here)
 
+phase <- c("hindcast", "production")[1] # specify analysis phase
 species <- "yellowfin_sole" 
 #pollock pacific_cod yellowfin_sole kamchatka_flounder
 ```
@@ -36,7 +37,7 @@ We will fit geostatistical spatiotemporal models with sdmTMB for the purposes of
 
 ```{r data, echo = TRUE}
 if(species == "pacific_cod"){
-  dat <- readRDS(here("species_specific_code", "BS", species, "production", 
+  dat <- readRDS(here("species_specific_code", "BS", species, phase, 
                         "data", "data_geostat_index.RDS"))
   dat <-  rename(dat, cpue = cpue_n_km2)
 }
@@ -50,7 +51,7 @@ if(species == "pollock"){
                          )
 }
 if(species %in% c("yellowfin_sole", "kamchatka_flounder")){
-  dat <- readRDS(here("species_specific_code", "BS", species, "production", 
+  dat <- readRDS(here("species_specific_code", "BS", species, phase, 
                        "data", "data_geostat_index.RDS"))  
   dat <-  rename(dat, cpue = cpue_kg_km2)
 }
@@ -212,8 +213,7 @@ pred_grid <- left_join(pred_grid, rename(env_join, cpe = env), by = "year")
 
 # NOTE: if using get_index_split() rather than get_index() you need to pass the 
 # model object and new data (not prediction object, you can bypass that step) and run:
-f3 <- here("species_specific_code", "BS", species,
-           "index_comparison", "indices.RData")
+f3 <- here("species_specific_code", "BS", species, phase, "index.RDS")
 if (!file.exists(f3)) {
   gc()
   if(species == "kamchatka_flounder"){
