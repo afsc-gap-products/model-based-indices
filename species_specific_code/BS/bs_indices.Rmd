@@ -229,31 +229,139 @@ if (!file.exists(f3)) {
 } else {
 load(f3)
 }
+
+## Plot predicted density maps and fit diagnostics ----
+# q-q plot
+pdf(file = here("species_specific_code", "BS", species, phase, "qq.pdf"), 
+    width = 5, height = 5)
+  simulate(fit, nsim = 500, type = "mle-mvn") |>
+    dharma_residuals(fit, test_uniformity = FALSE)
+dev.off()
+
+# residuals on map plot, by year
+dat$resids <- residuals(fit, type ="mle-mvn") 
+ggplot(subset(dat, !is.na(resids)), aes(X, Y, col = resids)) + 
+  scale_colour_gradient2(name = "residuals") +
+  geom_point(size = 0.7) + 
+  facet_wrap(~year) + 
+  coord_fixed() +
+  theme_bw()
+ggsave(file = here("species_specific_code", "BS", species, phase, 
+                   "residuals_map.pdf"), 
+       height = 9, width = 6.5, units = c("in"))
+
+#TODO: update p object (extract from index_split index object?)
+# # predictions on map plot, by year
+# if(species == "Gadus_macrocephalus"){
+#   title <- "Predicted densities (n / square km)"
+# } else {
+#   title <- "Predicted densities (kg / square km)"
+# }
+# 
+# ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
+#   geom_tile() +
+#   scale_fill_viridis_c(trans = "sqrt", name = "") +
+#   facet_wrap(~year, ncol = 2) +
+#   coord_fixed() +
+#   ggtitle(title) +
+#   theme_bw()
+# ggsave(file = here("species_specific_code", "BS", species, phase, 
+#                    "predictions_map.pdf"), 
+#        height = 9, width = 6.5, units = c("in"))
 ```
 
 Now, we can compare the index to the prior model.
 
 ```{r index-compare, message=FALSE, warning=FALSE}
-#TODO: incorporate design-based estimate like GOA script
-  if(species == "kamchatka_flounder"){
+# Plot design-based estimate vs old and new model estimate ---------------------
+# query db index
+channel <- gapindex::get_connected(check_access = FALSE) # enter credentials 
+
+if(species == "kamchatka_flounder"){
     stratum <- "EBS"
   } else {
     stratum <- "Both"
   }
 
+if(species == "Gadus_macrocephalus"){
+  query <- paste0('
+    SELECT 
+    \'db\' AS "index",
+    YEAR AS "year",
+    POPULATION_COUNT AS "est",
+    (POPULATION_COUNT - SQRT(POPULATION_VAR) * (1.959964)) as "lwr", -- qnorm(0.025) in R
+    (POPULATION_COUNT + SQRT(POPULATION_VAR) * (1.959964)) as "upr" -- qnorm(0.975) in R
+    
+    -- Identify what tables to pull data from
+    WHERE SURVEY_DEFINITION_ID IN (143, 98)
+    AND SPECIES_CODE = ', unique(dat$species_code)
+  )
+} else {
+  query <- paste0('
+    SELECT 
+    \'db\' AS "index",
+    YEAR AS "year",
+    BIOMASS_MT * 1000 AS "est",
+    (BIOMASS_MT - SQRT(BIOMASS_VAR) * (1.959964)) * 1000 as "lwr", -- qnorm(0.025) in R
+    (BIOMASS_MT + SQRT(BIOMASS_VAR) * (1.959964)) * 1000 as "upr" -- qnorm(0.975) in R
+    
+    -- Identify what tables to pull data from
+    WHERE SURVEY_DEFINITION_ID IN (143, 98)
+    AND SPECIES_CODE = ', unique(dat$species_code)
+  )
+}
+db_i <- RODBC::sqlQuery(channel = channel, query = query)
+
+new_i <- ind %>% mutate(index = "mb_new") %>% select(index, year, est, lwr, upr)
+
 old_i <- read.csv(here("species_specific_code", "BS", species, "index_comparison", "Index.csv")) %>%
+#old_i <- read.csv(here("species_specific_code", "BS", species, phase, "Index.csv")) %>%
   mutate(index = "mb_old", year = as.numeric(Time), est = Estimate, 
     se = Std..Error.for.ln.Estimate.) %>% 
-  filter(year != 2020, Stratum == stratum) %>%
+  filter(year %in% unique(new_i$year), Stratum == stratum) %>%
   select(index, year, est, se) %>% 
-  mutate(lwr = exp(log(est) + qnorm(0.025) * se)) %>% 
-  mutate(upr = exp(log(est) + qnorm(0.975) * se))
-new_i <- ind %>% mutate(index = "mb_new")
-both_i <- bind_rows(new_i, old_i) %>% filter(est > 0)
+  mutate(lwr = exp(log(est) + qnorm(0.025) * se),
+         upr = exp(log(est) + qnorm(0.975) * se)) %>%
+  select(index, year, est, lwr, upr)
 
-ggplot(both_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = index)) + 
+both_i <- bind_rows(new_i, old_i, db_i) %>% 
+  filter(est > 0)
+both_i[both_i < 0] <- 0
+
+# plot  
+if(species == "Gadus_macrocephalus"){
+  ylab <- "Abundance (n)"
+} else {
+  ylab <- "Biomass (kg)"
+}
+ggplot(both_i, aes(x = year, y = est, ymin = lwr, ymax = upr, 
+                   colour = index)) + 
   geom_ribbon(alpha = 0.1) +
   geom_line(alpha = 0.8) + 
   ylim(0, max(both_i$upr)) +
-  coord_cartesian(expand = FALSE)
+  ggtitle(species) +
+  coord_cartesian(expand = FALSE) + 
+  ylab(ylab) +
+  theme_bw()
+ggsave(file = here("species_specific_code", "BS", species, phase, 
+                   "index_comparison.pdf"), 
+       height = 4, width = 6, units = c("in"))
+
+#### ESP products ----
+# TODO: check if there is different trend without bias correction
+f4 <- here("species_specific_code", "BS", species, phase, "cog.RDS")
+if (!file.exists(f4)) {
+  cog <- get_cog(p, bias_correct = FALSE, 
+                 area = p$data$area_km2, format = "wide")
+  saveRDS(cog, file = here("species_specific_code", "BS", 
+                           species, phase, "cog.RDS"))
+}
+
+f5 <- here("species_specific_code", "BS", species, phase, 
+           "area_occupied.RDS")
+if (!file.exists(f5)) {
+eao <- get_eao(p, bias_correct = FALSE, area = p$data$area_km2)
+saveRDS(eao, file = here("species_specific_code", "BS", 
+                         species, phase, "area_occupied.RDS"))
+}
 ```
