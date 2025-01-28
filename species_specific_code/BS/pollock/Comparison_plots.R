@@ -167,13 +167,14 @@ index_diff
 # Read in age comp model results (and remove rownames column)
 # old_props <- read.csv(here(workDir, "results", "2023 Production", "Comps", "proportions.csv"))
 new_props <- cbind(read.csv(here(workDir, "results", "Comps", "proportions.csv")), distribution = "VAST")
-tiny_tweedie <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props.csv")), distribution = "Tweedie")
-tiny_dg <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv")), distribution = "Delta Gamma")
+# tiny_tweedie <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props.csv")), distribution = "Tweedie")
+# tiny_dg <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv")), distribution = "Delta Gamma")
 tiny_mesh <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_mesh.csv")), distribution = "Tweedie")
 tiny_mesh_dg <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_mesh_dg.csv")), distribution = "Delta Gamma")
-tiny_logn <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_logn.csv")), distribution = "Lognormal")
-tiny_bc <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_bc.csv")), distribution = "Tweedie")
-tiny_dg_bc <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg_bc.csv")), distribution = "Delta Gamma")
+# tiny_logn <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_logn.csv")), distribution = "Lognormal")
+# tiny_bc <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_bc.csv")), distribution = "Tweedie")
+# tiny_dg_bc <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg_bc.csv")), distribution = "Delta Gamma")
+tiny_mesh_dglink <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_mesh_dglink.csv")), distribution = "DG (poisson-link)")
 sdm_props <- dcast(cbind(read.csv(here(workDir, "results", "sdmTMB_age_prop.csv"))[, 2:4]), formula = year ~ Age)
 
 # Reshape sdmTMB comps 
@@ -182,9 +183,40 @@ sdm_props$Region <- "EBS"
 sdm_props$distribution <- "sdmTMB"
 sdm_props <- sdm_props[, c(2:16, 1, 17, 18)]
 
-# # Update old_props to match tinyVAST test output - only EBS
+# Update old_props to match tinyVAST test output - only EBS
 tiny_years <- c(1980:2019, 2021:this_year)
 new_props <- new_props %>% filter(Year %in% tiny_years & Region == "Both")
+
+# Get design-based comps from gapindex ----------------------------------------
+# devtools::install_github("afsc-gap-products/gapindex")
+
+if (file.exists("Z:/Projects/ConnectToOracle.R")) {
+  source("Z:/Projects/ConnectToOracle.R")
+} else {
+  # For those without a ConnectToOracle file
+  channel <- odbcConnect(dsn = "AFSC",
+                         uid = rstudioapi::showPrompt(title = "Username",
+                                                      message = "Oracle Username",
+                                                      default = ""),
+                         pwd = rstudioapi::askForPassword("Enter Password"),
+                         believeNRows = FALSE)
+}
+
+# check to see if connection has been established
+odbcGetInfo(channel)
+
+# channel <- gapindex::get_connected()
+
+gapindex_data_ebs <- gapindex::get_data(
+  year_set = c(1982:2024),
+  survey_set = "EBS",
+  spp_codes = 21740,
+  haul_type = 3,
+  abundance_haul = "Y",
+  pull_lengths = T,
+  channel = channel
+)
+
 
 # Set names for old and new comps
 # names_comps <- c("original", "original", "original", "VAST mesh", "VAST mesh", "original", "bias correction", "bias correction")
@@ -229,8 +261,8 @@ summary_props_all <- comp_all_plots$boxplot +
   facet_wrap(~ distribution)
 summary_props_all
 
-sum_props_sub <- compare_props(props = list(new_props, tiny_mesh, sdm_props),
-                               names = c("VAST", "tinyVAST (Tweedie)", "sdmTMB"))
+sum_props_sub <- compare_props(props = list(new_props, tiny_mesh, tiny_mesh_dg, tiny_mesh_dglink),
+                               names = c("VAST", "tinyVAST (Tweedie)", "tinyVAST (DG)", "tinyVAST (DG poisson-link)"))
 sum_props_sub$barplot
 sum_props_sub$boxplot
 
@@ -368,6 +400,10 @@ ggsave(per_diff, filename = here(workDir, "results", save_dir, "tweedie_mesh_per
        width=200, height=200, units="mm", dpi=300)
 ggsave(comp_trends, filename = here(workDir, "results", save_dir, "tweedie_mesh_trends.png"),
        width=260, height=120, units="mm", dpi=300)
+
+sum_props_sub$boxplot
+ggsave(sum_props_sub$boxplot, filename = here(workDir, "results", save_dir, "tinyVAST_summary.png"),
+       width=200, height=120, units="mm", dpi=300)
 
 # Save plots ------------------------------------------------------------------
 # ggsave(index_comp, filename = here(workDir, "results", save_dir, "index_comparison.png"),
