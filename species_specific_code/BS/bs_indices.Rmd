@@ -181,54 +181,68 @@ pred_grid_ebs <- left_join(pred_grid_ebs, rename(env_join, cpe = env), by = "yea
 pred_grid_nbs <- left_join(pred_grid_nbs, rename(env_join, cpe = env), by = "year")
 pred_grid <- left_join(pred_grid, rename(env_join, cpe = env), by = "year")
 
-# get predictions for total area, and the two subareas of interest (EBS, NBS)
-# f2 <- here("species_specific_code", "BS", species,
-#            "index_comparison", "predictions.RData")
-# if (!file.exists(f2)) {
-#   p <- predict(fit, newdata = pred_grid, return_tmb_object = TRUE)
-#   p_ebs <- predict(fit, newdata = pred_grid_ebs, return_tmb_object = TRUE)
-#   p_nbs <- predict(fit, newdata = pred_grid_nbs, return_tmb_object = TRUE)
-#     save(p, p_ebs, p_nbs, file = f2)
-# } else {
-#   load(f2)
-# }
+# get predictions
+f2 <- here("species_specific_code", "BS", species,
+           "index_comparison", "predictions.RDS")
+if (!file.exists(f2)) {
+  gc()
+  if(species == "kamchatka_flounder"){
+    p <- predict(fit, newdata = pred_grid_ebs, return_tmb_object = TRUE)
+  } else {
+      p <- predict(fit, newdata = pred_grid, return_tmb_object = TRUE)
+  }
+  saveRDS(p, file = f2)
+  # p_ebs <- predict(fit, newdata = pred_grid_ebs, return_tmb_object = TRUE)
+  # p_nbs <- predict(fit, newdata = pred_grid_nbs, return_tmb_object = TRUE)
+  # save(p, p_ebs, p_nbs, file = f2)
+} else {
+  load(f2)
+}
 
-# get indices for total area, and the two subareas of interest (EBS, NBS)
-# f3 <- here("species_specific_code", "BS", species, 
-#            "index_comparison", "indices.RData")
-# if (!file.exists(f3)) {
-#   gc()
-#   ind <- get_index(p, bias_correct = FALSE, area = pred_grid$area_in_survey_km2)
-#   ind$stratum <- "Both"
-# 
-#   ind_ebs <- get_index(p_ebs, bias_correct = FALSE, area = pred_grid_ebs$area_in_survey_km2)
-#   ind_ebs$stratum <- "EBS"
-# 
-#   ind_nbs <- get_index(p_nbs, bias_correct = FALSE, area = pred_grid_nbs$area_in_survey_km2)
-#   ind_nbs$stratum <- "NBS"
-#   save(ind, ind_ebs, ind_nbs, file = f3)
-# } else {
-# load(f3)
-# }
-
-# NOTE: if using get_index_split() rather than get_index() you need to pass the 
-# model object and new data (not prediction object, you can bypass that step) and run:
-f3 <- here("species_specific_code", "BS", species, phase, "index.RDS")
+# get indices
+f3 <- here("species_specific_code", "BS", species,
+           "index_comparison", "index.RDS")
 if (!file.exists(f3)) {
   gc()
   if(species == "kamchatka_flounder"){
-    ind <- get_index_split(fit, newdata = pred_grid_ebs, nsplit = 2,
-                           bias_correct = TRUE, 
-                           area = pred_grid_ebs$area_in_survey_km2)
+    ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_in_survey_km2)
+    ind$stratum <- "Both"
   } else {
-      ind <- get_index_split(fit, newdata = pred_grid, nsplit = 2, # may need 6 if have 64GB RAM
-                             bias_correct = TRUE, 
-                             area = pred_grid$area_in_survey_km2)
+    ind <- get_index(p, bias_correct = TRUE, area = pred_grid_ebs$area_in_survey_km2)
+    ind$stratum <- "EBS"
   }
-  saveRDS(ind, file = here("species_specific_code", "BS", species, phase, "index.RDS"))
+  saveRDS(ind, file = f3)
+  # ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_in_survey_km2)
+  # ind$stratum <- "Both"
+  # 
+  # ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = pred_grid_ebs$area_in_survey_km2)
+  # ind_ebs$stratum <- "EBS"
+  # 
+  # ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = pred_grid_nbs$area_in_survey_km2)
+  # ind_nbs$stratum <- "NBS"
+  # save(ind, ind_ebs, ind_nbs, file = f3)
 } else {
 load(f3)
 }
+
+# NOTE: if using get_index_split() rather than get_index() you need to pass the 
+# model object and new data (not prediction object, you can bypass that step) and run:
+# f3 <- here("species_specific_code", "BS", species, phase, "index.RDS")
+# if (!file.exists(f3)) {
+#   gc()
+#   if(species == "kamchatka_flounder"){
+#     ind <- get_index_split(fit, newdata = pred_grid_ebs, nsplit = 2,
+#                            bias_correct = TRUE, 
+#                            area = pred_grid_ebs$area_in_survey_km2)
+#   } else {
+#       ind <- get_index_split(fit, newdata = pred_grid, nsplit = 2, # may need 6 if have 64GB RAM
+#                              bias_correct = TRUE, 
+#                              area = pred_grid$area_in_survey_km2)
+#   }
+#   saveRDS(ind, file = here("species_specific_code", "BS", species, phase, "index.RDS"))
+# } else {
+# load(f3)
+# }
 
 ## Plot predicted density maps and fit diagnostics ----
 # q-q plot
@@ -250,24 +264,24 @@ ggsave(file = here("species_specific_code", "BS", species, phase,
                    "residuals_map.pdf"), 
        height = 9, width = 6.5, units = c("in"))
 
-#TODO: update p object (extract from index_split index object?)
-# # predictions on map plot, by year
-# if(species == "Gadus_macrocephalus"){
-#   title <- "Predicted densities (n / square km)"
-# } else {
-#   title <- "Predicted densities (kg / square km)"
-# }
-# 
-# ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
-#   geom_tile() +
-#   scale_fill_viridis_c(trans = "sqrt", name = "") +
-#   facet_wrap(~year, ncol = 2) +
-#   coord_fixed() +
-#   ggtitle(title) +
-#   theme_bw()
-# ggsave(file = here("species_specific_code", "BS", species, phase, 
-#                    "predictions_map.pdf"), 
-#        height = 9, width = 6.5, units = c("in"))
+#TODO: update p object name if using index_split
+# predictions on map plot, by year
+if(species == "Gadus_macrocephalus"){
+  title <- "Predicted densities (n / square km)"
+} else {
+  title <- "Predicted densities (kg / square km)"
+}
+
+ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
+  geom_tile() +
+  scale_fill_viridis_c(trans = "sqrt", name = "") +
+  facet_wrap(~year, ncol = 2) +
+  coord_fixed() +
+  ggtitle(title) +
+  theme_bw()
+ggsave(file = here("species_specific_code", "BS", species, phase,
+                   "predictions_map.pdf"),
+       height = 9, width = 6.5, units = c("in"))
 ```
 
 Now, we can compare the index to the prior model.
