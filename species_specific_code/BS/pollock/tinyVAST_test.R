@@ -12,11 +12,7 @@ library(fmesher)
 library(sf)
 library(here)
 
-#' To start, we load sampling data that has undergone first-stage expansion. 
-#' This arises when each primary sampling unit includes secondary subsampling 
-#' of ages, and the subsampled proportion-at-age in each primary unit has been 
-#' expanded to the total abundance in that primary sample:
-#' ----------------------------------------------------------------------------
+# Load data -------------------------------------------------------------------
 species <- 21740
 # this_year <- lubridate::year(Sys.Date())
 this_year <- 2024  # different year for debugging
@@ -39,8 +35,6 @@ Data <- st_transform(Data,
 # Add UTM coordinates as columns X & Y
 Data <- cbind(st_drop_geometry(Data), st_coordinates(Data))
 
-# Set name for script output (related to model specification)
-name <- "mesh_dglink"
 
 #' Next, we construct the various inputs to tinyVAST
 #' ----------------------------------------------------------------------------
@@ -67,26 +61,27 @@ dsem <- "
   Age_15 -> Age_15, 1, lag1
 "
 
-# TinyVAST mesh
-mesh <- fm_mesh_2d(loc = Data[,c("X","Y")],
-                   cutoff = 50)
+# # TinyVAST mesh
+# mesh <- fm_mesh_2d(loc = Data[,c("X","Y")],
+#                    cutoff = 50)
+# 
+# control <- tinyVASTcontrol(getsd = FALSE,
+#                            profile = c("alpha_j"),  
+#                            trace = 0)
 
-control <- tinyVASTcontrol(getsd = FALSE,
-                           profile = c("alpha_j"),  
-                           trace = 0)
-
-# SNW: use mesh from the VAST model for bridging ------------------------------
+# Use mesh from the VAST model for bridging -----------------------------------
 # Read in VAST model & get mesh
 VASTfit_age <- readRDS(here("VAST_results", "BS", "pollock", "VASTfit_age.RDS"))
 mesh_vast <- VASTfit_age$spatial_list$MeshList$anisotropic_mesh
 
 # Format mesh for tinyVAST (using a function from sdmTMB; same method as sdmTMB index bridging)
-old_mesh <- sdmTMB::make_mesh(Data, xy_cols = c("X", "Y"), 
+old_mesh <- sdmTMB::make_mesh(Data, 
+                              xy_cols = c("X", "Y"), 
                               mesh = VASTfit_age$spatial_list$MeshList$anisotropic_mesh,
                               fmesher_func = fm_mesh_2d())
 
-#' We could run the model with a log-linked Tweedie distribution and a single 
-#' linear predictor:
+#' Run the model with a Poisson-linked delta gamma distribution with time- and 
+#' age- varying intercepts in the second linear predictor
 #' ----------------------------------------------------------------------------
 family <- list(
   Age_1 = delta_gamma(type = "poisson-link"),
@@ -106,7 +101,6 @@ family <- list(
   Age_15 = delta_gamma(type = "poisson-link")     
 )
 
-# Data$Year = factor(Data$Year)
 start.time <- Sys.time() 
 myfit <- tinyVAST(
   data = Data,
@@ -114,7 +108,7 @@ myfit <- tinyVAST(
   sem = sem,
   dsem = dsem,
   family = family,
-  delta_options = list(delta_formula = ~ 0 + factor(Year_Age)),
+  delta_options = list(delta_formula = ~ 0 + factor(Year_Age)),  # 2nd linear predictor
   space_column = c("X", "Y"), 
   variable_column = "Age",
   time_column = "Year",
@@ -125,15 +119,13 @@ myfit <- tinyVAST(
 stop.time <- Sys.time()
 
 # Save fit object
-saveRDS(myfit, here(workDir, "results", paste0("tinyVAST_fit_", name, ".RDS")))
+saveRDS(myfit, here(workDir, "results", paste0("tinyVAST_fit_", as.character(this_year), ".RDS")))
 
-#' ----------------------------------------------------------------------------
-#' SNW: this step takes longer than the model fitting and is memory-intensive. 
-#' It's a good idea to re-start R before this point. You'll need to re-run lines
-#' 10-43, too.
 
-# Load back fit object if you restarted R
-myfit <- readRDS(here(workDir, "results", paste0("tinyVAST_fit_", name, ".RDS")))
+# Index Expansion -------------------------------------------------------------
+# Load fit object if needed
+myfit <- readRDS(here(workDir, "results", paste0("tinyVAST_fit_", as.character(this_year), ".RDS")))
+
 # Get shapefile for survey extent
 data(bering_sea)
 
@@ -172,40 +164,17 @@ for(j in seq_len(nrow(N_jz))){
 N_ct <- array(N_jz$Biomass, dim=c(length(myfit$internal$variables),length(unique(Data$Year))),
               dimnames=list(myfit$internal$variables,sort(unique(Data$Year))))
 N_ct <- N_ct / outer(rep(1, nrow(N_ct)), colSums(N_ct))
-write.csv(N_ct, here(workDir, "results", paste0("tinyVAST_natage_", name, ".csv")), row.names = FALSE)
 
-#' Finally, we can compare these estimates with those from package VAST. 
-#' Estimates differ somewhat because VAST used a delta-gamma distribution with 
-#' spatio-temporal variation in two linear predictors, and also used a different mesh.
-#' ----------------------------------------------------------------------------
-# Load VAST results for same data
-data(bering_sea_pollock_vast)
-myvast <- bering_sea_pollock_vast
-rownames(myvast) <- 1:15
+# Save abundance estimate
+write.csv(N_ct, here(workDir, "results", paste0("tinyVAST_natage_", as.character(this_year), ".csv")), row.names = FALSE)
 
-# Reformat tinyVAST output with same dimnames
-mytiny <- N_ct
-rownames(mytiny) <- 1:15
-
-longvast <- cbind(expand.grid(dimnames(myvast)), 
-                  p = as.numeric(myvast),
-                  method = "VAST")
-longtiny <- cbind(expand.grid(dimnames(mytiny)), 
-                  p = as.numeric(mytiny), 
-                  method = "tinyVAST")
-long <- rbind(longvast, longtiny)
-
-library(ggplot2)
-ggplot(data = long, aes(x = Var2, y = p, col = method)) +
-  facet_grid(rows = vars(Var1), scales = "free") +
-  geom_point() +
-  scale_y_log10()
-
-# SNW: Reformat and save a version for comparison plots -----------------------
-tiny_out <- tibble::rownames_to_column(data.frame(t(mytiny)), "VALUE")
+# Reformat and calculate proportions
+rownames(N_ct) <- 1:15
+tiny_out <- tibble::rownames_to_column(data.frame(t(N_ct)), "VALUE")
 tiny_out <- tiny_out[, c(2:16, 1)]
 colnames(tiny_out) <- c("age_1", "age_2", "age_3", "age_4", "age_5", "age_6",
                         "age_7", "age_8", "age_9", "age_10", "age_11", "age_12",
                         "age_13", "age_14", "age_15", "Year")
-tiny_out$Region <- "EBS"
-write.csv(tiny_out, here(workDir, "results", paste0("tinyVAST_props_", name, ".csv")), row.names = FALSE)
+
+# Save proportions
+write.csv(tiny_out, here(workDir, "results", paste0("tinyVAST_props_", as.character(this_year), ".csv")), row.names = FALSE)
