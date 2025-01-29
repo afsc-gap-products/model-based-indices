@@ -149,24 +149,14 @@ summary(fit)
 We can compare the index we would get using sdmTMB. 
 
 ```{r sdmTMB-index, echo=TRUE}
-#TODO: Scrap below and instead upload saved prediction grid
-
-# prep prediction grids (all, EBS, NBS) and transform to UTM projection
-load(here("extrapolation_grids", "eastern_bering_sea_grid.rda"))
-load(here("extrapolation_grids", "northern_bering_sea_grid.rda"))
-
 # EBS grid
-grid_ebs <- as.data.frame(eastern_bering_sea_grid)
-names(grid_ebs) <- tolower(names(grid_ebs))
-add_utm_columns(grid_ebs, ll_names = c("lon", "lat"), units = "km")
+grid_ebs <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))
 
 # NBS grid
-grid_nbs <- as.data.frame(northern_bering_sea_grid)
-names(grid_nbs) <- tolower(names(grid_nbs))
-add_utm_columns(grid_nbs, ll_names = c("lon", "lat"), units = "km")
+grid_nbs <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))
 
 # Combined grid
-grid <- bind_rows(grid_nbs, grid_ebs)
+grid <- read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))
 
 # replicate extrapolation grids for each year in data
 pred_grid_ebs <- replicate_df(grid_ebs, "year_f", unique(dat$year_f))
@@ -205,20 +195,20 @@ f3 <- here("species_specific_code", "BS", species,
 if (!file.exists(f3)) {
   gc()
   if(species == "kamchatka_flounder"){
-    ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_in_survey_km2)
+    ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
     ind$stratum <- "Both"
   } else {
-    ind <- get_index(p, bias_correct = TRUE, area = pred_grid_ebs$area_in_survey_km2)
+    ind <- get_index(p, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
     ind$stratum <- "EBS"
   }
   saveRDS(ind, file = f3)
-  # ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_in_survey_km2)
+  # ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
   # ind$stratum <- "Both"
   # 
-  # ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = pred_grid_ebs$area_in_survey_km2)
+  # ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
   # ind_ebs$stratum <- "EBS"
   # 
-  # ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = pred_grid_nbs$area_in_survey_km2)
+  # ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = pred_grid_nbs$area_km2)
   # ind_nbs$stratum <- "NBS"
   # save(ind, ind_ebs, ind_nbs, file = f3)
 } else {
@@ -233,11 +223,11 @@ load(f3)
 #   if(species == "kamchatka_flounder"){
 #     ind <- get_index_split(fit, newdata = pred_grid_ebs, nsplit = 2,
 #                            bias_correct = TRUE, 
-#                            area = pred_grid_ebs$area_in_survey_km2)
+#                            area = pred_grid_ebs$area_km2)
 #   } else {
 #       ind <- get_index_split(fit, newdata = pred_grid, nsplit = 2, # may need 6 if have 64GB RAM
 #                              bias_correct = TRUE, 
-#                              area = pred_grid$area_in_survey_km2)
+#                              area = pred_grid$area_km2)
 #   }
 #   saveRDS(ind, file = here("species_specific_code", "BS", species, phase, "index.RDS"))
 # } else {
