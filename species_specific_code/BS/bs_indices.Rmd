@@ -21,7 +21,6 @@ knitr::opts_chunk$set(
 
 ```{r packages, message=FALSE, warning=FALSE, cache=FALSE}
 #remotes::install_github("pbs-assess/sdmTMB")
-#remotes::install_github("pbs-assess/sdmTMB@index-split")
 remotes::install_github("afsc-gap-products/coldpool")
 library(sdmTMB)
 library(dplyr)
@@ -42,7 +41,8 @@ if(species == "pacific_cod"){
   dat <-  rename(dat, cpue = cpue_n_km2)
 }
 if(species == "pollock"){
-  dat <- read.csv(here("species_specific_code", "BS", species, "VAST_ddc_all_2023.csv"))  
+  dat <- read.csv(here("species_specific_code", "BS", species, phase,
+                       "data", "VAST_ddc_all_2024.csv"))  
   dat <-  dplyr::transmute(dat,
                          cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
                          year = as.integer(year),
@@ -102,7 +102,7 @@ if(sum(mins$min) == 0){
 			    )
 }
 
-f1 <- here("species_specific_code", "BS", species, "index_comparison", "fit.RDS")
+f1 <- here("species_specific_code", "BS", species, phase, "fit.RDS")
 if (!file.exists(f1)) {
   
     if(species == "kamchatka_flounder"){
@@ -142,7 +142,8 @@ if (!file.exists(f1)) {
           control = control
         )
     }
-    saveRDS(fit, file = here("species_specific_code", "BS", species, "index_comparison", "fit.RDS"))
+    saveRDS(fit, file = here("species_specific_code", "BS", 
+                             species, phase, "fit.RDS"))
   } else {
     fit <- readRDS(f1)
 }
@@ -179,93 +180,69 @@ pred_grid_nbs <- left_join(pred_grid_nbs, env, by = "year")
 pred_grid <- left_join(pred_grid, env, by = "year")
 
 # get predictions
-f2 <- here("species_specific_code", "BS", species,
-           "index_comparison", "predictions.RDS")
+f2 <- here("species_specific_code", "BS", species, phase, "predictions.RData")
 if (!file.exists(f2)) {
-  gc()
   if(species == "kamchatka_flounder"){
     p <- predict(fit, newdata = pred_grid_ebs, return_tmb_object = TRUE)
+    save(p, file = f2)
   } else {
       p <- predict(fit, newdata = pred_grid, return_tmb_object = TRUE)
+      p_ebs <- predict(fit, newdata = pred_grid_ebs, return_tmb_object = TRUE)
+      p_nbs <- predict(fit, newdata = pred_grid_nbs, return_tmb_object = TRUE)
+      save(p, p_ebs, p_nbs, file = f2)
   }
-  saveRDS(p, file = f2)
-  # p_ebs <- predict(fit, newdata = pred_grid_ebs, return_tmb_object = TRUE)
-  # p_nbs <- predict(fit, newdata = pred_grid_nbs, return_tmb_object = TRUE)
-  # save(p, p_ebs, p_nbs, file = f2)
 } else {
   load(f2)
 }
 
 # get indices
-f3 <- here("species_specific_code", "BS", species,
-           "index_comparison", "index.RDS")
+f3 <- here("species_specific_code", "BS", species, phase, "indices.RData")
 if (!file.exists(f3)) {
-  gc()
   if(species == "kamchatka_flounder"){
     ind <- get_index(p, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
-    ind$stratum <- "Both"
+    ind$stratum <- "EBS"
+    
+    save(ind, file = f3)
   } else {
     ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
-    ind$stratum <- "EBS"
+    ind$stratum <- "Both"
+    
+    ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
+    ind_ebs$stratum <- "EBS"
+  
+    ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = pred_grid_nbs$area_km2)
+    ind_nbs$stratum <- "NBS"
+    
+    save(ind, ind_ebs, ind_nbs, file = f3)
   }
-  saveRDS(ind, file = f3)
-  # ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
-  # ind$stratum <- "Both"
-  # 
-  # ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
-  # ind_ebs$stratum <- "EBS"
-  # 
-  # ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = pred_grid_nbs$area_km2)
-  # ind_nbs$stratum <- "NBS"
-  # save(ind, ind_ebs, ind_nbs, file = f3)
 } else {
 load(f3)
 }
-
-# NOTE: if using get_index_split() rather than get_index() you need to pass the 
-# model object and new data (not prediction object, you can bypass that step) and run:
-# f3 <- here("species_specific_code", "BS", species, phase, "index.RDS")
-# if (!file.exists(f3)) {
-#   gc()
-#   if(species == "kamchatka_flounder"){
-#     ind <- get_index_split(fit, newdata = pred_grid_ebs, nsplit = 2,
-#                            bias_correct = TRUE, 
-#                            area = pred_grid_ebs$area_km2)
-#   } else {
-#       ind <- get_index_split(fit, newdata = pred_grid, nsplit = 2, # may need 6 if have 64GB RAM
-#                              bias_correct = TRUE, 
-#                              area = pred_grid$area_km2)
-#   }
-#   saveRDS(ind, file = here("species_specific_code", "BS", species, phase, "index.RDS"))
-# } else {
-# load(f3)
-# }
 ```
 Make maps and diagnostics:
 
 ```{r plots, echo=TRUE}
 ## Plot predicted density maps and fit diagnostics ----
-
-# #TODO: fix matrix package version bug throwing errors in calls to residuals
+#TODO: find why calls to residuals throws errors for some package versions
 
 # q-q plot
-# pdf(file = here("species_specific_code", "BS", species, phase, "qq.pdf"), 
-#     width = 5, height = 5)
-#   simulate(fit, nsim = 500, type = "mle-mvn") |>
-#     dharma_residuals(fit, test_uniformity = FALSE)
-# dev.off()
+pdf(file = here("species_specific_code", "BS", species, phase, "qq.pdf"),
+    width = 5, height = 5)
+  simulate(fit, nsim = 500, type = "mle-mvn") |>
+    dharma_residuals(fit, test_uniformity = FALSE)
+dev.off()
 
-# residuals on map plot, by year
-# dat$resids <- residuals(fit, type ="mle-mvn") 
-# ggplot(subset(dat, !is.na(resids)), aes(X, Y, col = resids)) + 
-#   scale_colour_gradient2(name = "residuals") +
-#   geom_point(size = 0.7) + 
-#   facet_wrap(~year) + 
-#   coord_fixed() +
-#   theme_bw()
-# ggsave(file = here("species_specific_code", "BS", species, phase, 
-#                    "residuals_map.pdf"), 
-#        height = 9, width = 6.5, units = c("in"))
+#residuals on map plot, by year
+dat$resids <- residuals(fit, type ="mle-mvn")
+ggplot(subset(dat, !is.na(resids)), aes(X, Y, col = resids)) +
+  scale_colour_gradient2(name = "residuals") +
+  geom_point(size = 0.7) +
+  facet_wrap(~year) +
+  coord_fixed() +
+  theme_bw()
+ggsave(file = here("species_specific_code", "BS", species, phase,
+                   "residuals_map.pdf"),
+       height = 9, width = 6.5, units = c("in"))
 
 # predictions on map plot, by year
 if(species == "Gadus_macrocephalus"){
@@ -331,47 +308,86 @@ Now, we can compare the index to the prior model.
 #   select(-AREA_ID)
 
 if(species == "kamchatka_flounder"){
-    stratum <- "EBS"
+    new_i <- ind %>% mutate(index = "mb_new") %>% 
+      select(index, stratum, year, est, lwr, upr)
   } else {
-    stratum <- "Both"
+    new_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_new") %>% 
+      select(index, stratum, year, est, lwr, upr)
   }
 
-new_i <- ind %>% mutate(index = "mb_new") %>% select(index, year, est, lwr, upr)
-
-old_i <- read.csv(here("species_specific_code", "BS", species, "index_comparison", "Index.csv")) %>%
-#old_i <- read.csv(here("species_specific_code", "BS", species, phase, "Index.csv")) %>%
+#TODO: update prior index once we've moved on from VAST
+old_i <- read.csv(here("species_specific_code", "BS", species, phase, "Index.csv")) %>%
   mutate(index = "mb_old", year = as.numeric(Time), est = Estimate, 
-    se = Std..Error.for.ln.Estimate.) %>% 
-  filter(year %in% unique(new_i$year), Stratum == stratum) %>%
-  select(index, year, est, se) %>% 
+    se = Std..Error.for.ln.Estimate., stratum = Stratum) %>% 
+  filter(year %in% unique(new_i$year), stratum %in% unique(new_i$stratum)) %>%
+  select(index, stratum, year, est, se) %>% 
   mutate(lwr = exp(log(est) + qnorm(0.025) * se),
          upr = exp(log(est) + qnorm(0.975) * se)) %>%
-  select(index, year, est, lwr, upr)
+  select(index, stratum, year, est, lwr, upr)
 
 both_i <- bind_rows(new_i, old_i) %>% 
   filter(est > 0)
 both_i[both_i < 0] <- 0
 
-# plot  
+# plot indices ----
 if(species == "Gadus_macrocephalus"){
   ylab <- "Abundance (n)"
 } else {
   ylab <- "Biomass (kg)"
 }
-ggplot(both_i, aes(x = year, y = est, ymin = lwr, ymax = upr, 
-                   colour = index)) + 
+
+ggplot(filter(both_i, stratum == "Both"), aes(x = year, y = est, ymin = lwr, 
+                                              ymax = upr, colour = index)) + 
   geom_ribbon(alpha = 0.1) +
   geom_line(alpha = 0.8) + 
   ylim(0, max(both_i$upr)) +
-  ggtitle(species) +
+  ggtitle(paste(species, "EBS + NBS")) +
   coord_cartesian(expand = FALSE) + 
   ylab(ylab) +
   theme_bw()
 ggsave(file = here("species_specific_code", "BS", species, phase, 
-                   "index_comparison.pdf"), 
+                   "index_comparison_both.pdf"), 
        height = 4, width = 6, units = c("in"))
 
-#### ESP products ----
+ggplot(filter(both_i, stratum == "EBS"), aes(x = year, y = est, ymin = lwr, 
+                                              ymax = upr, colour = index)) + 
+  geom_ribbon(alpha = 0.1) +
+  geom_line(alpha = 0.8) + 
+  ylim(0, max(both_i$upr)) +
+  ggtitle(paste(species, "EBS")) +
+  coord_cartesian(expand = FALSE) + 
+  ylab(ylab) +
+  theme_bw()
+ggsave(file = here("species_specific_code", "BS", species, phase, 
+                   "index_comparison_ebs.pdf"), 
+       height = 4, width = 6, units = c("in"))
+
+ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, 
+                                              ymax = upr, colour = index)) + 
+  geom_ribbon(alpha = 0.1) +
+  geom_line(alpha = 0.8) + 
+  ylim(0, max(both_i$upr)) +
+  ggtitle(paste(species, "NBS")) +
+  coord_cartesian(expand = FALSE) + 
+  ylab(ylab) +
+  theme_bw()
+ggsave(file = here("species_specific_code", "BS", species, phase, 
+                   "index_comparison_nbs.pdf"), 
+       height = 4, width = 6, units = c("in"))
+
+# plot new index only for all regions
+ggplot(new_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = stratum)) + 
+  geom_ribbon(alpha = 0.1) +
+  geom_line(alpha = 0.8) + 
+  ylim(0, max(new_i$upr)) +
+  ggtitle(species) +
+  coord_cartesian(expand = FALSE) + 
+  ylab(ylab) +
+  theme_bw()
+ggsave(file = here("species_specific_code", "BS", species, phase, "index.pdf"), 
+       height = 4, width = 6, units = c("in"))
+
+# create ESP products ----
 # TODO: check if there is different trend without bias correction
 f4 <- here("species_specific_code", "BS", species, phase, "cog.RDS")
 if (!file.exists(f4)) {
