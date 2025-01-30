@@ -20,9 +20,9 @@ knitr::opts_chunk$set(
 ```
 
 ```{r packages, message=FALSE, warning=FALSE, cache=FALSE}
-#pak::pak("pbs-assess/sdmTMB")
-#pak::pak("pbs-assess/sdmTMB@index-split")
-#pak::pak("afsc-gap-products/coldpool")
+#remotes::install_github("pbs-assess/sdmTMB")
+#remotes::install_github("pbs-assess/sdmTMB@index-split")
+remotes::install_github("afsc-gap-products/coldpool")
 library(sdmTMB)
 library(dplyr)
 library(ggplot2)
@@ -60,10 +60,17 @@ if(species %in% c("yellowfin_sole", "kamchatka_flounder")){
 We also need to pull in the appropriate environmental covariate as this is used as a spatially varying covariate in AFSC GAP Bering Sea indices. For yellowfin sole, this is the mean bottom temperature in waters less than 100m. For other species, this is the cold pool extent. The cold pool is defined here as the areal extent (in km^2^) of seawater equal to or colder than 2 degrees Celsius near the seafloor, calculated from observations from the AFSC GAP EBS/NBS bottom trawl survey. We center and scale this for inclusion as a covariate.
 
 ```{r covariate, echo = TRUE}
+
+env_df <- coldpool:::cold_pool_index
+  
 if(species == "yellowfin_sole"){
-  env <- scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)
+  env <- cbind(env_df, env = scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)) |>
+    mutate(year = as.integer(YEAR)) |>
+    select(year, env)
 } else {
-  env <- scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)
+  env <- cbind(env_df, env = scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)) |>
+    mutate(year = as.integer(YEAR)) |>
+    select(year, env)
 }
 
 dat <- left_join(dat, env, by = "year") 
@@ -73,7 +80,7 @@ Now we fit the model in sdmTMB:
 ```{r sdmTMB-example, echo = TRUE}
 dat$year_f <- as.factor(dat$year)
 
-add_utm_columns(dat, ll_names = c("lon", "lat"), units = "km")
+add_utm_columns(dat, ll_names = c("lon", "lat"), utm_crs = 32602, units = "km")
 
 # detect if any years have occurrences at every haul and fix params as needed
 mins <- dat %>% group_by(year) %>% summarize(min = min(cpue))
