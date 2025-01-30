@@ -245,24 +245,27 @@ Make maps and diagnostics:
 
 ```{r plots, echo=TRUE}
 ## Plot predicted density maps and fit diagnostics ----
+
+# #TODO: fix matrix package version bug throwing errors in calls to residuals
+
 # q-q plot
-pdf(file = here("species_specific_code", "BS", species, phase, "qq.pdf"), 
-    width = 5, height = 5)
-  simulate(fit, nsim = 500, type = "mle-mvn") |>
-    dharma_residuals(fit, test_uniformity = FALSE)
-dev.off()
+# pdf(file = here("species_specific_code", "BS", species, phase, "qq.pdf"), 
+#     width = 5, height = 5)
+#   simulate(fit, nsim = 500, type = "mle-mvn") |>
+#     dharma_residuals(fit, test_uniformity = FALSE)
+# dev.off()
 
 # residuals on map plot, by year
-dat$resids <- residuals(fit, type ="mle-mvn") 
-ggplot(subset(dat, !is.na(resids)), aes(X, Y, col = resids)) + 
-  scale_colour_gradient2(name = "residuals") +
-  geom_point(size = 0.7) + 
-  facet_wrap(~year) + 
-  coord_fixed() +
-  theme_bw()
-ggsave(file = here("species_specific_code", "BS", species, phase, 
-                   "residuals_map.pdf"), 
-       height = 9, width = 6.5, units = c("in"))
+# dat$resids <- residuals(fit, type ="mle-mvn") 
+# ggplot(subset(dat, !is.na(resids)), aes(X, Y, col = resids)) + 
+#   scale_colour_gradient2(name = "residuals") +
+#   geom_point(size = 0.7) + 
+#   facet_wrap(~year) + 
+#   coord_fixed() +
+#   theme_bw()
+# ggsave(file = here("species_specific_code", "BS", species, phase, 
+#                    "residuals_map.pdf"), 
+#        height = 9, width = 6.5, units = c("in"))
 
 # predictions on map plot, by year
 if(species == "Gadus_macrocephalus"){
@@ -273,7 +276,7 @@ if(species == "Gadus_macrocephalus"){
 ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
   geom_tile() +
   scale_fill_viridis_c(trans = "sqrt", name = "") +
-  facet_wrap(~year, ncol = 2) +
+  facet_wrap(~year) +
   coord_fixed() +
   ggtitle(title) +
   theme_bw()
@@ -282,7 +285,7 @@ ggsave(file = here("species_specific_code", "BS", species, phase,
        height = 9, width = 6.5, units = c("in"))
 ```
 
-Now, we can compare the index to the prior model after making sure you're connected to Oracle db.
+Now, we can compare the index to the prior model and the design-based estimates after making sure you're connected to Oracle db.
 
 ```{r index-compare, message=FALSE, warning=FALSE}
 # Plot design-based estimate vs old and new model estimate ---------------------
