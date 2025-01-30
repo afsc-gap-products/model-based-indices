@@ -29,8 +29,8 @@ library(ggplot2)
 library(here)
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
-species <- "yellowfin_sole" 
-#pollock pacific_cod yellowfin_sole kamchatka_flounder
+sp <- 1 # specify species from species vector
+species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 ```
 
 We will fit geostatistical spatiotemporal models with sdmTMB for the purposes of index standardization. We will use data from the EBS/NBS AFSC GAP bottom trawl surveys. The density units we will work in are either kg/km^2^ or n/km^2^, for biomass or numerical abundance. 
@@ -285,47 +285,56 @@ ggsave(file = here("species_specific_code", "BS", species, phase,
        height = 9, width = 6.5, units = c("in"))
 ```
 
-Now, we can compare the index to the prior model and the design-based estimates after making sure you're connected to Oracle db.
+Now, we can compare the index to the prior model.
 
 ```{r index-compare, message=FALSE, warning=FALSE}
-# Plot design-based estimate vs old and new model estimate ---------------------
-# query db index
-channel <- gapindex::get_connected(check_access = FALSE) # enter credentials 
+## query db index
+# channel <- gapindex::get_connected(check_access = FALSE) # enter credentials 
+# 
+# species_code <- c("10210", "21740", "21720", "10112")[sp]
+#
+# if(species == "Gadus_macrocephalus"){
+#   query <- paste0('
+#     SELECT 
+#     \'db\' AS "index",
+#     YEAR AS "year",
+#     POPULATION_COUNT AS "est",
+#     (POPULATION_COUNT - SQRT(POPULATION_VAR) * (1.959964)) as "lwr", 
+#     (POPULATION_COUNT + SQRT(POPULATION_VAR) * (1.959964)) as "upr", 
+#     AREA_ID
+#     
+#     -- Identify what tables to pull data from
+#     FROM GAP_PRODUCTS.BIOMASS
+#     WHERE AREA_ID IN (99900, 99902)
+#     AND SPECIES_CODE = ', species_code)
+# } else {
+#   query <- paste0('
+#     SELECT 
+#     \'db\' AS "index",
+#     YEAR AS "year",
+#     BIOMASS_MT * 1000 AS "est",
+#     (BIOMASS_MT - SQRT(BIOMASS_VAR) * (1.959964)) * 1000 as "lwr", 
+#     (BIOMASS_MT + SQRT(BIOMASS_VAR) * (1.959964)) * 1000 as "upr", 
+#     AREA_ID
+#         
+#     -- Identify what tables to pull data from
+#     FROM GAP_PRODUCTS.BIOMASS
+#     WHERE AREA_ID IN (99900, 99902)
+#     AND SPECIES_CODE = ', species_code)
+# }
+# db_i <- RODBC::sqlQuery(channel = channel, query = query)
+# db_i <- db_i %>% 
+#   mutate(stratum = recode(AREA_ID, 
+#                           `99900` = "EBS", 
+#                           `99902` = "NBS")) %>% 
+#   mutate(index = "db") %>%
+#   select(-AREA_ID)
 
 if(species == "kamchatka_flounder"){
     stratum <- "EBS"
   } else {
     stratum <- "Both"
   }
-
-if(species == "Gadus_macrocephalus"){
-  query <- paste0('
-    SELECT 
-    \'db\' AS "index",
-    YEAR AS "year",
-    POPULATION_COUNT AS "est",
-    (POPULATION_COUNT - SQRT(POPULATION_VAR) * (1.959964)) as "lwr", -- qnorm(0.025) in R
-    (POPULATION_COUNT + SQRT(POPULATION_VAR) * (1.959964)) as "upr" -- qnorm(0.975) in R
-    
-    -- Identify what tables to pull data from
-    WHERE SURVEY_DEFINITION_ID IN (143, 98)
-    AND SPECIES_CODE = ', unique(dat$species_code)
-  )
-} else {
-  query <- paste0('
-    SELECT 
-    \'db\' AS "index",
-    YEAR AS "year",
-    BIOMASS_MT * 1000 AS "est",
-    (BIOMASS_MT - SQRT(BIOMASS_VAR) * (1.959964)) * 1000 as "lwr", -- qnorm(0.025) in R
-    (BIOMASS_MT + SQRT(BIOMASS_VAR) * (1.959964)) * 1000 as "upr" -- qnorm(0.975) in R
-    
-    -- Identify what tables to pull data from
-    WHERE SURVEY_DEFINITION_ID IN (143, 98)
-    AND SPECIES_CODE = ', unique(dat$species_code)
-  )
-}
-db_i <- RODBC::sqlQuery(channel = channel, query = query)
 
 new_i <- ind %>% mutate(index = "mb_new") %>% select(index, year, est, lwr, upr)
 
@@ -339,7 +348,7 @@ old_i <- read.csv(here("species_specific_code", "BS", species, "index_comparison
          upr = exp(log(est) + qnorm(0.975) * se)) %>%
   select(index, year, est, lwr, upr)
 
-both_i <- bind_rows(new_i, old_i, db_i) %>% 
+both_i <- bind_rows(new_i, old_i) %>% 
   filter(est > 0)
 both_i[both_i < 0] <- 0
 
