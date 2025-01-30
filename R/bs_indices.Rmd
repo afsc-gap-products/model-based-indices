@@ -28,7 +28,7 @@ library(ggplot2)
 library(here)
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
-sp <- 1 # specify species from species vector
+sp <- 3 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 ```
 
@@ -38,12 +38,12 @@ We will fit geostatistical spatiotemporal models with sdmTMB for the purposes of
 if(species == "pacific_cod"){
   dat <- readRDS(here("species_specific_code", "BS", species, phase, 
                         "data", "data_geostat_index.RDS"))
-  dat <-  rename(dat, cpue = cpue_n_km2)
+  dat <- rename(dat, cpue = cpue_n_km2)
 }
 if(species == "pollock"){
   dat <- read.csv(here("species_specific_code", "BS", species, phase,
                        "data", "VAST_ddc_all_2024.csv"))  
-  dat <-  dplyr::transmute(dat,
+  dat <- dplyr::transmute(dat,
                          cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
                          year = as.integer(year),
                          lat = start_latitude,
@@ -53,8 +53,10 @@ if(species == "pollock"){
 if(species %in% c("yellowfin_sole", "kamchatka_flounder")){
   dat <- readRDS(here("species_specific_code", "BS", species, phase, 
                        "data", "data_geostat_index.RDS"))  
-  dat <-  rename(dat, cpue = cpue_kg_km2)
+  dat <- rename(dat, cpue = cpue_kg_km2)
 }
+
+dat <- dat[!is.na(dat$cpue),]
 ```
 
 We also need to pull in the appropriate environmental covariate as this is used as a spatially varying covariate in AFSC GAP Bering Sea indices. For yellowfin sole, this is the mean bottom temperature in waters less than 100m. For other species, this is the cold pool extent. The cold pool is defined here as the areal extent (in km^2^) of seawater equal to or colder than 2 degrees Celsius near the seafloor, calculated from observations from the AFSC GAP EBS/NBS bottom trawl survey. We center and scale this for inclusion as a covariate.
