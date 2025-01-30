@@ -282,7 +282,7 @@ ggsave(file = here("species_specific_code", "BS", species, phase,
        height = 9, width = 6.5, units = c("in"))
 ```
 
-Now, we can compare the index to the prior model after making sure you're still connected to Oracle db.
+Now, we can compare the index to the prior model after making sure you're connected to Oracle db.
 
 ```{r index-compare, message=FALSE, warning=FALSE}
 # Plot design-based estimate vs old and new model estimate ---------------------
