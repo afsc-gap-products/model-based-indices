@@ -77,7 +77,7 @@ dat <- left_join(dat, env, by = "year")
 ```
 Now we fit the model in sdmTMB:
 
-```{r sdmTMB-example, echo = TRUE}
+```{r fit, echo = TRUE}
 dat$year_f <- as.factor(dat$year)
 
 add_utm_columns(dat, ll_names = c("lon", "lat"), utm_crs = 32602, units = "km")
@@ -153,9 +153,9 @@ summary(fit)
 #TMBhelper::check_estimability(fit$tmb_obj)
 ```
 
-We can compare the index we would get using sdmTMB. 
+Make predictions and index:
 
-```{r sdmTMB-index, echo=TRUE}
+```{r predictions-index, echo=TRUE}
 # EBS grid
 grid_ebs <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))
 
@@ -165,7 +165,7 @@ grid_nbs <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))
 # Combined grid
 grid <- read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))
 
-# replicate extrapolation grids for each year in data
+# replicate prediction grids for each year in data
 pred_grid_ebs <- replicate_df(grid_ebs, "year_f", unique(dat$year_f))
 pred_grid_nbs <- replicate_df(grid_nbs, "year_f", unique(dat$year_f))
 pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
@@ -174,9 +174,9 @@ pred_grid_nbs$year <- as.integer(as.character(factor(pred_grid_nbs$year_f)))
 pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
 
 # join in environmental covariate (cold pool or mean bottom temperature)
-pred_grid_ebs <- left_join(pred_grid_ebs, rename(env_join, cpe = env), by = "year") 
-pred_grid_nbs <- left_join(pred_grid_nbs, rename(env_join, cpe = env), by = "year")
-pred_grid <- left_join(pred_grid, rename(env_join, cpe = env), by = "year")
+pred_grid_ebs <- left_join(pred_grid_ebs, env, by = "year") 
+pred_grid_nbs <- left_join(pred_grid_nbs, env, by = "year")
+pred_grid <- left_join(pred_grid, env, by = "year")
 
 # get predictions
 f2 <- here("species_specific_code", "BS", species,
@@ -240,7 +240,10 @@ load(f3)
 # } else {
 # load(f3)
 # }
+```
+Make maps and diagnostics:
 
+```{r plots, echo=TRUE}
 ## Plot predicted density maps and fit diagnostics ----
 # q-q plot
 pdf(file = here("species_specific_code", "BS", species, phase, "qq.pdf"), 
@@ -261,14 +264,12 @@ ggsave(file = here("species_specific_code", "BS", species, phase,
                    "residuals_map.pdf"), 
        height = 9, width = 6.5, units = c("in"))
 
-#TODO: update p object name if using index_split
 # predictions on map plot, by year
 if(species == "Gadus_macrocephalus"){
   title <- "Predicted densities (n / square km)"
 } else {
   title <- "Predicted densities (kg / square km)"
 }
-
 ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
   geom_tile() +
   scale_fill_viridis_c(trans = "sqrt", name = "") +
@@ -281,7 +282,7 @@ ggsave(file = here("species_specific_code", "BS", species, phase,
        height = 9, width = 6.5, units = c("in"))
 ```
 
-Now, we can compare the index to the prior model.
+Now, we can compare the index to the prior model after making sure you're still connected to Oracle db.
 
 ```{r index-compare, message=FALSE, warning=FALSE}
 # Plot design-based estimate vs old and new model estimate ---------------------
