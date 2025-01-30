@@ -80,7 +80,7 @@ Now we fit the model in sdmTMB:
 ```{r fit, echo = TRUE}
 dat$year_f <- as.factor(dat$year)
 
-add_utm_columns(dat, ll_names = c("lon", "lat"), utm_crs = 32602, units = "km")
+dat <- add_utm_columns(dat, ll_names = c("lon", "lat"), utm_crs = 32602, units = "km")
 
 # detect if any years have occurrences at every haul and fix params as needed
 mins <- dat %>% group_by(year) %>% summarize(min = min(cpue))
@@ -202,10 +202,10 @@ f3 <- here("species_specific_code", "BS", species,
 if (!file.exists(f3)) {
   gc()
   if(species == "kamchatka_flounder"){
-    ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
+    ind <- get_index(p, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
     ind$stratum <- "Both"
   } else {
-    ind <- get_index(p, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
+    ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
     ind$stratum <- "EBS"
   }
   saveRDS(ind, file = f3)
