@@ -25,12 +25,13 @@ ebs_grid <- akgfmaps:::make_2d_grid(obj = dplyr::filter(ebs_layers$survey.strata
 ebs_grid[, c('LON_UTM', "LAT_UTM")] <- sf::st_coordinates(ebs_grid)
 
 # change units to km 
-ebs_grid <- ebs_grid |>
+ebs_grid <- as.data.frame(ebs_grid) |>
+  dplyr::select(LON_UTM, LAT_UTM, AREA) |>
   dplyr::mutate(X = LON_UTM / 1000,
                 Y = LAT_UTM / 1000,
                 area_km2 = as.numeric(AREA)/1e6) |> 
-  dplyr::select(X, Y, area_km2) |>
-  as.data.frame()
+  dplyr::select(X, Y, area_km2)
+ebs_grid <- as.data.frame(as.matrix(ebs_grid)) # drop attributes
 
 ggplot2::ggplot(ebs_grid, aes(X, Y, colour = area_km2)) +
   geom_tile(width = 2, height = 2, fill = NA) +
@@ -52,12 +53,13 @@ nbs_grid <- akgfmaps:::make_2d_grid(obj = dplyr::filter(ebs_layers$survey.strata
 nbs_grid[, c('LON_UTM', "LAT_UTM")] <- sf::st_coordinates(nbs_grid)
 
 # change units to km 
-nbs_grid <- nbs_grid |>
+nbs_grid <- as.data.frame(nbs_grid) |>
+  dplyr::select(LON_UTM, LAT_UTM, AREA) |>
   dplyr::mutate(X = LON_UTM / 1000,
                 Y = LAT_UTM / 1000,
                 area_km2 = as.numeric(AREA)/1e6) |> 
-  dplyr::select(X, Y, area_km2) |>
-  as.data.frame()
+  dplyr::select(X, Y, area_km2)
+nbs_grid <- as.data.frame(as.matrix(nbs_grid))
 
 ggplot2::ggplot(nbs_grid, aes(X, Y, colour = area_km2)) +
   geom_tile(width = 2, height = 2, fill = NA) +
