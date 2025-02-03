@@ -160,7 +160,7 @@ Make predictions and index:
 
 ```{r predictions-index, echo=TRUE}
 # EBS grid
-grid_ebs <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))
+grid_ebs <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))
 
 # NBS grid
 grid_nbs <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))
@@ -243,6 +243,7 @@ Make maps and diagnostics:
 # ggplot(subset(dat, !is.na(resids)), aes(X, Y, col = resids)) +
 #   scale_colour_gradient2(name = "residuals") +
 #   geom_point(size = 0.7) +
+#   scale_x_continuous(breaks = c(250, 750)) +
 #   facet_wrap(~year) +
 #   coord_fixed() +
 #   theme_bw()
@@ -259,6 +260,7 @@ if(species == "Gadus_macrocephalus"){
 ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
   geom_tile() +
   scale_fill_viridis_c(trans = "sqrt", name = "") +
+  scale_x_continuous(breaks = c(250, 750)) +
   facet_wrap(~year) +
   coord_fixed() +
   ggtitle(title) +
