@@ -335,7 +335,7 @@ if(species == "kamchatka_flounder"){
     ylab(ylab) +
     theme_bw()
   ggsave(file = here("species_specific_code", "BS", species, phase, 
-                   "index_comparison_both.pdf"), 
+                   "index_comparison.pdf"), 
          height = 4, width = 6, units = c("in"))
   } else {
     new_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_new") %>% 
