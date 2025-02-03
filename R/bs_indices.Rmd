@@ -317,85 +317,95 @@ Now, we can compare the index to the prior model.
 #   mutate(index = "db") %>%
 #   select(-AREA_ID)
 
-if(species == "kamchatka_flounder"){
-    new_i <- ind %>% mutate(index = "mb_new") %>% 
-      select(index, stratum, year, est, lwr, upr)
-  } else {
-    new_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_new") %>% 
-      select(index, stratum, year, est, lwr, upr)
-  }
-
-#TODO: update prior index once we've moved on from VAST
-old_i <- read.csv(here("species_specific_code", "BS", species, phase, "Index.csv")) %>%
-  mutate(index = "mb_old", year = as.numeric(Time), est = Estimate, 
-    se = Std..Error.for.ln.Estimate., stratum = Stratum) %>% 
-  filter(year %in% unique(new_i$year), stratum %in% unique(new_i$stratum)) %>%
-  select(index, stratum, year, est, se) %>% 
-  mutate(lwr = exp(log(est) + qnorm(0.025) * se),
-         upr = exp(log(est) + qnorm(0.975) * se)) %>%
-  select(index, stratum, year, est, lwr, upr)
-
-both_i <- bind_rows(new_i, old_i) %>% 
-  filter(est > 0)
-both_i[both_i < 0] <- 0
-
-# plot indices ----
+# automate switch between numbers and biomass on index plots
 if(species == "Gadus_macrocephalus"){
   ylab <- "Abundance (n)"
 } else {
   ylab <- "Biomass (kg)"
 }
 
-ggplot(filter(both_i, stratum == "Both"), aes(x = year, y = est, ymin = lwr, 
-                                              ymax = upr, colour = index)) + 
-  geom_ribbon(alpha = 0.1) +
-  geom_line(alpha = 0.8) + 
-  ylim(0, max(both_i$upr)) +
-  ggtitle(paste(species, "EBS + NBS")) +
-  coord_cartesian(expand = FALSE) + 
-  ylab(ylab) +
-  theme_bw()
-ggsave(file = here("species_specific_code", "BS", species, phase, 
+# plot indices and compare to old model (only plot new EBS index for KAMs)
+if(species == "kamchatka_flounder"){
+  ggplot(ind, aes(x = year, y = est, ymin = lwr, ymax = upr)) + 
+    geom_ribbon(alpha = 0.1) +
+    geom_line(alpha = 0.8) + 
+    ylim(0, max(ind$upr)) +
+    ggtitle(paste(species, "EBS")) +
+    coord_cartesian(expand = FALSE) + 
+    ylab(ylab) +
+    theme_bw()
+  ggsave(file = here("species_specific_code", "BS", species, phase, 
                    "index_comparison_both.pdf"), 
-       height = 4, width = 6, units = c("in"))
+         height = 4, width = 6, units = c("in"))
+  } else {
+    new_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_new") %>% 
+      select(index, stratum, year, est, lwr, upr)
 
-ggplot(filter(both_i, stratum == "EBS"), aes(x = year, y = est, ymin = lwr, 
-                                              ymax = upr, colour = index)) + 
-  geom_ribbon(alpha = 0.1) +
-  geom_line(alpha = 0.8) + 
-  ylim(0, max(both_i$upr)) +
-  ggtitle(paste(species, "EBS")) +
-  coord_cartesian(expand = FALSE) + 
-  ylab(ylab) +
-  theme_bw()
-ggsave(file = here("species_specific_code", "BS", species, phase, 
-                   "index_comparison_ebs.pdf"), 
-       height = 4, width = 6, units = c("in"))
-
-ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, 
-                                              ymax = upr, colour = index)) + 
-  geom_ribbon(alpha = 0.1) +
-  geom_line(alpha = 0.8) + 
-  ylim(0, max(both_i$upr)) +
-  ggtitle(paste(species, "NBS")) +
-  coord_cartesian(expand = FALSE) + 
-  ylab(ylab) +
-  theme_bw()
-ggsave(file = here("species_specific_code", "BS", species, phase, 
-                   "index_comparison_nbs.pdf"), 
-       height = 4, width = 6, units = c("in"))
-
-# plot new index only for all regions
-ggplot(new_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = stratum)) + 
-  geom_ribbon(alpha = 0.1) +
-  geom_line(alpha = 0.8) + 
-  ylim(0, max(new_i$upr)) +
-  ggtitle(species) +
-  coord_cartesian(expand = FALSE) + 
-  ylab(ylab) +
-  theme_bw()
-ggsave(file = here("species_specific_code", "BS", species, phase, "index.pdf"), 
-       height = 4, width = 6, units = c("in"))
+    #TODO: update prior index once we've moved on from VAST
+    old_i <- read.csv(here("species_specific_code", "BS", species, phase, "Index.csv")) %>%
+      mutate(index = "mb_old", year = as.numeric(Time), est = Estimate, 
+        se = Std..Error.for.ln.Estimate., stratum = Stratum) %>% 
+      filter(year %in% unique(new_i$year), stratum %in% unique(new_i$stratum)) %>%
+      select(index, stratum, year, est, se) %>% 
+      mutate(lwr = exp(log(est) + qnorm(0.025) * se),
+             upr = exp(log(est) + qnorm(0.975) * se)) %>%
+      select(index, stratum, year, est, lwr, upr)
+    
+    both_i <- bind_rows(new_i, old_i) %>% 
+      filter(est > 0)
+    both_i[both_i < 0] <- 0
+    
+    ggplot(filter(both_i, stratum == "Both"), aes(x = year, y = est, ymin = lwr, 
+                                                  ymax = upr, colour = index)) + 
+      geom_ribbon(alpha = 0.1) +
+      geom_line(alpha = 0.8) + 
+      ylim(0, max(both_i$upr)) +
+      ggtitle(paste(species, "EBS + NBS")) +
+      coord_cartesian(expand = FALSE) + 
+      ylab(ylab) +
+      theme_bw()
+    ggsave(file = here("species_specific_code", "BS", species, phase, 
+                       "index_comparison_both.pdf"), 
+           height = 4, width = 6, units = c("in"))
+    
+    ggplot(filter(both_i, stratum == "EBS"), aes(x = year, y = est, ymin = lwr, 
+                                                  ymax = upr, colour = index)) + 
+      geom_ribbon(alpha = 0.1) +
+      geom_line(alpha = 0.8) + 
+      ylim(0, max(both_i$upr)) +
+      ggtitle(paste(species, "EBS")) +
+      coord_cartesian(expand = FALSE) + 
+      ylab(ylab) +
+      theme_bw()
+    ggsave(file = here("species_specific_code", "BS", species, phase, 
+                       "index_comparison_ebs.pdf"), 
+           height = 4, width = 6, units = c("in"))
+    
+    ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, 
+                                                  ymax = upr, colour = index)) + 
+      geom_ribbon(alpha = 0.1) +
+      geom_line(alpha = 0.8) + 
+      ylim(0, max(both_i$upr)) +
+      ggtitle(paste(species, "NBS")) +
+      coord_cartesian(expand = FALSE) + 
+      ylab(ylab) +
+      theme_bw()
+    ggsave(file = here("species_specific_code", "BS", species, phase, 
+                       "index_comparison_nbs.pdf"), 
+           height = 4, width = 6, units = c("in"))
+    
+    # plot new index only for all regions
+    ggplot(new_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = stratum)) + 
+      geom_ribbon(alpha = 0.1) +
+      geom_line(alpha = 0.8) + 
+      ylim(0, max(new_i$upr)) +
+      ggtitle(species) +
+      coord_cartesian(expand = FALSE) + 
+      ylab(ylab) +
+      theme_bw()
+    ggsave(file = here("species_specific_code", "BS", species, phase, "index.pdf"), 
+           height = 4, width = 6, units = c("in"))
+}
 
 # create ESP products ----
 # TODO: check if there is different trend without bias correction
