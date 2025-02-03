@@ -244,6 +244,7 @@ Make maps and diagnostics:
 #   scale_colour_gradient2(name = "residuals") +
 #   geom_point(size = 0.7) +
 #   scale_x_continuous(breaks = c(250, 750)) +
+#   scale_y_continuous(breaks = c(6000, 6500, 7000)) +
 #   facet_wrap(~year) +
 #   coord_fixed() +
 #   theme_bw()
@@ -261,6 +262,7 @@ ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
   geom_tile() +
   scale_fill_viridis_c(trans = "sqrt", name = "") +
   scale_x_continuous(breaks = c(250, 750)) +
+  scale_y_continuous(breaks = c(6000, 6500, 7000)) +
   facet_wrap(~year) +
   coord_fixed() +
   ggtitle(title) +
