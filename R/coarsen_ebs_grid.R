@@ -39,7 +39,8 @@ ggplot2::ggplot(ebs_grid, aes(X, Y, colour = area_km2)) +
   geom_point(size = 0.5) +
   coord_fixed()
 
-write.csv(ebs_grid, file = here::here("extrapolation_grids", "ebs_coarse_grid.csv"))
+write.csv(ebs_grid, row.names = FALSE,
+          file = here::here("extrapolation_grids", "ebs_coarse_grid.csv"))
 
 # NBS alone ----
 nbs_grid <- akgfmaps:::make_2d_grid(obj = dplyr::filter(ebs_layers$survey.strata, 
@@ -67,7 +68,8 @@ ggplot2::ggplot(nbs_grid, aes(X, Y, colour = area_km2)) +
   geom_point(size = 0.5) +
   coord_fixed()
 
-write.csv(nbs_grid, file = here::here("extrapolation_grids", "nbs_coarse_grid.csv"))
+write.csv(nbs_grid, row.names = FALSE,
+          file = here::here("extrapolation_grids", "nbs_coarse_grid.csv"))
 
 # combine to get full Bering grid ----
 grid <- dplyr::bind_rows(nbs_grid, ebs_grid)
@@ -80,4 +82,5 @@ ggplot2::ggplot(grid, aes(X, Y, colour = area_km2)) +
 
 nrow(grid) # check N cells: results in 1908 for 12x12nm resolution
 
-write.csv(grid, file = here::here("extrapolation_grids", "bering_coarse_grid.csv"))
+write.csv(grid, row.names = FALSE,
+          file = here::here("extrapolation_grids", "bering_coarse_grid.csv"))
