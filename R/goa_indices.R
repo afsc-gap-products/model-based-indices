@@ -200,7 +200,6 @@ for (i in species_list){
          height = 4, width = 6, units = c("in"))
   
   #### ESP products ----
-  # TODO: check if there is different trend without bias correction
   f4 <- here("species_specific_code", "GOA", species, phase, "cog.RDS")
   if (!file.exists(f4)) {
     cog <- get_cog(p, bias_correct = FALSE, 
