@@ -36,9 +36,7 @@ Data <- st_transform(Data,
 Data <- cbind(st_drop_geometry(Data), st_coordinates(Data))
 
 
-#' Next, we construct the various inputs to tinyVAST
-#' ----------------------------------------------------------------------------
-# adds different variances for each age
+# Inputs to tinyVAST ----------------------------------------------------------
 sem <- ""
 
 # Constant AR1 spatio-temporal term across ages
@@ -122,7 +120,7 @@ stop.time <- Sys.time()
 saveRDS(myfit, here(workDir, "results", paste0("tinyVAST_fit_", as.character(this_year), ".RDS")))
 
 
-# Index Expansion -------------------------------------------------------------
+# Index expansion -------------------------------------------------------------
 # Load fit object if needed
 myfit <- readRDS(here(workDir, "results", paste0("tinyVAST_fit_", as.character(this_year), ".RDS")))
 
@@ -168,7 +166,8 @@ N_ct <- N_ct / outer(rep(1, nrow(N_ct)), colSums(N_ct))
 # Save abundance estimate
 write.csv(N_ct, here(workDir, "results", paste0("tinyVAST_natage_", as.character(this_year), ".csv")), row.names = FALSE)
 
-# Reformat and calculate proportions
+
+# Reformat and calculate proportions ------------------------------------------
 rownames(N_ct) <- 1:15
 tiny_out <- tibble::rownames_to_column(data.frame(t(N_ct)), "VALUE")
 tiny_out <- tiny_out[, c(2:16, 1)]
