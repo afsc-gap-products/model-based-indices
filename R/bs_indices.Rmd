@@ -1,0 +1,427 @@
+---
+title: "sdmTMB Bering indices"
+output:
+  bookdown::pdf_document2:
+    highlight: pygments
+    toc: true
+    number_sections: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.asp = 0.618,
+  cache = FALSE,
+  autodep = TRUE,
+  cache.comments = FALSE
+)
+```
+
+```{r packages, message=FALSE, warning=FALSE, cache=FALSE}
+#remotes::install_github("pbs-assess/sdmTMB")
+remotes::install_github("afsc-gap-products/coldpool")
+library(sdmTMB)
+library(dplyr)
+library(ggplot2)
+library(here)
+
+phase <- c("hindcast", "production")[1] # specify analysis phase
+sp <- 1 # specify species from species vector
+species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
+```
+
+We will fit geostatistical spatiotemporal models with sdmTMB for the purposes of index standardization. We will use data from the EBS/NBS AFSC GAP bottom trawl surveys. The density units we will work in are either kg/km^2^ or n/km^2^, for biomass or numerical abundance. 
+
+```{r data, echo = TRUE}
+if(species == "pacific_cod"){
+  dat <- readRDS(here("species_specific_code", "BS", species, phase, 
+                        "data", "data_geostat_index.RDS"))
+  dat <- rename(dat, cpue = cpue_n_km2)
+}
+if(species == "pollock"){
+  dat <- read.csv(here("species_specific_code", "BS", species, phase,
+                       "data", "VAST_ddc_all_2024.csv"))  
+  dat <- dplyr::transmute(dat,
+                         cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
+                         year = as.integer(year),
+                         lat = start_latitude,
+                         lon = start_longitude
+                         )
+}
+if(species %in% c("yellowfin_sole", "kamchatka_flounder")){
+  dat <- readRDS(here("species_specific_code", "BS", species, phase, 
+                       "data", "data_geostat_index.RDS"))  
+  dat <- rename(dat, cpue = cpue_kg_km2)
+}
+
+dat <- dat[!is.na(dat$cpue),]
+```
+
+We also need to pull in the appropriate environmental covariate as this is used as a spatially varying covariate in AFSC GAP Bering Sea indices. For yellowfin sole, this is the mean bottom temperature in waters less than 100m. For other species, this is the cold pool extent. The cold pool is defined here as the areal extent (in km^2^) of seawater equal to or colder than 2 degrees Celsius near the seafloor, calculated from observations from the AFSC GAP EBS/NBS bottom trawl survey. We center and scale this for inclusion as a covariate.
+
+```{r covariate, echo = TRUE}
+
+env_df <- coldpool:::cold_pool_index
+  
+if(species == "yellowfin_sole"){
+  env <- cbind(env_df, env = scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)) |>
+    mutate(year = as.integer(YEAR)) |>
+    select(year, env)
+} else {
+  env <- cbind(env_df, env = scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)) |>
+    mutate(year = as.integer(YEAR)) |>
+    select(year, env)
+}
+
+dat <- left_join(dat, env, by = "year") 
+```
+Now we fit the model in sdmTMB:
+
+```{r fit, echo = TRUE}
+dat$year_f <- as.factor(dat$year)
+
+dat <- add_utm_columns(dat, ll_names = c("lon", "lat"), utm_crs = 32602, units = "km")
+
+# detect if any years have occurrences at every haul and fix params as needed
+mins <- dat %>% group_by(year) %>% summarize(min = min(cpue))
+if(sum(mins$min) == 0){
+  control = sdmTMBcontrol()
+} else {
+  no_zero_yr <- as.integer(mins %>% filter(min > 0) %>% select(year))
+			# set up map and fix value of p(occurrence) to slightly less than 1:
+			yrs <- unique(dat$year)
+			.map <- seq_along(yrs)
+			.map[yrs %in% no_zero_yr] <- NA
+			.map <- factor(.map)
+			.start <- rep(0, length(yrs))
+			.start[yrs %in% no_zero_yr] <- 20
+
+			control =  sdmTMBcontrol(
+			      map = list(b_j = .map),
+			      start = list(b_j = .start)
+			    )
+}
+
+f1 <- here("species_specific_code", "BS", species, phase, "fit.RDS")
+if (!file.exists(f1)) {
+  
+    if(species == "kamchatka_flounder"){
+      #make mesh just for EBS only
+      mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
+                         n_knots = 250, type = "kmeans")
+      #fit to EBS only, using IID spatiotemporal fields instead of "ar1"
+      fit <- sdmTMB( 
+        cpue ~ 0 + year_f,
+        spatial_varying = ~ env,
+        data = dat, 
+        mesh = mesh,
+        family = delta_gamma(type = "poisson-link"), 
+        time = "year", 
+        spatial = "on",
+        spatiotemporal = "iid",
+        silent = FALSE,
+        anisotropy = TRUE,
+        control = control
+      )
+    } else {
+        #pass same mesh as prior model
+        mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
+                     mesh = readRDS(file = here("meshes/bs_vast_mesh.RDS")))
+        fit <- sdmTMB( 
+          cpue ~ 0 + year_f,
+          spatial_varying = ~ env,
+          data = dat, 
+          mesh = mesh,
+          family = delta_gamma(type = "poisson-link"), 
+          time = "year", 
+          spatial = "on",
+          spatiotemporal = "ar1",
+          extra_time = 2020L, 
+          silent = FALSE,
+          anisotropy = TRUE,
+          control = control
+        )
+    }
+    saveRDS(fit, file = here("species_specific_code", "BS", 
+                             species, phase, "fit.RDS"))
+  } else {
+    fit <- readRDS(f1)
+}
+
+sanity(fit)
+summary(fit)
+# diagnose estimation issues due to model structure
+#TMBhelper::check_estimability(fit$tmb_obj)
+```
+
+Make predictions and index:
+
+```{r predictions-index, echo=TRUE}
+# EBS grid
+grid_ebs <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))
+
+# NBS grid
+grid_nbs <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))
+
+# Combined grid
+grid <- read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))
+
+# replicate prediction grids for each year in data
+pred_grid_ebs <- replicate_df(grid_ebs, "year_f", unique(dat$year_f))
+pred_grid_nbs <- replicate_df(grid_nbs, "year_f", unique(dat$year_f))
+pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
+pred_grid_ebs$year <- as.integer(as.character(factor(pred_grid_ebs$year_f)))
+pred_grid_nbs$year <- as.integer(as.character(factor(pred_grid_nbs$year_f)))
+pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
+
+# join in environmental covariate (cold pool or mean bottom temperature)
+pred_grid_ebs <- left_join(pred_grid_ebs, env, by = "year") 
+pred_grid_nbs <- left_join(pred_grid_nbs, env, by = "year")
+pred_grid <- left_join(pred_grid, env, by = "year")
+
+# get predictions
+f2 <- here("species_specific_code", "BS", species, phase, "predictions.RData")
+if (!file.exists(f2)) {
+  if(species == "kamchatka_flounder"){
+    p <- predict(fit, newdata = pred_grid_ebs, return_tmb_object = TRUE)
+    save(p, file = f2)
+  } else {
+      p <- predict(fit, newdata = pred_grid, return_tmb_object = TRUE)
+      p_ebs <- predict(fit, newdata = pred_grid_ebs, return_tmb_object = TRUE)
+      p_nbs <- predict(fit, newdata = pred_grid_nbs, return_tmb_object = TRUE)
+      save(p, p_ebs, p_nbs, file = f2)
+  }
+} else {
+  load(f2)
+}
+
+# get indices
+gc()
+
+f3 <- here("species_specific_code", "BS", species, phase, "indices.RData")
+if (!file.exists(f3)) {
+  if(species == "kamchatka_flounder"){
+    ind <- get_index(p, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
+    ind$stratum <- "EBS"
+    
+    save(ind, file = f3)
+  } else {
+    ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
+    ind$stratum <- "Both"
+    
+    gc()
+    ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
+    ind_ebs$stratum <- "EBS"
+  
+    gc()
+    ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = pred_grid_nbs$area_km2)
+    ind_nbs$stratum <- "NBS"
+    
+    save(ind, ind_ebs, ind_nbs, file = f3)
+  }
+} else {
+load(f3)
+}
+```
+Make maps and diagnostics:
+
+```{r plots, echo=TRUE}
+## Plot predicted density maps and fit diagnostics ----
+#TODO: find why calls to residuals throws errors for some package versions
+# 
+# # q-q plot
+# pdf(file = here("species_specific_code", "BS", species, phase, "qq.pdf"),
+#     width = 5, height = 5)
+#   simulate(fit, nsim = 500, type = "mle-mvn") |>
+#     dharma_residuals(fit, test_uniformity = FALSE)
+# dev.off()
+# 
+# #residuals on map plot, by year
+# dat$resids <- residuals(fit, type ="mle-mvn")
+# ggplot(subset(dat, !is.na(resids)), aes(X, Y, col = resids)) +
+#   scale_colour_gradient2(name = "residuals") +
+#   geom_point(size = 0.7) +
+#   scale_x_continuous(breaks = c(250, 750)) +
+#   scale_y_continuous(breaks = c(6000, 6500, 7000)) +
+#   facet_wrap(~year) +
+#   coord_fixed() +
+#   theme_bw()
+# ggsave(file = here("species_specific_code", "BS", species, phase,
+#                    "residuals_map.pdf"),
+#        height = 9, width = 6.5, units = c("in"))
+
+# predictions on map plot, by year
+if(species == "Gadus_macrocephalus"){
+  title <- "Predicted densities (n / square km)"
+} else {
+  title <- "Predicted densities (kg / square km)"
+}
+ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
+  geom_tile() +
+  scale_fill_viridis_c(trans = "sqrt", name = "") +
+  scale_x_continuous(breaks = c(250, 750)) +
+  scale_y_continuous(breaks = c(6000, 6500, 7000)) +
+  facet_wrap(~year) +
+  coord_fixed() +
+  ggtitle(title) +
+  theme_bw()
+ggsave(file = here("species_specific_code", "BS", species, phase,
+                   "predictions_map.pdf"),
+       height = 9, width = 6.5, units = c("in"))
+```
+
+Now, we can compare the index to the prior model.
+
+```{r index-compare, message=FALSE, warning=FALSE}
+## query db index
+# channel <- gapindex::get_connected(check_access = FALSE) # enter credentials 
+# 
+# species_code <- c("10210", "21740", "21720", "10112")[sp]
+#
+# if(species == "Gadus_macrocephalus"){
+#   query <- paste0('
+#     SELECT 
+#     \'db\' AS "index",
+#     YEAR AS "year",
+#     POPULATION_COUNT AS "est",
+#     (POPULATION_COUNT - SQRT(POPULATION_VAR) * (1.959964)) as "lwr", 
+#     (POPULATION_COUNT + SQRT(POPULATION_VAR) * (1.959964)) as "upr", 
+#     AREA_ID
+#     
+#     -- Identify what tables to pull data from
+#     FROM GAP_PRODUCTS.BIOMASS
+#     WHERE AREA_ID IN (99900, 99902)
+#     AND SPECIES_CODE = ', species_code)
+# } else {
+#   query <- paste0('
+#     SELECT 
+#     \'db\' AS "index",
+#     YEAR AS "year",
+#     BIOMASS_MT * 1000 AS "est",
+#     (BIOMASS_MT - SQRT(BIOMASS_VAR) * (1.959964)) * 1000 as "lwr", 
+#     (BIOMASS_MT + SQRT(BIOMASS_VAR) * (1.959964)) * 1000 as "upr", 
+#     AREA_ID
+#         
+#     -- Identify what tables to pull data from
+#     FROM GAP_PRODUCTS.BIOMASS
+#     WHERE AREA_ID IN (99900, 99902)
+#     AND SPECIES_CODE = ', species_code)
+# }
+# db_i <- RODBC::sqlQuery(channel = channel, query = query)
+# db_i <- db_i %>% 
+#   mutate(stratum = recode(AREA_ID, 
+#                           `99900` = "EBS", 
+#                           `99902` = "NBS")) %>% 
+#   mutate(index = "db") %>%
+#   select(-AREA_ID)
+
+# automate switch between numbers and biomass on index plots
+if(species == "Gadus_macrocephalus"){
+  ylab <- "Abundance (n)"
+} else {
+  ylab <- "Biomass (kg)"
+}
+
+# plot indices and compare to old model (only plot new EBS index for KAMs)
+if(species == "kamchatka_flounder"){
+  ggplot(ind, aes(x = year, y = est, ymin = lwr, ymax = upr)) + 
+    geom_ribbon(alpha = 0.1) +
+    geom_line(alpha = 0.8) + 
+    ylim(0, max(ind$upr)) +
+    ggtitle(paste(species, "EBS")) +
+    coord_cartesian(expand = FALSE) + 
+    ylab(ylab) +
+    theme_bw()
+  ggsave(file = here("species_specific_code", "BS", species, phase, 
+                   "index_comparison.pdf"), 
+         height = 4, width = 6, units = c("in"))
+  } else {
+    new_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_new") %>% 
+      select(index, stratum, year, est, lwr, upr)
+
+    #TODO: update prior index once we've moved on from VAST
+    old_i <- read.csv(here("species_specific_code", "BS", species, phase, "Index.csv")) %>%
+      mutate(index = "mb_old", year = as.numeric(Time), est = Estimate, 
+        se = Std..Error.for.ln.Estimate., stratum = Stratum) %>% 
+      filter(year %in% unique(new_i$year), stratum %in% unique(new_i$stratum)) %>%
+      select(index, stratum, year, est, se) %>% 
+      mutate(lwr = exp(log(est) + qnorm(0.025) * se),
+             upr = exp(log(est) + qnorm(0.975) * se)) %>%
+      select(index, stratum, year, est, lwr, upr)
+    
+    both_i <- bind_rows(new_i, old_i) %>% 
+      filter(est > 0)
+    both_i[both_i < 0] <- 0
+    
+    ggplot(filter(both_i, stratum == "Both"), aes(x = year, y = est, ymin = lwr, 
+                                                  ymax = upr, colour = index)) + 
+      geom_ribbon(alpha = 0.1) +
+      geom_line(alpha = 0.8) + 
+      ylim(0, max(both_i$upr)) +
+      ggtitle(paste(species, "EBS + NBS")) +
+      coord_cartesian(expand = FALSE) + 
+      ylab(ylab) +
+      theme_bw()
+    ggsave(file = here("species_specific_code", "BS", species, phase, 
+                       "index_comparison_both.pdf"), 
+           height = 4, width = 6, units = c("in"))
+    
+    ggplot(filter(both_i, stratum == "EBS"), aes(x = year, y = est, ymin = lwr, 
+                                                  ymax = upr, colour = index)) + 
+      geom_ribbon(alpha = 0.1) +
+      geom_line(alpha = 0.8) + 
+      ylim(0, max(both_i$upr)) +
+      ggtitle(paste(species, "EBS")) +
+      coord_cartesian(expand = FALSE) + 
+      ylab(ylab) +
+      theme_bw()
+    ggsave(file = here("species_specific_code", "BS", species, phase, 
+                       "index_comparison_ebs.pdf"), 
+           height = 4, width = 6, units = c("in"))
+    
+    ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, 
+                                                  ymax = upr, colour = index)) + 
+      geom_ribbon(alpha = 0.1) +
+      geom_line(alpha = 0.8) + 
+      ylim(0, max(both_i$upr)) +
+      ggtitle(paste(species, "NBS")) +
+      coord_cartesian(expand = FALSE) + 
+      ylab(ylab) +
+      theme_bw()
+    ggsave(file = here("species_specific_code", "BS", species, phase, 
+                       "index_comparison_nbs.pdf"), 
+           height = 4, width = 6, units = c("in"))
+    
+    # plot new index only for all regions
+    ggplot(new_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = stratum)) + 
+      geom_ribbon(alpha = 0.1) +
+      geom_line(alpha = 0.8) + 
+      ylim(0, max(new_i$upr)) +
+      ggtitle(species) +
+      coord_cartesian(expand = FALSE) + 
+      ylab(ylab) +
+      theme_bw()
+    ggsave(file = here("species_specific_code", "BS", species, phase, "index.pdf"), 
+           height = 4, width = 6, units = c("in"))
+}
+
+# create ESP products ----
+# TODO: check if there is different trend without bias correction
+f4 <- here("species_specific_code", "BS", species, phase, "cog.RDS")
+if (!file.exists(f4)) {
+  cog <- get_cog(p, bias_correct = FALSE, 
+                 area = p$data$area_km2, format = "wide")
+  saveRDS(cog, file = here("species_specific_code", "BS", 
+                           species, phase, "cog.RDS"))
+}
+
+f5 <- here("species_specific_code", "BS", species, phase, 
+           "area_occupied.RDS")
+if (!file.exists(f5)) {
+eao <- get_eao(p, bias_correct = FALSE, area = p$data$area_km2)
+saveRDS(eao, file = here("species_specific_code", "BS", 
+                         species, phase, "area_occupied.RDS"))
+}
+```
