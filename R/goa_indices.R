@@ -205,15 +205,13 @@ for (i in species_list){
   if (!file.exists(f4)) {
     cog <- get_cog(p, bias_correct = FALSE, 
                    area = p$data$area_km2, format = "wide")
-    saveRDS(cog, file = here("species_specific_code", "GOA", 
-                             species, phase, "cog.RDS"))
+    saveRDS(cog, file = f4)
   }
   
   f5 <- here("species_specific_code", "GOA", species, phase, 
              "area_occupied.RDS")
   if (!file.exists(f5)) {
   eao <- get_eao(p, bias_correct = FALSE, area = p$data$area_km2)
-  saveRDS(eao, file = here("species_specific_code", "GOA", 
-                           species, phase, "area_occupied.RDS"))
+  saveRDS(eao, file = f5)
   }
 }
