@@ -108,9 +108,9 @@ f1 <- here("species_specific_code", "BS", species, phase, "fit.RDS")
 if (!file.exists(f1)) {
   
     if(species == "kamchatka_flounder"){
-      #make mesh just for EBS only
-      mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
-                         n_knots = 250, type = "kmeans")
+      #make mesh just for EBS only, need to try out different numbers of knots
+        mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
+                     mesh = readRDS(file = here("meshes/ebs_vast_mesh_250_knots.RDS")))
       #fit to EBS only, using IID spatiotemporal fields instead of "ar1"
       fit <- sdmTMB( 
         cpue ~ 0 + year_f,
