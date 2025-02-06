@@ -166,16 +166,18 @@ index_diff
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
 # old_props <- read.csv(here(workDir, "results", "2023 Production", "Comps", "proportions.csv"))
-new_props <- cbind(read.csv(here(workDir, "results", "Comps", "proportions.csv")), distribution = "VAST")
+new_props <- cbind(read.csv(here(workDir, "results", "Comps", "proportions.csv")), distribution = "VAST")[, -1]
 # tiny_tweedie <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props.csv")), distribution = "Tweedie")
 # tiny_dg <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv")), distribution = "Delta Gamma")
-tiny_mesh <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_mesh.csv")), distribution = "Tweedie")
-tiny_mesh_dg <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_mesh_dg.csv")), distribution = "Delta Gamma")
+# tiny_mesh <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_mesh.csv")), distribution = "Tweedie")
+# tiny_mesh_dg <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_mesh_dg.csv")), distribution = "Delta Gamma")
 # tiny_logn <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_logn.csv")), distribution = "Lognormal")
 # tiny_bc <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_bc.csv")), distribution = "Tweedie")
 # tiny_dg_bc <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg_bc.csv")), distribution = "Delta Gamma")
-tiny_mesh_dglink <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_mesh_dglink.csv")), distribution = "DG (poisson-link)")
-sdm_props <- dcast(cbind(read.csv(here(workDir, "results", "sdmTMB_age_prop.csv"))[, 2:4]), formula = year ~ Age)
+tiny_mesh_dglink <- cbind(read.csv(here(workDir, "results", "tinyVAST_props_mesh_dglink.csv")), distribution = "DG (poisson-link)")[, -17]
+# sdm_props <- dcast(cbind(read.csv(here(workDir, "results", "sdmTMB_age_prop.csv"))[, 2:4]), formula = year ~ Age)
+tiny_coarse <- cbind(read.csv(here(workDir, "results", "tinyVAST_props_coarse_2024.csv")), distribution = "DG (poisson-link)")
+
 
 # Reshape sdmTMB comps 
 colnames(sdm_props)[1] <- "Year"
@@ -186,6 +188,7 @@ sdm_props <- sdm_props[, c(2:16, 1, 17, 18)]
 # Update old_props to match tinyVAST test output - only EBS
 tiny_years <- c(1980:2019, 2021:this_year)
 new_props <- new_props %>% filter(Year %in% tiny_years & Region == "Both")
+new_props <- new_props[, -17]
 
 # Get design-based comps from gapindex ----------------------------------------
 # devtools::install_github("afsc-gap-products/gapindex")
@@ -227,7 +230,7 @@ compare_props <- function(props, names, last_year) {
   for(i in 1:length(props)) {
     prop <- props[[i]]
     colnames(prop)[1:15] <- 1:15
-    prop <- melt(prop, id.vars = c("Year", "Region", "distribution"),
+    prop <- melt(prop, id.vars = c("Year", "distribution"),
                  variable.name = "Age", value.name = "Proportion")
     prop$version <- names[i]
     df <- rbind.data.frame(df, prop)
@@ -250,19 +253,19 @@ compare_props <- function(props, names, last_year) {
   return(list(barplot = barplot, boxplot = boxplot))
 }
 
-comp_all_plots <- compare_props(props = list(new_props, tiny_tweedie, tiny_dg, 
-                                             tiny_mesh, tiny_mesh_dg, tiny_logn, 
-                                             tiny_bc, tiny_dg_bc, sdm_props),
-                                names = c("VAST", "1 - original", "1 - original", 
-                                          "3 - VAST mesh", "3 - VAST mesh", "1 - original", 
-                                          "2 - bias correction", "2 - bias correction", "sdmTMB"))
+# comp_all_plots <- compare_props(props = list(new_props, tiny_tweedie, tiny_dg, 
+#                                              tiny_mesh, tiny_mesh_dg, tiny_logn, 
+#                                              tiny_bc, tiny_dg_bc, sdm_props),
+#                                 names = c("VAST", "1 - original", "1 - original", 
+#                                           "3 - VAST mesh", "3 - VAST mesh", "1 - original", 
+#                                           "2 - bias correction", "2 - bias correction", "sdmTMB"))
 
-summary_props_all <- comp_all_plots$boxplot + 
-  facet_wrap(~ distribution)
-summary_props_all
+# summary_props_all <- comp_all_plots$boxplot + 
+#   facet_wrap(~ distribution)
+# summary_props_all
 
-sum_props_sub <- compare_props(props = list(new_props, tiny_mesh, tiny_mesh_dg, tiny_mesh_dglink),
-                               names = c("VAST", "tinyVAST (Tweedie)", "tinyVAST (DG)", "tinyVAST (DG poisson-link)"))
+sum_props_sub <- compare_props(props = list(tiny_mesh_dglink, tiny_coarse),
+                               names = c("tinyVAST (old grid)", "tinyVAST (coarse grid)"))
 sum_props_sub$barplot
 sum_props_sub$boxplot
 

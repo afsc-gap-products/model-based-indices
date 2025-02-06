@@ -63,9 +63,9 @@ dsem <- "
 # mesh <- fm_mesh_2d(loc = Data[,c("X","Y")],
 #                    cutoff = 50)
 # 
-# control <- tinyVASTcontrol(getsd = FALSE,
-#                            profile = c("alpha_j"),  
-#                            trace = 0)
+control <- tinyVASTcontrol(getsd = FALSE,
+                           profile = c("alpha_j"),
+                           trace = 0)
 
 # Use mesh from the VAST model for bridging -----------------------------------
 # Read in VAST model & get mesh
@@ -124,20 +124,11 @@ saveRDS(myfit, here(workDir, "results", paste0("tinyVAST_fit_", as.character(thi
 # Load fit object if needed
 myfit <- readRDS(here(workDir, "results", paste0("tinyVAST_fit_", as.character(this_year), ".RDS")))
 
-# Get shapefile for survey extent
-data(bering_sea)
 
-# Make extrapolation grid based on shapefile
-bering_sea <- st_transform(bering_sea, 
-                           st_crs("+proj=utm +zone=2 +units=km"))
-grid <- st_make_grid(bering_sea, n=c(50,50))
-grid <- st_intersection(grid, bering_sea)
-grid <- st_make_valid(grid)
-loc_gz <- st_coordinates(st_centroid(grid))
-
-# Get area for extrapolation grid
-library(units)
-areas <- set_units(st_area(grid), "hectares") #  / 100^2 # Hectares
+# Read in coarsened extrapolation grid for desired region 
+# coarse_grid <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))  # EBS
+# coarse_grid <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))  # NBS
+coarse_grid <- read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))  # both regions
 
 # Get abundance
 N_jz <- expand.grid(Age = myfit$internal$variables, Year = sort(unique(Data$Year)))
@@ -147,11 +138,11 @@ for(j in seq_len(nrow(N_jz))){
     message("Integrating ", N_jz[j,'Year'], " ", N_jz[j,'Age'], ": ", Sys.time())
   }
   if(is.na(N_jz[j,'Biomass'])){
-    newdata = data.frame(loc_gz, Year = N_jz[j, 'Year'], Age = N_jz[j, 'Age'])
+    newdata = data.frame(coarse_grid, Year = N_jz[j, 'Year'], Age = N_jz[j, 'Age'])
     newdata$Year_Age = paste(newdata$Year, newdata$Age, sep=".")
     # Area-expansion
     index1 = integrate_output(myfit,
-                              area = areas,
+                              area = coarse_grid$area_km2,
                               newdata = newdata,
                               apply.epsilon = TRUE,
                               bias.correct = TRUE,
