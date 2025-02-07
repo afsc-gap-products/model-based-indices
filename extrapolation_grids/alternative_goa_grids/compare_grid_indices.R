@@ -12,7 +12,27 @@ species_list <-
   c("Gadus_macrocephalus", "Sebastes_alutus", "Sebastes_polyspinis", 
     "Sebastes_variabilis", "Squalus_suckleyi", "Atheresthes_stomias")
 
-for (species in species_list) { ## Loop over species -- start
+goa_grid <- read.csv(file = here("extrapolation_grids", 
+                                 "GOAThorsonGrid_Less700m.csv"))
+goa_grid <- data.frame(Lat=goa_grid$Latitude, 
+                       Lon=goa_grid$Longitude,
+                       Area_km2=goa_grid$Shape_Area/1000000)
+
+## Turn the goa grid df into a lat/lon spatial object 
+sf_grid <- sf::st_as_sf(x = goa_grid,
+                        coords = c("Lon", "Lat"),
+                        crs = "+proj=longlat +datum=WGS84"
+)
+## Transform the grid to UTM (Zone 5)
+sf_grid <- sf::st_transform(sf_grid, crs = "+proj=utm +zone=5 +units=km")
+goa_grid[, c("X", "Y")] <- sf::st_coordinates(x = sf_grid)
+
+## Collate relevant fields and save
+grid <- goa_grid[, c("Lon", "Lat", "X", "Y", "Area_km2")]
+names(x = grid) <- c("lon", "lat", "X", "Y", "area_km2")
+
+
+for (species in species_list[1]) { ## Loop over species -- start
   
   dir <- here("species_specific_code", "GOA", species, "/grid_comparison/")
   if (!dir.exists(paths = dir)) dir.create(path = dir, recursive = TRUE)
@@ -33,12 +53,16 @@ for (species in species_list) { ## Loop over species -- start
       xy_cols = c("X", "Y"), 
       mesh = readRDS(file = here("meshes/goa_vast_mesh.RDS"))
     )
+  
     
     fit_sdmTMB <- sdmTMB::sdmTMB( 
-      cpue_kg_km2 ~ 0 + year_f,
+      catch_kg ~ 0 + year_f,
+      offset = log(x = dat$effort_km2),
+      # cpue_kg_km2 ~ 0 + year_f,
       data = dat, 
       mesh = mesh,
-      family = delta_gamma(type = "poisson-link"), 
+      # family = delta_lognormal(type = "poisson-link"),
+      family = delta_gamma(type = "poisson-link"),
       time = "year", 
       spatial = "on",
       spatiotemporal = "iid",
@@ -53,7 +77,7 @@ for (species in species_list) { ## Loop over species -- start
   }
   
   # load grid and process prediction grid for all years desired
-  grid <- readRDS(file = "extrapolation_grids/goa_sdmtmb_grid.RDS")
+  # grid <- readRDS(file = "extrapolation_grids/goa_sdmtmb_grid.RDS")
   pred_grid <- sdmTMB::replicate_df(dat = grid, 
                                     time_name = "year_f", 
                                     time_values = unique(x = dat$year_f))
@@ -72,7 +96,7 @@ for (species in species_list) { ## Loop over species -- start
   p <- predict(fit_sdmTMB, 
                newdata = pred_grid, 
                return_tmb_object = TRUE)
-  ind <- sdm get_index(p, 
+  ind <- sdmTMB::get_index(p, 
                        bias_correct = TRUE, 
                        area = p$data$area_km2)
   

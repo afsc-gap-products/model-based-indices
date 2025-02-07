@@ -45,7 +45,7 @@ goa_grid_df <- subset(x = goa_grid_df,
                       subset = area_km2 >= 0.001)
 
 write.csv(x = goa_grid_df, 
-        file = paste0("extrapolation_grids/alternative_goa_grids/",
+        file = paste0("extrapolation_grids/",
                       "goa_2025_interpolation_grid.csv"), 
         row.names = F)
 
