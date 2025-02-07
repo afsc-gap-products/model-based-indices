@@ -68,15 +68,11 @@ control <- tinyVASTcontrol(getsd = FALSE,
                            trace = 0)
 
 # Use mesh from the VAST model for bridging -----------------------------------
-# Read in VAST model & get mesh
-VASTfit_age <- readRDS(here("VAST_results", "BS", "pollock", "VASTfit_age.RDS"))
-mesh_vast <- VASTfit_age$spatial_list$MeshList$anisotropic_mesh
-
 # Format mesh for tinyVAST (using a function from sdmTMB; same method as sdmTMB index bridging)
 old_mesh <- sdmTMB::make_mesh(Data, 
                               xy_cols = c("X", "Y"), 
-                              mesh = VASTfit_age$spatial_list$MeshList$anisotropic_mesh,
-                              fmesher_func = fm_mesh_2d())
+                              mesh = readRDS(file = here("meshes/bs_vast_mesh_50_knots.RDS")),
+                              fmesher_func = fm_mesh_2d()) # unsure if this is needed or what it is doing?
 
 #' Run the model with a Poisson-linked delta gamma distribution with time- and 
 #' age- varying intercepts in the second linear predictor

@@ -49,9 +49,9 @@ dat <- as.data.frame(spTransform(dat, CRS("+proj=utm +zone=2")))
 dat$X <- dat$coords.x1 / 1000
 dat$Y <- dat$coords.x2 / 1000
 
-# Read in VAST fit object to use mesh
-VASTfit <- readRDS(here("VAST_results", "BS", "pollock", "VASTfit_age.RDS"))
-mesh <- make_mesh(dat, xy_cols = c("X", "Y"), mesh = VASTfit$spatial_list$MeshList$anisotropic_mesh)
+# use prior model mesh from VAST
+mesh <- make_mesh(dat, xy_cols = c("X", "Y"), 
+                  mesh = readRDS(file = here("meshes/bs_vast_mesh_50_knots.RDS")))
 
 # Fit sdmTMB model ------------------------------------------------------------
 fit_sdmTMB <- sdmTMB( 
