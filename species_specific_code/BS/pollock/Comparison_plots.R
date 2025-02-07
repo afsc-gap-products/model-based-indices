@@ -44,40 +44,6 @@ index2$error <- index2$error / 1000000000
 # index2 <- index2 %>% group_by(Time, Stratum) %>%
 #   summarize(Estimate = sum(Estimate),
 #             error = mean(error))
-
-# # Get design-based index from GAP_PRODUCTS ------------------------------------
-# if (file.exists("Z:/Projects/ConnectToOracle.R")) {
-#   source("Z:/Projects/ConnectToOracle.R")
-# } else {
-#   # For those without a ConnectToOracle file
-#   channel <- odbcConnect(dsn = "AFSC",
-#                          uid = rstudioapi::showPrompt(title = "Username",
-#                                                       message = "Oracle Username",
-#                                                       default = ""),
-#                          pwd = rstudioapi::askForPassword("Enter Password"),
-#                          believeNRows = FALSE)
-# }
-# 
-# # check to see if connection has been established
-# odbcGetInfo(channel)
-# 
-# # Pull index
-# wp_db_index <- RODBC::sqlQuery(channel = channel,
-#                                query = "SELECT
-#                                     YEAR,
-#                                     CASE
-#                                      WHEN AREA_ID = 99900 THEN 'EBS'
-#                                      WHEN AREA_ID = 99902 THEN 'NBS'
-#                                     END AS REGION,
-#                                     BIOMASS_MT,
-#                                     SQRT(BIOMASS_VAR)/BIOMASS_MT AS BIOMASS_CV
-#                                     FROM GAP_PRODUCTS.BIOMASS
-#                                     WHERE SPECIES_CODE = 21740
-#                                     AND AREA_ID in (99900, 99902)")
-# 
-# colnames(wp_db_index) <- c("Time", "Stratum", "Estimate", "error")
-# wp_db_index$Estimate <- wp_db_index$Estimate / 1000000
-# wp_db_index$error <- wp_db_index$error / 1000000
 # 
 # # Get design-based index from density-dependent correction --------------------
 # ddc_orig_biomass <- read.csv(here(workDir, "results", "design-based", "biomass_densdep_corrected_EBSonly_2024.csv"))
@@ -174,52 +140,29 @@ new_props <- cbind(read.csv(here(workDir, "results", "Comps", "proportions.csv")
 # tiny_logn <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_logn.csv")), distribution = "Lognormal")
 # tiny_bc <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_bc.csv")), distribution = "Tweedie")
 # tiny_dg_bc <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg_bc.csv")), distribution = "Delta Gamma")
-tiny_mesh_dglink <- cbind(read.csv(here(workDir, "results", "tinyVAST_props_mesh_dglink.csv")), distribution = "DG (poisson-link)")[, -17]
-# sdm_props <- dcast(cbind(read.csv(here(workDir, "results", "sdmTMB_age_prop.csv"))[, 2:4]), formula = year ~ Age)
-tiny_coarse <- cbind(read.csv(here(workDir, "results", "tinyVAST_props_coarse_2024.csv")), distribution = "DG (poisson-link)")
-
+tiny_mesh_dglink <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_mesh_dglink.csv")), distribution = "DG (poisson-link)")[, -17]
+sdm_props <- dcast(cbind(read.csv(here(workDir, "results", "sdmTMB_age_prop.csv"))[, 2:4]), formula = year ~ Age)
+# tiny_coarse <- cbind(read.csv(here(workDir, "results", "tinyVAST_props_coarse_2024.csv")), distribution = "DG (poisson-link)")
+gapindex_comps_raw <- read.csv(here(workDir, "results", "Comps", "gapindex_comps_2024.csv"))
 
 # Reshape sdmTMB comps 
 colnames(sdm_props)[1] <- "Year"
-sdm_props$Region <- "EBS"
 sdm_props$distribution <- "sdmTMB"
-sdm_props <- sdm_props[, c(2:16, 1, 17, 18)]
+sdm_props <- sdm_props[, c(2:16, 1, 17)]
+
+# Reshape gapindex comps
+gapindex_comps <- gapindex_comps_raw %>% 
+  filter(Region == "Both")
+gapindex_comps <- gapindex_comps[, -4] %>%
+  dcast(formula = YEAR ~ AGE) 
+colnames(gapindex_comps)[1] <- "Year"
+gapindex_comps <- gapindex_comps[, c(2:16, 1)]
+gapindex_comps$distribution <- "gapindex"
 
 # Update old_props to match tinyVAST test output - only EBS
 tiny_years <- c(1980:2019, 2021:this_year)
 new_props <- new_props %>% filter(Year %in% tiny_years & Region == "Both")
 new_props <- new_props[, -17]
-
-# Get design-based comps from gapindex ----------------------------------------
-# devtools::install_github("afsc-gap-products/gapindex")
-
-if (file.exists("Z:/Projects/ConnectToOracle.R")) {
-  source("Z:/Projects/ConnectToOracle.R")
-} else {
-  # For those without a ConnectToOracle file
-  channel <- odbcConnect(dsn = "AFSC",
-                         uid = rstudioapi::showPrompt(title = "Username",
-                                                      message = "Oracle Username",
-                                                      default = ""),
-                         pwd = rstudioapi::askForPassword("Enter Password"),
-                         believeNRows = FALSE)
-}
-
-# check to see if connection has been established
-odbcGetInfo(channel)
-
-# channel <- gapindex::get_connected()
-
-gapindex_data_ebs <- gapindex::get_data(
-  year_set = c(1982:2024),
-  survey_set = "EBS",
-  spp_codes = 21740,
-  haul_type = 3,
-  abundance_haul = "Y",
-  pull_lengths = T,
-  channel = channel
-)
-
 
 # Set names for old and new comps
 # names_comps <- c("original", "original", "original", "VAST mesh", "VAST mesh", "original", "bias correction", "bias correction")
@@ -264,8 +207,8 @@ compare_props <- function(props, names, last_year) {
 #   facet_wrap(~ distribution)
 # summary_props_all
 
-sum_props_sub <- compare_props(props = list(tiny_mesh_dglink, tiny_coarse),
-                               names = c("tinyVAST (old grid)", "tinyVAST (coarse grid)"))
+sum_props_sub <- compare_props(props = list(tiny_mesh_dglink, sdm_props, gapindex_comps),
+                               names = c("tinyVAST", "sdmTMB", "gapindex"))
 sum_props_sub$barplot
 sum_props_sub$boxplot
 
