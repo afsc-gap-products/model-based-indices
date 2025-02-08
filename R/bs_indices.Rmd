@@ -28,7 +28,7 @@ library(ggplot2)
 library(here)
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
-sp <- 1 # specify species from species vector
+sp <- 2 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 ```
 
@@ -91,7 +91,7 @@ if(sum(mins$min) == 0){
 } else {
   no_zero_yr <- as.integer(mins %>% filter(min > 0) %>% select(year))
 			# set up map and fix value of p(occurrence) to slightly less than 1:
-			yrs <- unique(dat$year)
+			yrs <- unique(factor(dat$year))
 			.map <- seq_along(yrs)
 			.map[yrs %in% no_zero_yr] <- NA
 			.map <- factor(.map)
@@ -230,27 +230,27 @@ Make maps and diagnostics:
 ```{r plots, echo=TRUE}
 ## Plot predicted density maps and fit diagnostics ----
 #TODO: find why calls to residuals throws errors for some package versions
-# 
-# # q-q plot
-# pdf(file = here("species_specific_code", "BS", species, phase, "qq.pdf"),
-#     width = 5, height = 5)
-#   simulate(fit, nsim = 500, type = "mle-mvn") |>
-#     dharma_residuals(fit, test_uniformity = FALSE)
-# dev.off()
-# 
-# #residuals on map plot, by year
-# dat$resids <- residuals(fit, type ="mle-mvn")
-# ggplot(subset(dat, !is.na(resids)), aes(X, Y, col = resids)) +
-#   scale_colour_gradient2(name = "residuals") +
-#   geom_point(size = 0.7) +
-#   scale_x_continuous(breaks = c(250, 750)) +
-#   scale_y_continuous(breaks = c(6000, 6500, 7000)) +
-#   facet_wrap(~year) +
-#   coord_fixed() +
-#   theme_bw()
-# ggsave(file = here("species_specific_code", "BS", species, phase,
-#                    "residuals_map.pdf"),
-#        height = 9, width = 6.5, units = c("in"))
+
+# q-q plot
+pdf(file = here("species_specific_code", "BS", species, phase, "qq.pdf"),
+    width = 5, height = 5)
+  simulate(fit, nsim = 500, type = "mle-mvn") |>
+    dharma_residuals(fit, test_uniformity = FALSE)
+dev.off()
+
+#residuals on map plot, by year
+dat$resids <- residuals(fit, type ="mle-mvn")
+ggplot(subset(dat, !is.na(resids)), aes(X, Y, col = resids)) +
+  scale_colour_gradient2(name = "residuals") +
+  geom_point(size = 0.7) +
+  scale_x_continuous(breaks = c(250, 750)) +
+  scale_y_continuous(breaks = c(6000, 6500, 7000)) +
+  facet_wrap(~year) +
+  coord_fixed() +
+  theme_bw()
+ggsave(file = here("species_specific_code", "BS", species, phase,
+                   "residuals_map.pdf"),
+       height = 9, width = 6.5, units = c("in"))
 
 # predictions on map plot, by year
 if(species == "Gadus_macrocephalus"){
