@@ -28,7 +28,7 @@ library(ggplot2)
 library(here)
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
-sp <- 2 # specify species from species vector
+sp <- 3 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 ```
 
@@ -99,8 +99,8 @@ if(sum(mins$min) == 0){
 			.start[yrs %in% no_zero_yr] <- 20
 
 			control =  sdmTMBcontrol(
-			      map = list(b_j = .map),
-			      start = list(b_j = .start)
+            map = list(b_j = .map, b_j2 = .map),
+            start = list(b_j = .start, b_j2 = .start)
 			    )
 }
 
@@ -404,7 +404,6 @@ if(species == "kamchatka_flounder"){
 }
 
 # create ESP products ----
-# TODO: check if there is different trend without bias correction
 f4 <- here("species_specific_code", "BS", species, phase, "cog.RDS")
 if (!file.exists(f4)) {
   cog <- get_cog(p, bias_correct = FALSE, 
