@@ -159,13 +159,9 @@ summary(fit)
 Make predictions and index:
 
 ```{r predictions-index, echo=TRUE}
-# EBS grid
+# load prediction grids for ebs, nbs, and both combined
 grid_ebs <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))
-
-# NBS grid
 grid_nbs <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))
-
-# Combined grid
 grid <- read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))
 
 # replicate prediction grids for each year in data
