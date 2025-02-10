@@ -91,16 +91,16 @@ if(sum(mins$min) == 0){
 } else {
   no_zero_yr <- as.integer(mins %>% filter(min > 0) %>% select(year))
 			# set up map and fix value of p(occurrence) to slightly less than 1:
-			yrs <- unique(factor(dat$year))
-			.map <- seq_along(yrs)
-			.map[yrs %in% no_zero_yr] <- NA
-			.map <- factor(.map)
-			.start <- rep(0, length(yrs))
-			.start[yrs %in% no_zero_yr] <- 15
+			yrs <- sort(unique(factor(dat$year)))
+			.map1 <- seq_along(yrs)
+			.map1[yrs %in% no_zero_yr] <- NA
+			.map1 <- factor(.map1)
+			.start1 <- rep(0, length(yrs))
+			.start1[yrs %in% no_zero_yr] <- 20
 
 			control =  sdmTMBcontrol(
-            map = list(b_j = .map),
-            start = list(b_j = .start)
+            map1 = list(b_j = .map1),
+            start1 = list(b_j = .start1)
 			    )
 }
 
