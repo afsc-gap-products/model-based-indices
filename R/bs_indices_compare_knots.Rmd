@@ -1,0 +1,240 @@
+---
+title: "sdmTMB Bering indices: comparing index scale across # of knots"
+output:
+  bookdown::pdf_document2:
+    highlight: pygments
+    toc: true
+    number_sections: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.asp = 0.618,
+  cache = FALSE,
+  autodep = TRUE,
+  cache.comments = FALSE
+)
+```
+
+```{r packages, message=FALSE, warning=FALSE, cache=FALSE}
+#remotes::install_github("pbs-assess/sdmTMB")
+remotes::install_github("afsc-gap-products/coldpool")
+library(sdmTMB)
+library(dplyr)
+library(ggplot2)
+library(here)
+
+phase <- c("hindcast", "production")[1] # specify analysis phase
+sp <- 2 # specify species from species vector
+species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
+```
+
+We will fit geostatistical spatiotemporal models with sdmTMB for the purposes of index standardization. We will use data from the EBS/NBS AFSC GAP bottom trawl surveys. The density units we will work in are either kg/km^2^ or n/km^2^, for biomass or numerical abundance. 
+
+```{r data, echo = TRUE}
+if(species == "pacific_cod"){
+  dat <- readRDS(here("species_specific_code", "BS", species, phase, 
+                        "data", "data_geostat_index.RDS"))
+  dat <- rename(dat, cpue = cpue_n_km2)
+}
+if(species == "pollock"){
+  dat <- read.csv(here("species_specific_code", "BS", species, phase,
+                       "data", "VAST_ddc_all_2024.csv"))  
+  dat <- dplyr::transmute(dat,
+                         cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
+                         year = as.integer(year),
+                         lat = start_latitude,
+                         lon = start_longitude
+                         )
+}
+if(species %in% c("yellowfin_sole", "kamchatka_flounder")){
+  dat <- readRDS(here("species_specific_code", "BS", species, phase, 
+                       "data", "data_geostat_index.RDS"))  
+  dat <- rename(dat, cpue = cpue_kg_km2)
+}
+
+dat <- dat[!is.na(dat$cpue),]
+```
+
+We also need to pull in the appropriate environmental covariate as this is used as a spatially varying covariate in AFSC GAP Bering Sea indices. For yellowfin sole, this is the mean bottom temperature in waters less than 100m. For other species, this is the cold pool extent. The cold pool is defined here as the areal extent (in km^2^) of seawater equal to or colder than 2 degrees Celsius near the seafloor, calculated from observations from the AFSC GAP EBS/NBS bottom trawl survey. We center and scale this for inclusion as a covariate.
+
+```{r covariate, echo = TRUE}
+
+env_df <- coldpool:::cold_pool_index
+  
+if(species == "yellowfin_sole"){
+  env <- cbind(env_df, env = scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)) |>
+    mutate(year = as.integer(YEAR)) |>
+    select(year, env)
+} else {
+  env <- cbind(env_df, env = scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)) |>
+    mutate(year = as.integer(YEAR)) |>
+    select(year, env)
+}
+
+dat <- left_join(dat, env, by = "year") 
+
+dat$year_f <- as.factor(dat$year)
+
+dat <- add_utm_columns(dat, ll_names = c("lon", "lat"), utm_crs = 32602, units = "km")
+
+# detect if any years have occurrences at every haul and fix params as needed
+mins <- dat %>% group_by(year) %>% summarize(min = min(cpue))
+if(sum(mins$min) == 0){
+  control = sdmTMBcontrol()
+} else {
+  no_zero_yr <- as.integer(mins %>% filter(min > 0) %>% select(year))
+			# set up map and fix value of p(occurrence) to slightly less than 1:
+			yrs <- sort(unique(factor(dat$year)))
+			.map <- seq_along(yrs)
+			.map[yrs %in% no_zero_yr] <- NA
+			.map <- factor(.map)
+			.start <- rep(0, length(yrs))
+			.start[yrs %in% no_zero_yr] <- 20
+
+			control =  sdmTMBcontrol(
+            map = list(b_j = .map),
+            start = list(b_j = .start)
+			    )
+}
+
+# load prediction grids for ebs, nbs, and both combined
+grid <- read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))
+
+# replicate prediction grids for each year in data
+pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
+pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
+
+# join in environmental covariate (cold pool or mean bottom temperature)
+pred_grid <- left_join(pred_grid, env, by = "year")
+```
+Now we fit the model in sdmTMB:
+
+```{r loop_knots, echo = TRUE}
+for(knots in c(250, 350, 500)){ #seq(250, 500, 50)
+  f1 <- here("species_specific_code", "BS", species, phase, paste0("fit_", knots, "_knots.RDS"))
+  if (!file.exists(f1)) {
+    
+      if(species == "kamchatka_flounder"){
+        #make mesh just for EBS only, need to try out different numbers of knots
+          mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
+                       mesh = readRDS(file = here("meshes", paste0("ebs_vast_mesh_", knots, "_knots.RDS"))))
+        #fit to EBS only, using IID spatiotemporal fields instead of "ar1"
+        fit <- sdmTMB( 
+          cpue ~ 0 + year_f,
+          spatial_varying = ~ env,
+          data = dat, 
+          mesh = mesh,
+          family = delta_gamma(type = "poisson-link"), 
+          time = "year", 
+          spatial = "on",
+          spatiotemporal = "iid",
+          silent = FALSE,
+          anisotropy = TRUE,
+          control = control
+        )
+      } else {
+          #pass same mesh as prior model
+          mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
+                       mesh = readRDS(file = here("meshes", paste0("bs_vast_mesh_", knots, "_knots.RDS"))))
+          fit <- sdmTMB( 
+            cpue ~ 0 + year_f,
+            spatial_varying = ~ env,
+            data = dat, 
+            mesh = mesh,
+            family = delta_gamma(type = "poisson-link"), 
+            time = "year", 
+            spatial = "on",
+            spatiotemporal = "ar1",
+            extra_time = 2020L, 
+            silent = FALSE,
+            anisotropy = TRUE,
+            control = control
+          )
+      }
+      saveRDS(fit, file = f1)
+      
+    } else {
+      fit <- readRDS(f1)
+  }
+  
+  sanity(fit)
+  summary(fit)
+  
+  # get predictions
+  f2 <- here("species_specific_code", "BS", species, phase, paste0("predictions_", knots, "_knots.RDS"))
+  if (!file.exists(f2)) {
+    if(species == "kamchatka_flounder"){
+      p <- predict(fit, newdata = pred_grid_ebs, return_tmb_object = TRUE)
+      save(p, file = f2)
+    } else {
+        p <- predict(fit, newdata = pred_grid, return_tmb_object = TRUE)
+        
+        saveRDS(p, file = f2)
+    }
+  } else {
+    load(f2)
+  }
+  
+  # get indices
+  gc()
+  
+  f3 <- here("species_specific_code", "BS", species, phase, paste0("index_", knots, "_knots.RDS"))
+  if (!file.exists(f3)) {
+    if(species == "kamchatka_flounder"){
+      ind <- get_index(p, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
+      ind$stratum <- "EBS"
+      
+      save(ind, file = f3)
+    } else {
+      ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
+      ind$stratum <- "Both"
+  
+      saveRDS(ind, file = f3)
+    }
+  } else {
+  load(f3)
+  }
+  
+  rm(fit, p, ind)
+}
+```
+
+Now, we can compare the index with 750 knots to that with fewer knots:
+
+```{r index-compare, message=FALSE, warning=FALSE}
+# automate switch between numbers and biomass on index plots
+if(species == "Gadus_macrocephalus"){
+  ylab <- "Abundance (n)"
+} else {
+  ylab <- "Biomass (kg)"
+}
+
+##load models, including 750 knot one...
+ind_250 <- readRDS(here("species_specific_code", "BS", species, phase, "index_250_knots.RDS")) %>% mutate(n_knots = 250)
+#ind_300 <- readRDS(here("species_specific_code", "BS", species, phase, "index_300_knots.RDS")) %>% mutate(n_knots = 300)
+ind_350 <- readRDS(here("species_specific_code", "BS", species, phase, "index_350_knots.RDS")) %>% mutate(n_knots = 350)
+#ind_400 <- readRDS(here("species_specific_code", "BS", species, phase, "index_400_knots.RDS")) %>% mutate(n_knots = 400)
+#ind_450 <- readRDS(here("species_specific_code", "BS", species, phase, "index_450_knots.RDS")) %>% mutate(n_knots = 450)
+ind_500 <- readRDS(here("species_specific_code", "BS", species, phase, "index_500_knots.RDS")) %>% mutate(n_knots = 500)
+
+load(here("species_specific_code", "BS", species, phase, "indices.RData"))
+ind_750 <- ind %>% mutate(n_knots = 750)
+
+indices <- bind_rows(ind_250, ind_350, ind_500, ind_750) #bind_rows(ind_250, ind_300, ind_350, ind_400, ind_450, ind_500, ind_750)
+
+# plot indices compared among knots
+ggplot(indices, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = n_knots)) + 
+  geom_ribbon(alpha = 0.1) +
+  geom_line(alpha = 0.8) + 
+  ylim(0, max(indices$upr)) +
+  coord_cartesian(expand = FALSE) + 
+  ylab(ylab) +
+  theme_bw()
+ggsave(file = here("species_specific_code", "BS", species, phase, 
+                   "index_comparison_knots.pdf"), 
+       height = 4, width = 6, units = c("in"))
+```
