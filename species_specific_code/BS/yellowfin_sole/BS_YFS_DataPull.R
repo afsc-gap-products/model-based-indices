@@ -14,12 +14,12 @@ sql_channel <- gapindex::get_connected()
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Species-Specific Constants. Toogle species row
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-species_info <- data.frame(species_name = c("yellowfin_sole", "Pacific_cod"),
-                           species_code = c(10210, 21720),
+species_info <- data.frame(species_name = "yellowfin_sole",
+                           species_code = 10210,
                            start_year = 1982,
                            current_year = 2024,
-                           plus_group = c(20, 12), 
-                           start_year_age = c(1982, 1994))[1, ]
+                           plus_group = 20, 
+                           start_year_age = 1982)
 
 ## Set constants
 which_model <- c("hindcast", "production")[2]
@@ -40,8 +40,8 @@ ebs_standard_data <- gapindex::get_data(year_set = start_year:current_year,
                                         pull_lengths = TRUE, 
                                         haul_type = 3, 
                                         abundance_haul = "Y",
-                                        sql_channel = sql_channel,
-                                        na_rm_strata = TRUE)
+                                        channel = sql_channel,
+                                        remove_na_strata = TRUE)
 
 ## Next, pull data from hauls that are not included in the design-based index
 ## production (abundance_haul == "N") but are included in VAST. By default, 
@@ -53,8 +53,8 @@ ebs_other_data <- gapindex::get_data(year_set = c(1994, 2001, 2005, 2006),
                                      pull_lengths = TRUE, 
                                      haul_type = 3, 
                                      abundance_haul = "N",
-                                     sql_channel = sql_channel, 
-                                     na_rm_strata = TRUE)
+                                     channel = sql_channel, 
+                                     remove_na_strata = TRUE)
 
 ## Combine the EBS standard and EBS other data into one list. 
 ebs_data <- list(
@@ -83,7 +83,7 @@ nbs_standard_data <- gapindex::get_data(year_set = start_year:current_year,
                                         pull_lengths = TRUE, 
                                         haul_type = 3, 
                                         abundance_haul = "Y",
-                                        sql_channel = sql_channel)
+                                        channel = sql_channel)
 
 ## Pull data from miscellaneous stations in 1985, 1988, and 1991 that were 
 ## sampled in the NBS but are not a part of the standard stations used in the
@@ -157,7 +157,7 @@ nbs18_data <- gapindex::get_data(year_set = 2018,
                                  pull_lengths = TRUE, 
                                  haul_type = 13, 
                                  abundance_haul = "N",
-                                 sql_channel = sql_channel)
+                                 channel = sql_channel)
 nbs18_data$cruise$SURVEY <- "NBS"
 nbs18_data$cruise$SURVEY_DEFINITION_ID <- 143
 
