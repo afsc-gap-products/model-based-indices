@@ -79,7 +79,7 @@ dat <- left_join(dat, env, by = "year")
 ```
 Now we fit the model in sdmTMB:
 
-```{r fit, echo = TRUE}
+```{r fit, echo = FALSE}
 dat$year_f <- as.factor(dat$year)
 
 dat <- add_utm_columns(dat, ll_names = c("lon", "lat"), utm_crs = 32602, units = "km")
