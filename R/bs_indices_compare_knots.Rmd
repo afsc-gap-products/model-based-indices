@@ -227,7 +227,7 @@ ind_750 <- ind %>% mutate(n_knots = 750)
 indices <- bind_rows(ind_250, ind_350, ind_500, ind_750) #bind_rows(ind_250, ind_300, ind_350, ind_400, ind_450, ind_500, ind_750)
 
 # plot indices compared among knots
-ggplot(indices, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = n_knots)) + 
+ggplot(indices, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = factor(n_knots))) + 
   geom_ribbon(alpha = 0.1) +
   geom_line(alpha = 0.8) + 
   ylim(0, max(indices$upr)) +
