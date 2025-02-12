@@ -113,7 +113,7 @@ pred_grid <- left_join(pred_grid, env, by = "year")
 ```
 Now we fit the model in sdmTMB:
 
-```{r loop_knots, echo = TRUE}
+```{r loop_knots, echo = FALSE}
 for(knots in c(250, 350, 500)){ #seq(250, 500, 50)
   f1 <- here("species_specific_code", "BS", species, phase, paste0("fit_", knots, "_knots.RDS"))
   if (!file.exists(f1)) {
