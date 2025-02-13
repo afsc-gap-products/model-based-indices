@@ -22,7 +22,7 @@ species_info <- data.frame(species_name = "yellowfin_sole",
                            start_year_age = 1982)
 
 ## Set constants
-which_model <- c("hindcast", "production")[2]
+which_model <- c("hindcast", "production")[1]
 start_year <- species_info$start_year
 current_year <- species_info$current_year
 species_code <- species_info$species_code

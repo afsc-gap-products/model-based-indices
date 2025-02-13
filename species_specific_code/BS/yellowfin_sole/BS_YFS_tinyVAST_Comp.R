@@ -17,12 +17,12 @@ workDir <- here::here("species_specific_code", "BS", Species)
 Data <- readRDS(here(workDir, "data", "data_geostat_agecomps.RDS"))
 
 # Add Year-Age interaction
-Data$Age <- factor(paste0("Age_", Data$Age))
-Data$Year_Age <- interaction(Data$Year, Data$Age)
+Data$Age <- factor(paste0("Age_", Data$age))
+Data$Year_Age <- interaction(Data$year, Data$Age)
 
 # Project data to UTM
 Data <- st_as_sf(Data,
-                 coords = c('Lon','Lat'),
+                 coords = c('lon','lat'),
                  crs = st_crs(4326))
 Data <- st_transform(Data,
                      crs = st_crs("+proj=utm +zone=2 +units=km"))
@@ -102,14 +102,14 @@ family <- list(
 start.time <- Sys.time() 
 myfit <- tinyVAST(
   data = Data,
-  formula = Catch_KG ~ 0 + Year_Age,  
+  formula = cpue_n_km2 ~ 0 + Year_Age,  
   sem = sem,
   dsem = dsem,
   family = family,
   delta_options = list(delta_formula = ~ 0 + factor(Year_Age)),  # 2nd linear predictor
   space_column = c("X", "Y"), 
   variable_column = "Age",
-  time_column = "Year",
+  time_column = "year",
   distribution_column = "Age",
   spatial_graph = old_mesh,
   control = control
@@ -131,15 +131,15 @@ myfit <- readRDS(here(workDir, "results", paste0("tinyVAST_fit_", as.character(t
 coarse_grid <- read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))  # both regions
 
 # Get abundance
-N_jz <- expand.grid(Age = myfit$internal$variables, Year = sort(unique(Data$Year)))
+N_jz <- expand.grid(Age = myfit$internal$variables, year = sort(unique(Data$year)))
 N_jz <- cbind(N_jz, "Biomass" = NA, "SE" = NA)
 for(j in seq_len(nrow(N_jz))){
   if(N_jz[j, 'Age'] == 1){
-    message("Integrating ", N_jz[j,'Year'], " ", N_jz[j,'Age'], ": ", Sys.time())
+    message("Integrating ", N_jz[j,'year'], " ", N_jz[j,'Age'], ": ", Sys.time())
   }
   if(is.na(N_jz[j,'Biomass'])){
-    newdata = data.frame(coarse_grid, Year = N_jz[j, 'Year'], Age = N_jz[j, 'Age'])
-    newdata$Year_Age = paste(newdata$Year, newdata$Age, sep=".")
+    newdata = data.frame(coarse_grid, year = N_jz[j, 'year'], Age = N_jz[j, 'Age'])
+    newdata$Year_Age = paste(newdata$year, newdata$Age, sep=".")
     # Area-expansion
     index1 = integrate_output(myfit,
                               area = coarse_grid$area_km2,
