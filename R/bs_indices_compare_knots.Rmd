@@ -114,7 +114,7 @@ pred_grid <- left_join(pred_grid, env, by = "year")
 Now we fit the model in sdmTMB:
 
 ```{r loop_knots, echo = FALSE}
-for(knots in seq(250, 500, 50)){
+for(knots in seq(300, 500, 50)){
   f1 <- here("species_specific_code", "BS", species, phase, paste0("fit_", knots, "_knots.RDS"))
   if (!file.exists(f1)) {
     
@@ -214,7 +214,6 @@ if(species == "Gadus_macrocephalus"){
 }
 
 ##load models, including 750 knot one...
-ind_250 <- readRDS(here("species_specific_code", "BS", species, phase, "index_250_knots.RDS")) %>% mutate(n_knots = 250)
 ind_300 <- readRDS(here("species_specific_code", "BS", species, phase, "index_300_knots.RDS")) %>% mutate(n_knots = 300)
 ind_350 <- readRDS(here("species_specific_code", "BS", species, phase, "index_350_knots.RDS")) %>% mutate(n_knots = 350)
 ind_400 <- readRDS(here("species_specific_code", "BS", species, phase, "index_400_knots.RDS")) %>% mutate(n_knots = 400)
