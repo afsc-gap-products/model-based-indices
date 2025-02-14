@@ -28,7 +28,7 @@ library(ggplot2)
 library(here)
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
-sp <- 2 # specify species from species vector
+sp <- 1 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 ```
 
@@ -114,7 +114,7 @@ pred_grid <- left_join(pred_grid, env, by = "year")
 Now we fit the model in sdmTMB:
 
 ```{r loop_knots, echo = FALSE}
-for(knots in c(250, 350, 500)){ #seq(250, 500, 50)
+for(knots in seq(250, 500, 50)){
   f1 <- here("species_specific_code", "BS", species, phase, paste0("fit_", knots, "_knots.RDS"))
   if (!file.exists(f1)) {
     
@@ -215,16 +215,16 @@ if(species == "Gadus_macrocephalus"){
 
 ##load models, including 750 knot one...
 ind_250 <- readRDS(here("species_specific_code", "BS", species, phase, "index_250_knots.RDS")) %>% mutate(n_knots = 250)
-#ind_300 <- readRDS(here("species_specific_code", "BS", species, phase, "index_300_knots.RDS")) %>% mutate(n_knots = 300)
+ind_300 <- readRDS(here("species_specific_code", "BS", species, phase, "index_300_knots.RDS")) %>% mutate(n_knots = 300)
 ind_350 <- readRDS(here("species_specific_code", "BS", species, phase, "index_350_knots.RDS")) %>% mutate(n_knots = 350)
-#ind_400 <- readRDS(here("species_specific_code", "BS", species, phase, "index_400_knots.RDS")) %>% mutate(n_knots = 400)
-#ind_450 <- readRDS(here("species_specific_code", "BS", species, phase, "index_450_knots.RDS")) %>% mutate(n_knots = 450)
+ind_400 <- readRDS(here("species_specific_code", "BS", species, phase, "index_400_knots.RDS")) %>% mutate(n_knots = 400)
+ind_450 <- readRDS(here("species_specific_code", "BS", species, phase, "index_450_knots.RDS")) %>% mutate(n_knots = 450)
 ind_500 <- readRDS(here("species_specific_code", "BS", species, phase, "index_500_knots.RDS")) %>% mutate(n_knots = 500)
 
 load(here("species_specific_code", "BS", species, phase, "indices.RData"))
 ind_750 <- ind %>% mutate(n_knots = 750)
 
-indices <- bind_rows(ind_250, ind_350, ind_500, ind_750) #bind_rows(ind_250, ind_300, ind_350, ind_400, ind_450, ind_500, ind_750)
+indices <- bind_rows(ind_250, ind_300, ind_350, ind_400, ind_450, ind_500, ind_750)
 
 # plot indices compared among knots
 ggplot(indices, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = factor(n_knots))) + 
