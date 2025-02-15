@@ -28,7 +28,7 @@ library(ggplot2)
 library(here)
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
-sp <- 3 # specify species from species vector
+sp <- 2 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 ```
 
@@ -270,7 +270,7 @@ ggsave(file = here("species_specific_code", "BS", species, phase,
 
 Now, we can compare the index to the prior model.
 
-```{r index-compare, message=FALSE, warning=FALSE}
+```{r index-compare, message=FALSE, warning=FALSE, echo = TRUE}
 ## query db index
 # channel <- gapindex::get_connected(check_access = FALSE) # enter credentials 
 # 
