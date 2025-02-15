@@ -28,7 +28,7 @@ library(ggplot2)
 library(here)
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
-sp <- 1 # specify species from species vector
+sp <- 3 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 ```
 
@@ -215,7 +215,7 @@ if(species == "Gadus_macrocephalus"){
 
 ##load models, including 750 knot one...
 ind_400 <- readRDS(here("species_specific_code", "BS", species, phase, "index_400_knots.RDS")) %>% mutate(n_knots = 400)
-ind_450 <- readRDS(here("species_specific_code", "BS", species, phase, "index_450_knots.RDS")) %>% mutate(n_knots = 400)
+ind_450 <- readRDS(here("species_specific_code", "BS", species, phase, "index_450_knots.RDS")) %>% mutate(n_knots = 450)
 ind_500 <- readRDS(here("species_specific_code", "BS", species, phase, "index_500_knots.RDS")) %>% mutate(n_knots = 500)
 
 load(here("species_specific_code", "BS", species, phase, "indices.RData"))
