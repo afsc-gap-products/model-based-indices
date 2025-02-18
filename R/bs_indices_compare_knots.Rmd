@@ -28,7 +28,7 @@ library(ggplot2)
 library(here)
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
-sp <- 3 # specify species from species vector
+sp <- 1 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 ```
 
@@ -103,13 +103,17 @@ if(sum(mins$min) == 0){
 
 # load prediction grids for ebs, nbs, and both combined
 grid <- read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))
+ebs_grid <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))
 
 # replicate prediction grids for each year in data
 pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
 pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
+pred_grid_ebs <- replicate_df(ebs_grid, "year_f", unique(dat$year_f))
+pred_grid_ebs$year <- as.integer(as.character(factor(pred_grid_ebs$year_f)))
 
 # join in environmental covariate (cold pool or mean bottom temperature)
 pred_grid <- left_join(pred_grid, env, by = "year")
+pred_grid_ebs <- left_join(pred_grid_ebs, env, by = "year")
 ```
 Now we fit the model in sdmTMB:
 
