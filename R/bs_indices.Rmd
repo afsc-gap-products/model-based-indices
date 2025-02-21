@@ -79,7 +79,7 @@ dat <- left_join(dat, env, by = "year")
 ```
 Now we fit the model in sdmTMB:
 
-```{r fit, echo = FALSE}
+```{r fit, echo = TRUE, results = 'hide'}
 dat$year_f <- as.factor(dat$year)
 
 dat <- add_utm_columns(dat, ll_names = c("lon", "lat"), utm_crs = 32602, units = "km")
@@ -149,16 +149,17 @@ if (!file.exists(f1)) {
   } else {
     fit <- readRDS(f1)
 }
-
-sanity(fit)
-summary(fit)
-# diagnose estimation issues due to model structure
-#TMBhelper::check_estimability(fit$tmb_obj)
 ```
 
 Make predictions and index:
 
 ```{r predictions-index, echo=TRUE}
+# check fit before proceeding
+sanity(fit)
+summary(fit)
+# diagnose estimation issues due to model structure
+#TMBhelper::check_estimability(fit$tmb_obj)
+
 # load prediction grids for ebs, nbs, and both combined
 grid_ebs <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))
 grid_nbs <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))
