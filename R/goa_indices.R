@@ -1,4 +1,4 @@
-# Draft script to run all GOA sdmTMB indices ----
+# Run all GOA sdmTMB indices ----
 
 library(sdmTMB)
 library(dplyr)
@@ -39,7 +39,7 @@ for (i in species_list){
     if(species == "Gadus_macrocephalus"){
       dat <- subset(dat, !is.na(cpue_n_km2))
       mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
-                         mesh = readRDS(file = here("meshes/goa_vast_mesh.RDS")))
+                         mesh = readRDS(file = here("meshes", "goa_vast_mesh.RDS")))
       fit <- sdmTMB( 
         cpue_n_km2 ~ 0 + year_f,
         data = dat, 
@@ -52,7 +52,7 @@ for (i in species_list){
       )
     } else {
       mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
-                         mesh = readRDS(file = here("meshes/goa_vast_mesh.RDS")))
+                         mesh = readRDS(file = here("meshes", "goa_vast_mesh.RDS")))
       fit <- sdmTMB( 
         cpue_kg_km2 ~ 0 + year_f,
         data = dat, 
