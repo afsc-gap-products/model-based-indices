@@ -3,7 +3,13 @@
 
 ## Connect to Oracle
 library(gapindex)
-channel <- gapindex::get_connected(check_access = FALSE)
+
+if (file.exists("Z:/Projects/ConnectToOracle.R")) {
+  source("Z:/Projects/ConnectToOracle.R")
+} else {
+  # For those without a ConnectToOracle file
+  channel <- gapindex::get_connected(check_access = FALSE)
+}
 
 ## Define species and species groupings
 rf_groups <- data.frame(
