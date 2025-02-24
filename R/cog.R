@@ -83,3 +83,36 @@ for (imetric in c("DEPTH_M", "BOTTOM_TEMPERATURE_C",
 }
 
 write.csv(cogs, here::here("output", "rf_cogs.csv"), row.names = FALSE)
+
+## Plotting
+library(dplyr)
+library(ggplot2)
+library(ggsidekick)
+theme_set(theme_sleek())
+
+cogs <- read.csv(here::here("output", "rf_cogs.csv"))
+
+cogs_plot <- cogs %>%
+  mutate(species_code = factor(species_code)) %>%
+  mutate(species_code = case_when(
+    species_code == 30020 ~ "Shortspine Thornyhead",
+    species_code == 30050 ~ "Rougheye & Blackspotted Rockfish",
+    species_code == 30060 ~ "Pacific Ocean Perch",
+    species_code == 30152 ~ "Dusky Rockfish",
+    species_code == 30420 ~ "Northern Rockfish",
+    species_code == 30576 ~ "Shortraker Rockfish",
+  )) %>%
+  mutate(metric = case_when(
+    metric == "BOTTOM_TEMPERATURE_C" ~ "Bottom Temp (°C)",
+    metric == "DEPTH_M" ~ "Depth (m)",
+    metric == "LATITUDE_DD_START" ~ "Latitude",
+    metric == "LONGITUDE_DD_START" ~ "Longitude"
+  ))
+
+ggplot(cogs_plot, aes(x = year, y = est)) +
+  geom_line(aes(color = species_code), alpha = 0.8) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr, fill = species_code), alpha = 0.3) +
+  xlab("Year") + ylab("Weighted Mean") +
+  theme(legend.title = element_blank()) +
+  facet_wrap(~ metric, scales = "free_y")
+
