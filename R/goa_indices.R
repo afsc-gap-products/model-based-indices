@@ -143,7 +143,7 @@ for (i in species_list){
          height = 9, width = 6.5, units = c("in"))
   
   ## compute index ----
-  if(species != "Gadus_macrocephalus"){
+  if(species != "Gadus_chalcogrammus"){
     
     f3 <- here("species_specific_code", "GOA", species, phase, "index.RDS")
     if (!file.exists(f3)) {
