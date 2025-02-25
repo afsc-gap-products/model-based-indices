@@ -95,6 +95,10 @@ for (i in species_list){
   grid <- read.csv(file = "extrapolation_grids/goa_2025_interpolation_grid.csv")
   pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
   pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
+  
+  if(species == "Gadus_chalcogrammus"){
+    pred_grid <- subset(pred_grid, lon < -140)
+  }
 
   f2 <- here("species_specific_code", "GOA", species, phase, "predictions.RDS")
   if (!file.exists(f2)) {
@@ -223,15 +227,14 @@ for (i in species_list){
   #### ESP products ----
   f4 <- here("species_specific_code", "GOA", species, phase, "cog.RDS")
   if (!file.exists(f4)) {
-    cog <- get_cog(p, bias_correct = FALSE, 
-                   area = p$data$area_km2, format = "wide")
+    cog <- get_cog(p, area = p$data$area_km2, format = "wide")
     saveRDS(cog, file = f4)
   }
   
   f5 <- here("species_specific_code", "GOA", species, phase, 
              "area_occupied.RDS")
   if (!file.exists(f5)) {
-  eao <- get_eao(p, bias_correct = FALSE, area = p$data$area_km2)
+  eao <- get_eao(p, area = p$data$area_km2)
   saveRDS(eao, file = f5)
   }
 }
