@@ -87,6 +87,7 @@ write.csv(cogs, here::here("output", "rf_cogs.csv"), row.names = FALSE)
 ## Plotting
 library(dplyr)
 library(ggplot2)
+library(viridis)
 library(ggsidekick)
 theme_set(theme_sleek())
 
@@ -96,7 +97,7 @@ cogs_plot <- cogs %>%
   mutate(species_code = factor(species_code)) %>%
   mutate(species_code = case_when(
     species_code == 30020 ~ "Shortspine Thornyhead",
-    species_code == 30050 ~ "Rougheye & Blackspotted Rockfish",
+    species_code == 30050 ~ "Rougheye & Blackspotted",
     species_code == 30060 ~ "Pacific Ocean Perch",
     species_code == 30152 ~ "Dusky Rockfish",
     species_code == 30420 ~ "Northern Rockfish",
@@ -109,10 +110,62 @@ cogs_plot <- cogs %>%
     metric == "LONGITUDE_DD_START" ~ "Longitude"
   ))
 
-ggplot(cogs_plot, aes(x = year, y = est)) +
-  geom_line(aes(color = species_code), alpha = 0.8) +
-  geom_ribbon(aes(ymin = lwr, ymax = upr, fill = species_code), alpha = 0.3) +
+## Plot all variables as a time-series
+pal <- nationalparkcolors::park_palette("Saguaro")
+ts_plot <- ggplot(cogs_plot, aes(x = year, y = est)) +
+  geom_line(aes(color = species_code)) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr, fill = species_code), alpha = 0.4) +
   xlab("Year") + ylab("Weighted Mean") +
   theme(legend.title = element_blank()) +
+  scale_color_manual(values = pal) +
+  scale_fill_manual(values = pal) +
   facet_wrap(~ metric, scales = "free_y")
+ts_plot
 
+## Plot latitude & longitude together in a 'sparkleplot'
+cog_lat <- cogs_plot[cogs_plot$metric == "Latitude", c(2:4, 6:7)]
+colnames(cog_lat)[3:5] <- c("est_lat", "lwr_lat", "upr_lat")
+cog_lon <- cogs_plot[cogs_plot$metric == "Longitude", c(2:4, 6:7)]
+colnames(cog_lon)[3:5] <- c("est_lon", "lwr_lon", "upr_lon")
+
+cog_sparkle <- cog_lat %>% left_join(cog_lon, by = c("species_code", "year"))
+
+sparkle <- ggplot(data = cog_sparkle, aes(x = est_lon, y = est_lat, color = year)) +
+  geom_point() +
+  # With arrow
+  # geom_segment(data = cog_error2 %>% filter(Year >= this_year - 10), 
+  #              aes(x = X, y = Y, xend = X2, yend = Y2), 
+  #              alpha = 0.8, arrow = arrow(length = unit(0.03, "npc"))) +
+  # Without arrow
+  # geom_segment(data = cog_error2 %>% filter(Year >= this_year - 10), 
+  #              aes(x = X, y = Y, xend = X2, yend = Y2), 
+  #              alpha = 0.8) +
+  geom_errorbar(aes(ymin = lwr_lat, ymax = upr_lat, color = year), alpha = 0.4) +
+  geom_errorbarh(aes(xmin = lwr_lon, xmax = upr_lon, color = year), alpha = 0.4) +
+  scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
+  xlab("Longitude (°W)") + ylab("Latitude (°N)") +
+  facet_wrap(~species_code)
+sparkle
+
+## Plot points on a map
+world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
+sf::sf_use_s2(FALSE)  # turn off spherical geometry
+map <- ggplot(data = world) +
+  geom_sf() +
+  geom_point(data = cog_sparkle, aes(x = est_lon, y = est_lat, color = year), size = 1) +
+  # geom_errorbar(aes(ymin = lwr_lat, ymax = upr_lat, color = year), alpha = 0.4) +
+  # geom_errorbarh(aes(xmin = lwr_lon, xmax = upr_lon, color = year), alpha = 0.4) +
+  coord_sf(xlim = c(-162, -135), ylim = c(54, 60), expand = FALSE) +
+  scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
+  scale_x_continuous(breaks = c(-160, -140)) +
+  scale_y_continuous(breaks = c(55, 60)) +
+  labs(x = NULL, y = NULL) +
+  facet_wrap(~species_code, ncol = 2)
+map
+
+ggsave(ts_plot, filename = here::here("output", "rf_cog_ts.png"), 
+       width = 190, height = 100, unit = "mm", dpi = 300)
+ggsave(sparkle, filename = here::here("output", "rf_cog_sparkle.png"), 
+       width = 160, height = 100, unit = "mm", dpi = 300)
+ggsave(map, filename = here::here("output", "rf_cog_map.png"), 
+       width = 150, height = 100, unit = "mm", dpi = 300)
