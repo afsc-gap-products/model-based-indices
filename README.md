@@ -1,3 +1,5 @@
+![modsquad](https://github.com/user-attachments/assets/e0fbc2b1-aa23-42fe-8a71-2b0862f9ede2)
+
 # model-based-indices
 Code used for model-based indices of abundance and distribution from bottom trawl survey data, produced by the AFSC GAP ModSquad in the Gulf of Alaska and Bering Sea. Model-based indices of abundance and distribution are produced using spatiotemporal delta-GLMMs implemented in [sdmTMB](https://pbs-assess.github.io/sdmTMB/). Model-based age composition estimates follow a similar approach, but employ a multivariate extension and are implemented in [tinyVAST](https://vast-lib.github.io/tinyVAST/).
 
