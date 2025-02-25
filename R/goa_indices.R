@@ -1,4 +1,6 @@
 # Run all GOA sdmTMB indices ----
+# Author: Lewis Barnett
+# Date: 25-2-2025
 
 library(sdmTMB)
 library(dplyr)
@@ -53,7 +55,7 @@ for (i in species_list){
     }
     
     if(species == "Gadus_chalcogrammus"){
-      dat <- subset(dat, lon > -140)
+      dat <- subset(dat, lon < -140)
       mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 500, type = "kmeans")
       fit <- sdmTMB( 
         cpue_kg_km2 ~ 0 + year_f,
