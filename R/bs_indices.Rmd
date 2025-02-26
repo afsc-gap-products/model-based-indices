@@ -144,8 +144,7 @@ if (!file.exists(f1)) {
           control = control
         )
     }
-    saveRDS(fit, file = here("species_specific_code", "BS", 
-                             species, phase, "fit.RDS"))
+    saveRDS(fit, file = f1)
   } else {
     fit <- readRDS(f1)
 }
