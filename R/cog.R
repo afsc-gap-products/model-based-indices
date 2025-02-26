@@ -84,7 +84,8 @@ for (imetric in c("DEPTH_M", "BOTTOM_TEMPERATURE_C",
 
 write.csv(cogs, here::here("output", "rf_cogs.csv"), row.names = FALSE)
 
-## Plotting
+## Plotting 
+## Sophia Wassermann
 library(dplyr)
 library(ggplot2)
 library(viridis)
