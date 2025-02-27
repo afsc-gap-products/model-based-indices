@@ -184,7 +184,9 @@ ggsave(map, filename = here::here("output", "rf_cog_map.png"),
        width = 150, height = 100, unit = "mm", dpi = 300)
 
 ## Upload to google drive
-googledrive::drive_auth(path="/etc/sa_key.json")
-
 googledrive::drive_upload(media = here::here("output", "rf_cog_ts.png"),
+                          path = googledrive::as_id("19vBcKbgesfWDgJEjsntt5-fKMn9_LkS9"))
+googledrive::drive_upload(media = here::here("output", "rf_cog_sparkle.png"),
+                          path = googledrive::as_id("19vBcKbgesfWDgJEjsntt5-fKMn9_LkS9"))
+googledrive::drive_upload(media = here::here("output", "rf_cog_map.png"),
                           path = googledrive::as_id("19vBcKbgesfWDgJEjsntt5-fKMn9_LkS9"))
