@@ -4,12 +4,17 @@
 ## Connect to Oracle
 library(gapindex)
 
+
+## For local machines / on-prem VMs
 if (file.exists("Z:/Projects/ConnectToOracle.R")) {
   source("Z:/Projects/ConnectToOracle.R")
 } else {
   # For those without a ConnectToOracle file
   channel <- gapindex::get_connected(check_access = FALSE)
 }
+
+## For cloud
+
 
 ## Define species and species groupings
 rf_groups <- data.frame(
@@ -89,9 +94,17 @@ write.csv(cogs, here::here("output", "rf_cogs.csv"), row.names = FALSE)
 library(dplyr)
 library(ggplot2)
 library(viridis)
+
+# Plotting theme
+devtools::install_github("seananderson/ggsidekick")
 library(ggsidekick)
 theme_set(theme_sleek())
 
+# Color palette
+devtools::install_github("katiejolly/nationalparkcolors")
+pal <- nationalparkcolors::park_palette("Saguaro")
+
+# Reorganize data and plot
 cogs <- read.csv(here::here("output", "rf_cogs.csv"))
 
 cogs_plot <- cogs %>%
@@ -112,7 +125,6 @@ cogs_plot <- cogs %>%
   ))
 
 ## Plot all variables as a time-series
-pal <- nationalparkcolors::park_palette("Saguaro")
 ts_plot <- ggplot(cogs_plot, aes(x = year, y = est)) +
   geom_line(aes(color = species_code)) +
   geom_ribbon(aes(ymin = lwr, ymax = upr, fill = species_code), alpha = 0.4) +
@@ -170,3 +182,9 @@ ggsave(sparkle, filename = here::here("output", "rf_cog_sparkle.png"),
        width = 160, height = 100, unit = "mm", dpi = 300)
 ggsave(map, filename = here::here("output", "rf_cog_map.png"), 
        width = 150, height = 100, unit = "mm", dpi = 300)
+
+## Upload to google drive
+googledrive::drive_auth(path="/etc/sa_key.json")
+
+googledrive::drive_upload(media = here::here("output", "rf_cog_ts.png"),
+                          path = googledrive::as_id("19vBcKbgesfWDgJEjsntt5-fKMn9_LkS9"))
