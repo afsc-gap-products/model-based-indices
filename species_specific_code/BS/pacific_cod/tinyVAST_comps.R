@@ -17,9 +17,11 @@ species <- 21720
 # this_year <- lubridate::year(Sys.Date())
 this_year <- 2024  # different year for debugging
 Species <- "pacific_cod"
-speciesName <- paste0("Walleye_Pollock_age_", as.character(this_year), "_EBS-NBS")
+speciesName <- paste0("pacific_cod_age_", as.character(this_year), "_EBS-NBS")
 workDir <- here::here("species_specific_code", "BS", Species)
-Data <- readRDS("species_specific_code/BS/pacific_cod/hindcast/data/data_geostat_agecomps.RDS")
+Data <- readRDS(here::here("species_specific_code", "BS", Species, "hindcast", "data", 
+                   "data_geostat_agecomps.RDS"))
+Data <- dplyr::filter(Data, age > 0)
 
 # Add Year-Age interaction
 Data$age <- factor(paste0("Age_", Data$age))
@@ -41,7 +43,6 @@ sem <- ""
 # Constant AR1 spatio-temporal term across ages
 # and adds different variances for each age
 dsem <- "
-  Age_0 -> Age_0, 1, lag1
   Age_1 -> Age_1, 1, lag1
   Age_2 -> Age_2, 1, lag1
   Age_3 -> Age_3, 1, lag1
@@ -74,7 +75,6 @@ old_mesh <- sdmTMB::make_mesh(Data,
 #' age- varying intercepts in the second linear predictor
 #' ----------------------------------------------------------------------------
 family <- list(
-  Age_0 = delta_gamma(type = "poisson-link"),
   Age_1 = delta_gamma(type = "poisson-link"),
   Age_2 = delta_gamma(type = "poisson-link"),
   Age_3 = delta_gamma(type = "poisson-link"),
