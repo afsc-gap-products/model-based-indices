@@ -21,10 +21,10 @@ speciesName <- paste0("pacific_cod_age_", as.character(this_year), "_EBS-NBS")
 workDir <- here::here("species_specific_code", "BS", Species)
 Data <- readRDS(here::here("species_specific_code", "BS", Species, "hindcast", "data", 
                    "data_geostat_agecomps.RDS"))
-Data <- dplyr::filter(Data, age > 0)
+Data <- dplyr::filter(Data, age > 0) #TODO: update with age 0s if can fix probability of encounter near 0 for some years
 
-# Add Year-Age interaction
-Data$age <- factor(paste0("Age_", Data$age))
+# Add year-age interaction
+Data$age <- factor(paste0("age_", Data$age))
 Data$year_age <- interaction(Data$year, Data$age)
 
 # Project data to UTM
@@ -43,18 +43,18 @@ sem <- ""
 # Constant AR1 spatio-temporal term across ages
 # and adds different variances for each age
 dsem <- "
-  Age_1 -> Age_1, 1, lag1
-  Age_2 -> Age_2, 1, lag1
-  Age_3 -> Age_3, 1, lag1
-  Age_4 -> Age_4, 1, lag1
-  Age_5 -> Age_5, 1, lag1
-  Age_6 -> Age_6, 1, lag1
-  Age_7 -> Age_7, 1, lag1
-  Age_8 -> Age_8, 1, lag1
-  Age_9 -> Age_9, 1, lag1
-  Age_10 -> Age_10, 1, lag1
-  Age_11 -> Age_11, 1, lag1
-  Age_12 -> Age_12, 1, lag1
+  age_1 -> age_1, 1, lag1
+  age_2 -> age_2, 1, lag1
+  age_3 -> age_3, 1, lag1
+  age_4 -> age_4, 1, lag1
+  age_5 -> age_5, 1, lag1
+  age_6 -> age_6, 1, lag1
+  age_7 -> age_7, 1, lag1
+  age_8 -> age_8, 1, lag1
+  age_9 -> age_9, 1, lag1
+  age_10 -> age_10, 1, lag1
+  age_11 -> age_11, 1, lag1
+  age_12 -> age_12, 1, lag1
 "
 
 # # TinyVAST mesh
@@ -75,18 +75,18 @@ old_mesh <- sdmTMB::make_mesh(Data,
 #' age- varying intercepts in the second linear predictor
 #' ----------------------------------------------------------------------------
 family <- list(
-  Age_1 = delta_gamma(type = "poisson-link"),
-  Age_2 = delta_gamma(type = "poisson-link"),
-  Age_3 = delta_gamma(type = "poisson-link"),
-  Age_4 = delta_gamma(type = "poisson-link"),
-  Age_5 = delta_gamma(type = "poisson-link"), 
-  Age_6 = delta_gamma(type = "poisson-link"),
-  Age_7 = delta_gamma(type = "poisson-link"),
-  Age_8 = delta_gamma(type = "poisson-link"),
-  Age_9 = delta_gamma(type = "poisson-link"),
-  Age_10 = delta_gamma(type = "poisson-link"),
-  Age_11 = delta_gamma(type = "poisson-link"),
-  Age_12 = delta_gamma(type = "poisson-link")  
+  age_1 = delta_gamma(type = "poisson-link"),
+  age_2 = delta_gamma(type = "poisson-link"),
+  age_3 = delta_gamma(type = "poisson-link"),
+  age_4 = delta_gamma(type = "poisson-link"),
+  age_5 = delta_gamma(type = "poisson-link"), 
+  age_6 = delta_gamma(type = "poisson-link"),
+  age_7 = delta_gamma(type = "poisson-link"),
+  age_8 = delta_gamma(type = "poisson-link"),
+  age_9 = delta_gamma(type = "poisson-link"),
+  age_10 = delta_gamma(type = "poisson-link"),
+  age_11 = delta_gamma(type = "poisson-link"),
+  age_12 = delta_gamma(type = "poisson-link")  
 )
 
 start.time <- Sys.time() 
@@ -112,7 +112,7 @@ saveRDS(myfit, here(workDir, "hindcast", "results_age", paste0("tinyVAST_fit_", 
 
 # Index expansion -------------------------------------------------------------
 # Load fit object if needed
-myfit <- readRDS(here(workDir, "hindcast", "results_age",  paste0("tinyVAST_fit_", as.character(this_year), ".RDS")))
+#myfit <- readRDS(here(workDir, "hindcast", "results_age",  paste0("tinyVAST_fit_", as.character(this_year), ".RDS")))
 
 
 # Read in coarsened extrapolation grid for desired region 
@@ -121,15 +121,15 @@ myfit <- readRDS(here(workDir, "hindcast", "results_age",  paste0("tinyVAST_fit_
 coarse_grid <- read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))  # both regions
 
 # Get abundance
-N_jz <- expand.grid(Age = myfit$internal$variables, Year = sort(unique(Data$Year)))
+N_jz <- expand.grid(age = myfit$internal$variables, year = sort(unique(Data$year)))
 N_jz <- cbind(N_jz, "Biomass" = NA, "SE" = NA)
 for(j in seq_len(nrow(N_jz))){
-  if(N_jz[j, 'Age'] == 1){
-    message("Integrating ", N_jz[j,'Year'], " ", N_jz[j,'Age'], ": ", Sys.time())
+  if(N_jz[j, 'age'] == 1){
+    message("Integrating ", N_jz[j,'year'], " ", N_jz[j,'age'], ": ", Sys.time())
   }
   if(is.na(N_jz[j,'Biomass'])){
-    newdata = data.frame(coarse_grid, Year = N_jz[j, 'Year'], Age = N_jz[j, 'Age'])
-    newdata$Year_Age = paste(newdata$Year, newdata$Age, sep=".")
+    newdata = data.frame(coarse_grid, year = N_jz[j, 'year'], age = N_jz[j, 'age'])
+    newdata$year_age = paste(newdata$year, newdata$age, sep=".")
     # Area-expansion
     index1 = integrate_output(myfit,
                               area = coarse_grid$area_km2,
@@ -140,8 +140,8 @@ for(j in seq_len(nrow(N_jz))){
     N_jz[j, 'Biomass'] = index1[3] / 1e9
   }
 }
-N_ct <- array(N_jz$Biomass, dim=c(length(myfit$internal$variables),length(unique(Data$Year))),
-              dimnames=list(myfit$internal$variables,sort(unique(Data$Year))))
+N_ct <- array(N_jz$Biomass, dim=c(length(myfit$internal$variables),length(unique(Data$year))),
+              dimnames=list(myfit$internal$variables,sort(unique(Data$year))))
 N_ct <- N_ct / outer(rep(1, nrow(N_ct)), colSums(N_ct))
 
 # Save abundance estimate
@@ -154,7 +154,7 @@ tiny_out <- tibble::rownames_to_column(data.frame(t(N_ct)), "VALUE")
 tiny_out <- tiny_out[, c(2:13, 1)]
 colnames(tiny_out) <- c("age_1", "age_2", "age_3", "age_4", "age_5", "age_6",
                         "age_7", "age_8", "age_9", "age_10", "age_11", "age_12", 
-                        "Year")
+                        "year")
 
 # Save proportions
 write.csv(tiny_out, here(workDir, "hindcast", "results_age", paste0("tinyVAST_props_", as.character(this_year), ".csv")), row.names = FALSE)
