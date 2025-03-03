@@ -21,7 +21,6 @@ speciesName <- paste0("pacific_cod_age_", as.character(this_year), "_EBS-NBS")
 workDir <- here::here("species_specific_code", "BS", Species)
 Data <- readRDS(here::here("species_specific_code", "BS", Species, "hindcast", "data", 
                    "data_geostat_agecomps.RDS"))
-Data <- dplyr::filter(Data, age > 0) #TODO: update with age 0s if can fix probability of encounter near 0 for some years
 
 # Add year-age interaction
 Data$age <- factor(paste0("age_", Data$age))
@@ -36,6 +35,21 @@ Data <- st_transform(Data,
 # Add UTM coordinates as columns X & Y
 Data <- cbind(st_drop_geometry(Data), st_coordinates(Data))
 
+#  DROP DATA FOR LEVELS WITH ALL ZEROS
+N_z = tapply( Data$cpue_n_km, INDEX = Data$year_age, FUN = \(x) sum(x>0) )
+year_age_to_drop = names(which( N_z==0 ))
+Data = subset( Data, !(year_age %in% year_age_to_drop) )
+Data = droplevels(Data)
+
+# Check results
+tapply( Data$cpue_n_km,
+        INDEX = list( Data$age,
+                      Data$year),
+        FUN = \(x) sum(x>0) )
+
+# Npool = 100 in VAST
+N_a = tapply( Data$cpue_n_km, INDEX = Data$age, FUN=\(x) sum(x>0) )
+which(N_a < 100)
 
 # Inputs to tinyVAST ----------------------------------------------------------
 sem <- ""
@@ -43,6 +57,7 @@ sem <- ""
 # Constant AR1 spatio-temporal term across ages
 # and adds different variances for each age
 dsem <- "
+  age_0 -> age_0, 1, lag1
   age_1 -> age_1, 1, lag1
   age_2 -> age_2, 1, lag1
   age_3 -> age_3, 1, lag1
@@ -61,10 +76,6 @@ dsem <- "
 # mesh <- fm_mesh_2d(loc = Data[,c("X","Y")],
 #                    cutoff = 50)
 # 
-control <- tinyVASTcontrol(getsd = FALSE, 
-                           profile = c("alpha_j"),
-                           trace = 0)
-
 # Use mesh from the VAST model for bridging -----------------------------------
 # Format mesh for tinyVAST (using a function from sdmTMB; same method as sdmTMB index bridging)
 old_mesh <- sdmTMB::make_mesh(Data, 
@@ -75,6 +86,7 @@ old_mesh <- sdmTMB::make_mesh(Data,
 #' age- varying intercepts in the second linear predictor
 #' ----------------------------------------------------------------------------
 family <- list(
+  age_0 = delta_gamma(type = "poisson-link"),
   age_1 = delta_gamma(type = "poisson-link"),
   age_2 = delta_gamma(type = "poisson-link"),
   age_3 = delta_gamma(type = "poisson-link"),
@@ -88,6 +100,14 @@ family <- list(
   age_11 = delta_gamma(type = "poisson-link"),
   age_12 = delta_gamma(type = "poisson-link")  
 )
+
+control <- tinyVASTcontrol(profile = c("alpha_j","alpha2_j"),
+                           trace = 1,
+                           run_model = TRUE,
+                           nlminb_loops = 0,
+                           newton_loops = 0,
+                           getsd = FALSE,
+                           calculate_deviance_explained = FALSE)
 
 start.time <- Sys.time() 
 myfit <- tinyVAST(
@@ -105,6 +125,21 @@ myfit <- tinyVAST(
   control = control
 )
 stop.time <- Sys.time()
+
+if( FALSE ){
+  myfit$obj$fn( myfit$obj$par )
+  Gr = myfit$obj$gr( myfit$obj$par )
+  
+  #
+  P_ct = tapply( Data$cpue_n_km,
+                 INDEX = list( Data$age,
+                               Data$year),
+                 FUN = \(x) mean(x>0) )
+  P_z = tapply( Data$cpue_n_km, INDEX = Data$year_age, FUN = \(x) mean(x>0) )
+  
+  #
+  
+}
 
 # Save fit object
 saveRDS(myfit, here(workDir, "hindcast", "results_age", paste0("tinyVAST_fit_", as.character(this_year), ".RDS")))
@@ -149,10 +184,10 @@ write.csv(N_ct, here(workDir, "hindcast", "results_age", paste0("tinyVAST_natage
 
 
 # Reformat and calculate proportions ------------------------------------------
-rownames(N_ct) <- 1:12
+rownames(N_ct) <- 1:13
 tiny_out <- tibble::rownames_to_column(data.frame(t(N_ct)), "VALUE")
-tiny_out <- tiny_out[, c(2:13, 1)]
-colnames(tiny_out) <- c("age_1", "age_2", "age_3", "age_4", "age_5", "age_6",
+tiny_out <- tiny_out[, c(2:14, 1)]
+colnames(tiny_out) <- c("age_0", "age_1", "age_2", "age_3", "age_4", "age_5", "age_6",
                         "age_7", "age_8", "age_9", "age_10", "age_11", "age_12", 
                         "year")
 
