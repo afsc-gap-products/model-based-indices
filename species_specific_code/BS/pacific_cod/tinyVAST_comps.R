@@ -155,9 +155,15 @@ saveRDS(myfit, here(workDir, "hindcast", "results_age", paste0("tinyVAST_fit_", 
 # coarse_grid <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))  # NBS
 coarse_grid <- read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))  # both regions
 
-# Get abundance
+# Get abundance after dropping age:year combinations with all 0s (MAY NEED TO IMPUTE 0s for these levels after?)
 N_jz <- expand.grid(age = myfit$internal$variables, year = sort(unique(Data$year)))
+#  DROP LEVELS WITH ALL ZEROS
+N_jz$age_ <- factor(paste0("age_", N_jz$age))
+N_jz$year_age <- interaction(N_jz$year, N_jz$age)
+N_jz <- subset( N_jz, !(year_age %in% year_age_to_drop) )
+N_jz <- dplyr::select(N_jz, age, year)
 N_jz <- cbind(N_jz, "Biomass" = NA, "SE" = NA)
+
 for(j in seq_len(nrow(N_jz))){
   if(N_jz[j, 'age'] == 1){
     message("Integrating ", N_jz[j,'year'], " ", N_jz[j,'age'], ": ", Sys.time())
