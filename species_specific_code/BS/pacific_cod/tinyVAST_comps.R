@@ -103,9 +103,8 @@ family <- list(
 
 control <- tinyVASTcontrol(profile = c("alpha_j","alpha2_j"),
                            trace = 1,
-                           run_model = TRUE,
-                           nlminb_loops = 0,
-                           newton_loops = 0,
+                           #nlminb_loops = 0,
+                           #newton_loops = 0,
                            getsd = FALSE,
                            calculate_deviance_explained = FALSE)
 
