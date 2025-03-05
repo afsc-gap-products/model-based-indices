@@ -164,3 +164,13 @@ colnames(tiny_out) <- c("age_1", "age_2", "age_3", "age_4", "age_5", "age_6",
 
 # Save proportions
 write.csv(tiny_out, here(workDir, "results", paste0("tinyVAST_props_", as.character(this_year), ".csv")), row.names = FALSE)
+
+
+# Diagnostic plots ------------------------------------------------------------
+# working off of this vignette: https://vast-lib.github.io/tinyVAST/articles/mgcv.html
+sim <- replicate(n = 500, expr = myfit$obj$simulate()$y_i)
+
+res <- DHARMa::createDHARMa(simulatedResponse = sim, 
+                            observedResponse = Data$CPUE_num, 
+                            fittedPredictedResponse = fitted(myfit))
+plot(res)
