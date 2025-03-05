@@ -112,14 +112,17 @@ for (i in species_list){
   # q-q plot
   pdf(file = here("species_specific_code", "GOA", species, phase, "qq.pdf"), 
       width = 5, height = 5)
-    simulate(fit, nsim = 500, type = "mle-mvn") |>
-      dharma_residuals(fit, test_uniformity = FALSE)
+    sims <- simulate(fit, nsim = 500, type = "mle-mvn") 
+    sims |> dharma_residuals(fit, test_uniformity = FALSE)
   dev.off()
   
   # residuals on map plot, by year
-  fit$data$resids <- residuals(fit, type ="mle-mvn", model = list(1,2))
-  ggplot(subset(fit$data, !is.na(resids)), aes(X, Y, col = resids)) +
-    scale_colour_gradient2(name = "residuals") +
+  resids <- sims |>
+    dharma_residuals(fit, test_uniformity = FALSE, return_DHARMa = TRUE)
+  fit$data$resids <- resids$scaledResiduals
+  
+  ggplot(subset(fit$data, !is.na(resids) & is.finite(resids)), aes(X, Y, col = resids)) +
+    scale_colour_gradient2(name = "residuals", midpoint = 0.5) +
     geom_point(size = 0.7) + 
     facet_wrap(~year, ncol = 2) + 
     coord_fixed() +
