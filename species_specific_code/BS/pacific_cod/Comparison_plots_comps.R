@@ -186,13 +186,13 @@ comp_trends <- comp_trends(new = new_props, old = old_props,
 comp_trends
 
 # tinyVAST plots save ---------------------------------------------------------
-# ggsave(comp_diff, filename = here(workDir, "results", save_dir, "comp_diff.png"),
+# ggsave(comp_diff, filename = here(workDir, save_dir, "comp_diff.png"),
 #        width=200, height=200, units="mm", dpi=300)
-# ggsave(per_diff, filename = here(workDir, "results", save_dir, "comp_per_diff.png"),
+# ggsave(per_diff, filename = here(workDir, save_dir, "comp_per_diff.png"),
 #        width=200, height=200, units="mm", dpi=300)
-# ggsave(comp_trends, filename = here(workDir, "results", save_dir, "comp_trends.png"),
+# ggsave(comp_trends, filename = here(workDir, save_dir, "comp_trends.png"),
 #        width=260, height=120, units="mm", dpi=300)
-# ggsave(sum_props_sub$boxplot, filename = here(workDir, "results", save_dir, "tinyVAST_summary.png"),
+# ggsave(sum_props_sub$boxplot, filename = here(workDir, save_dir, "tinyVAST_summary.png"),
 #        width=200, height=120, units="mm", dpi=300)
-# ggsave(sum_props_sub$barplot, filename = here(workDir, "results", save_dir, "tinyVAST_by_year.png"),
+# ggsave(sum_props_sub$barplot, filename = here(workDir, save_dir, "tinyVAST_by_year.png"),
 #        width=200, height=120, units="mm", dpi=300)
