@@ -117,8 +117,8 @@ for (i in species_list){
   dev.off()
   
   # residuals on map plot, by year
-  dat$resids <- residuals(fit, type ="mle-mvn") 
-  ggplot(subset(dat, !is.na(resids)), aes(X, Y, col = resids)) + 
+  fit$data$resids <- residuals(fit, type ="mle-mvn", model = list(1,2))
+  ggplot(subset(fit$data, !is.na(resids)), aes(X, Y, col = resids)) +
     scale_colour_gradient2(name = "residuals") +
     geom_point(size = 0.7) + 
     facet_wrap(~year, ncol = 2) + 
