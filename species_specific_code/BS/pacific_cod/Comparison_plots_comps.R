@@ -192,7 +192,7 @@ comp_trends
 #        width=200, height=200, units="mm", dpi=300)
 # ggsave(comp_trends, filename = here(workDir, save_dir, "comp_trends.png"),
 #        width=260, height=120, units="mm", dpi=300)
-# ggsave(sum_props_sub$boxplot, filename = here(workDir, save_dir, "tinyVAST_summary.png"),
-#        width=200, height=120, units="mm", dpi=300)
-# ggsave(sum_props_sub$barplot, filename = here(workDir, save_dir, "tinyVAST_by_year.png"),
-#        width=200, height=120, units="mm", dpi=300)
+ggsave(sum_props_sub$boxplot, filename = here(workDir, save_dir, "tinyVAST_summary.png"),
+       width=200, height=120, units="mm", dpi=300)
+ggsave(sum_props_sub$barplot, filename = here(workDir, save_dir, "tinyVAST_by_year.png"),
+       width=200, height=120, units="mm", dpi=300)
