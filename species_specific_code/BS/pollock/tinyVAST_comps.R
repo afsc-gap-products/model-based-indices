@@ -173,4 +173,15 @@ sim <- replicate(n = 500, expr = myfit$obj$simulate()$y_i)
 res <- DHARMa::createDHARMa(simulatedResponse = sim, 
                             observedResponse = Data$CPUE_num, 
                             fittedPredictedResponse = fitted(myfit))
-plot(res)
+
+res_data <- residuals(res)
+
+# q-q plot
+library(ggplot2)
+library(qqplotr)
+
+ggplot(data.frame(resid = res_data), aes(sample = resid)) +
+  stat_qq_band() +
+  stat_qq_line() +
+  stat_qq_point() +
+  theme_bw()
