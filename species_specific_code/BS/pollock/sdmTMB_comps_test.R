@@ -17,8 +17,8 @@ theme_set(theme_sleek())
 
 # Set species -----------------------------------------------------------------
 species <- 21740
-this_year <- lubridate::year(Sys.Date())
-# this_year <- 2022  # different year for debugging
+# this_year <- lubridate::year(Sys.Date())
+this_year <- 2024  # different year for debugging
 Species <- "pollock"
 speciesName <- paste0("Walleye_Pollock_age_", as.character(this_year), "_EBS-NBS")
 workDir <- here::here("species_specific_code", "BS", Species)
@@ -51,7 +51,7 @@ dat$Y <- dat$coords.x2 / 1000
 
 # use prior model mesh from VAST
 mesh <- make_mesh(dat, xy_cols = c("X", "Y"), 
-                  mesh = readRDS(file = here("meshes/bs_vast_mesh_50_knots.RDS")))
+                  mesh = readRDS(file = here("meshes", "bs_vast_mesh_50_knots.RDS")))
 
 # Fit sdmTMB model ------------------------------------------------------------
 fit_sdmTMB <- sdmTMB( 
@@ -70,6 +70,16 @@ fit_sdmTMB <- sdmTMB(
 )
 fit_sdmTMB
 saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", Species, "results", "fit_sdmTMB_age.RDS"))
+
+# Diagnostic plots ------------------------------------------------------------
+sanity(fit_sdmTMB)
+
+pdf(file = here("species_specific_code", "BS", Species, "qq.pdf"),
+    width = 5, height = 5)
+sims <- simulate(fit_sdmTMB, nsim = 500, type = "mle-mvn") 
+sims |> dharma_residuals(fit_sdmTMB, test_uniformity = FALSE)
+dev.off()
+
 
 # Get abundance density indices for each year-age combination -----------------
 fit_sdmTMB <- readRDS(here("species_specific_code", "BS", Species, "results", "fit_sdmTMB_age.RDS"))
