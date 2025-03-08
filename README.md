@@ -1,4 +1,4 @@
-![modsquad](https://github.com/user-attachments/assets/e0fbc2b1-aa23-42fe-8a71-2b0862f9ede2)
+<img src="https://github.com/user-attachments/assets/e0fbc2b1-aa23-42fe-8a71-2b0862f9ede2" width="200" height="200" />
 
 # model-based-indices
 Code used for model-based indices of abundance and distribution from bottom trawl survey data, produced by the AFSC GAP ModSquad in the Gulf of Alaska and Bering Sea. Model-based indices of abundance and distribution are produced using spatiotemporal delta-GLMMs implemented in [sdmTMB](https://pbs-assess.github.io/sdmTMB/). Model-based age composition estimates follow a similar approach, but employ a multivariate extension and are implemented in [tinyVAST](https://vast-lib.github.io/tinyVAST/).
@@ -56,3 +56,36 @@ Provide model-based estimates of abundance and their standard error from GAP sur
   - MRAN v4.0.2: VAST v3.9.0, FishStatsUtils v2.10.0, cpp VAST_v13_1_0, TMB v1.7.16, Matrix v1.2-18, DHARMa v0.3.2
 - **2021**: Rv4.0.2: VAST v3.6.1, FishStatsUtils v2.8.0, cpp VAST_v12_0_0, TMB v1.7.18, Matrix v1.2.18
 - **2020**: VAST v3.3.0, FishStatsUtils v2.5.0, cpp VAST_v8_2_0
+
+## NOAA README
+
+This repository is a scientific product and is not official
+communication of the National Oceanic and Atmospheric Administration, or
+the United States Department of Commerce. All NOAA GitHub project code
+is provided on an ‘as is’ basis and the user assumes responsibility for
+its use. Any claims against the Department of Commerce or Department of
+Commerce bureaus stemming from the use of this GitHub project will be
+governed by all applicable Federal law. Any reference to specific
+commercial products, processes, or services by service mark, trademark,
+manufacturer, or otherwise, does not constitute or imply their
+endorsement, recommendation or favoring by the Department of Commerce.
+The Department of Commerce seal and logo, or the seal and logo of a DOC
+bureau, shall not be used in any manner to imply endorsement of any
+commercial product or activity by DOC or the United States Government.
+
+## NOAA License
+
+Software code created by U.S. Government employees is not subject to
+copyright in the United States (17 U.S.C. §105). The United
+States/Department of Commerce reserve all rights to seek and obtain
+copyright protection in countries other than the United States for
+Software authored in its entirety by the Department of Commerce. To this
+end, the Department of Commerce hereby grants to Recipient a
+royalty-free, nonexclusive license to use, copy, and create derivative
+works of the Software outside of the United States.
+
+<img src="https://raw.githubusercontent.com/nmfs-general-modeling-tools/nmfspalette/main/man/figures/noaa-fisheries-rgb-2line-horizontal-small.png" alt="NOAA Fisheries" height="75"/>
+
+[U.S. Department of Commerce](https://www.commerce.gov/) \| [National
+Oceanographic and Atmospheric Administration](https://www.noaa.gov) \|
+[NOAA Fisheries](https://www.fisheries.noaa.gov/)
