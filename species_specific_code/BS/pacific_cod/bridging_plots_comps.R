@@ -81,7 +81,7 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
   }
   
   colnames(check_props_tab)[1:13] <- 0:12
-  props_plot <- melt(select(check_props_tab, -distribution), id.vars = "year", 
+  props_plot <- melt(check_props_tab, id.vars = c("year","distribution"), 
                      variable.name = "Age", value.name = "Proportion") %>%
     # add column for coloring the bars in the plot based on positive/negative
     mutate(sign = case_when(Proportion >= 0 ~ "positive",
@@ -121,7 +121,7 @@ comp_percent_diff <- function(new, old, names, save_results = FALSE) {
   }
   
   colnames(check_props_tab)[1:13] <- 0:12
-  props_plot <- melt(select(check_props_tab, -distribution), id.vars = "year", 
+  props_plot <- melt(check_props_tab, id.vars = c("year","distribution"), 
                      variable.name = "Age", value.name = "Proportion") %>%
     # add column for coloring the bars in the plot based on positive/negative
     mutate(sign = case_when(Proportion >= 0 ~ "positive",
@@ -156,7 +156,7 @@ comp_trends <- function(new, old, names) {
   check_props_abs_tab <-  cbind(check_props_abs, new[,14:15])
   
   colnames(check_props_tab)[1:13] <- 0:12
-  props <- melt(select(check_props_tab, -distribution), id.vars = "year", 
+  props <- melt(check_props_tab, id.vars = c("year","distribution"), 
                      variable.name = "Age", value.name = "Proportion") %>%
     # add column for coloring the bars in the plot based on positive/negative
     mutate(sign = case_when(Proportion >= 0 ~ "positive",
