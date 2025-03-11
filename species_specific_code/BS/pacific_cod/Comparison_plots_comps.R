@@ -76,23 +76,24 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
   
   if(save_results == TRUE) {  # save to drive, if you want. Check file paths.
     options(scipen=999)
-    write.csv(check_props_tab, here(results_dir, save_dir, "bridge_props.csv"))
-    write.csv(check_props_abs_tab, here(results_dir, save_dir, "bridge_props_abs.csv"))
+    write.csv(check_props_tab, here(workDir, save_dir, "bridge_props.csv"))
+    write.csv(check_props_abs_tab, here(workDir, save_dir, "bridge_props_abs.csv"))
   }
   
   colnames(check_props_tab)[1:13] <- 0:12
-  props_plot <- melt(check_props_tab, id.vars = "year", 
+  props_plot <- melt(select(check_props_tab, -distribution), id.vars = "year", 
                      variable.name = "Age", value.name = "Proportion") %>%
     # add column for coloring the bars in the plot based on positive/negative
     mutate(sign = case_when(Proportion >= 0 ~ "positive",
                             Proportion < 0 ~ "negative"))
+  props_plot$Proportion <- as.numeric(props_plot$Proportion)
   
   # Plot both regions together and without 2020
   label <- paste0("Difference between ", names[1], " and ", names[2])
   plot <- ggplot(props_plot, aes(x = Age, y = Proportion, fill = sign)) +
     geom_bar(stat = "identity", show.legend = FALSE) +
     scale_fill_manual(values = c("cornflowerblue", "darkred")) +
-    scale_x_discrete(breaks = c(1, 5, 10, 15)) +
+    scale_x_discrete(breaks = c(0, 5, 10, 15)) +
     ylab(label) +
     facet_wrap(~ year, ncol = 6, dir = "v") 
   
@@ -116,8 +117,8 @@ comp_percent_diff <- function(new, old, names, save_results = FALSE) {
   
   if(save_results == TRUE) {  # save to drive, if you want. Check file paths.
     options(scipen=999)
-    write.csv(check_props_tab, here(results_dir, save_dir, "bridge_props.csv"))
-    write.csv(check_props_abs_tab, here(results_dir, save_dir, "bridge_props_abs.csv"))
+    write.csv(check_props_tab, here(workDir, save_dir, "bridge_props.csv"))
+    write.csv(check_props_abs_tab, here(workDir, save_dir, "bridge_props_abs.csv"))
   }
   
   colnames(check_props_tab)[1:13] <- 0:12
