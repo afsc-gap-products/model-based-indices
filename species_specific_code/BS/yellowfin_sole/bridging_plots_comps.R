@@ -76,12 +76,12 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
   
   if(save_results == TRUE) {  # save to drive, if you want. Check file paths.
     options(scipen=999)
-    write.csv(check_props_tab, here(results_dir, save_dir, "bridge_props.csv"))
-    write.csv(check_props_abs_tab, here(results_dir, save_dir, "bridge_props_abs.csv"))
+    write.csv(check_props_tab, here(workDir, save_dir, "bridge_props.csv"))
+    write.csv(check_props_abs_tab, here(workDir, save_dir, "bridge_props_abs.csv"))
   }
   
   colnames(check_props_tab)[1:20] <- 1:20
-  props_plot <- melt(check_props_tab, id.vars = "year", 
+  props_plot <- melt(check_props_tab, id.vars = c("year","distribution"), 
                      variable.name = "Age", value.name = "Proportion") %>%
     # add column for coloring the bars in the plot based on positive/negative
     mutate(sign = case_when(Proportion >= 0 ~ "positive",
@@ -92,7 +92,7 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
   plot <- ggplot(props_plot, aes(x = Age, y = Proportion, fill = sign)) +
     geom_bar(stat = "identity", show.legend = FALSE) +
     scale_fill_manual(values = c("cornflowerblue", "darkred")) +
-    scale_x_discrete(breaks = c(1, 5, 10, 15)) +
+    scale_x_discrete(breaks = c(1, 5, 10, 15, 20)) +
     ylab(label) +
     facet_wrap(~ year, ncol = 6, dir = "v") 
   
@@ -121,7 +121,7 @@ comp_percent_diff <- function(new, old, names, save_results = FALSE) {
   }
   
   colnames(check_props_tab)[1:20] <- 1:20
-  props_plot <- melt(check_props_tab, id.vars = "year", 
+  props_plot <- melt(check_props_tab, id.vars = c("year","distribution"), 
                      variable.name = "Age", value.name = "Proportion") %>%
     # add column for coloring the bars in the plot based on positive/negative
     mutate(sign = case_when(Proportion >= 0 ~ "positive",
@@ -132,7 +132,8 @@ comp_percent_diff <- function(new, old, names, save_results = FALSE) {
   plot <- ggplot(props_plot, aes(x = Age, y = Proportion, fill = sign)) +
     geom_bar(stat = "identity", show.legend = FALSE) +
     scale_fill_manual(values = c("cornflowerblue", "darkred")) +
-    scale_x_discrete(breaks = c(1, 5, 10, 15)) +
+    scale_x_discrete(breaks = c(1, 5, 10, 15, 20)) +
+    #ylim(c(-100,100)) + #truncate as needed to see patterns without outliers
     ylab(label) +
     facet_wrap(~ year, ncol = 6) 
   
@@ -155,7 +156,7 @@ comp_trends <- function(new, old, names) {
   check_props_abs_tab <-  cbind(check_props_abs, new[,21:22])
   
   colnames(check_props_tab)[1:20] <- 1:20
-  props <- melt(check_props_tab, id.vars = "year", 
+  props <- melt(check_props_tab, id.vars = c("year","distribution"), 
                      variable.name = "Age", value.name = "Proportion") %>%
     # add column for coloring the bars in the plot based on positive/negative
     mutate(sign = case_when(Proportion >= 0 ~ "positive",
@@ -167,7 +168,7 @@ comp_trends <- function(new, old, names) {
     # geom_violin() +
     geom_jitter(height = 0, width = 0.1, alpha = 0.6, show.legend = FALSE) +
     scale_color_manual(values = c("cornflowerblue", "darkred")) +
-    scale_x_discrete(breaks = c(1, 5, 10, 15)) +
+    scale_x_discrete(breaks = c(1, 5, 10, 15, 20)) +
     ylab(label) 
   
   # Plot difference over years
@@ -186,12 +187,12 @@ comp_trends <- comp_trends(new = new_props, old = old_props,
 comp_trends
 
 # tinyVAST plots save ---------------------------------------------------------
-# ggsave(comp_diff, filename = here(workDir, save_dir, "comp_diff.png"),
-#        width=200, height=200, units="mm", dpi=300)
-# ggsave(per_diff, filename = here(workDir, save_dir, "comp_per_diff.png"),
-#        width=200, height=200, units="mm", dpi=300)
-# ggsave(comp_trends, filename = here(workDir, save_dir, "comp_trends.png"),
-#        width=260, height=120, units="mm", dpi=300)
+ggsave(comp_diff, filename = here(workDir, save_dir, "comp_diff.png"),
+       width=200, height=200, units="mm", dpi=300)
+ggsave(per_diff, filename = here(workDir, save_dir, "comp_per_diff.png"),
+       width=200, height=200, units="mm", dpi=300)
+ggsave(comp_trends, filename = here(workDir, save_dir, "comp_trends.png"),
+       width=260, height=120, units="mm", dpi=300)
 ggsave(sum_props_sub$boxplot, filename = here(workDir, save_dir, "tinyVAST_summary.png"),
        width=200, height=120, units="mm", dpi=300)
 ggsave(sum_props_sub$barplot, filename = here(workDir, save_dir, "tinyVAST_by_year.png"),
