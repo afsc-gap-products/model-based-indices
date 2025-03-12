@@ -225,8 +225,6 @@ Make maps and diagnostics:
 
 ```{r plots, echo=TRUE}
 ## Plot predicted density maps and fit diagnostics ----
-#TODO: find why calls to residuals throws errors for some package versions
-
 # q-q plot
 pdf(file = here("species_specific_code", "BS", species, phase, "qq.pdf"),
     width = 5, height = 5)
@@ -407,17 +405,17 @@ if(species == "kamchatka_flounder"){
 }
 
 # create ESP products ----
-f4 <- here("species_specific_code", "BS", species, phase, "cog.RDS")
+f4 <- here("species_specific_code", "BS", species, phase, "cog.csv")
 if (!file.exists(f4)) {
   cog <- get_cog(p, bias_correct = FALSE, 
                  area = p$data$area_km2, format = "wide")
-  saveRDS(cog, file = f4)
+  write.csv(cog, file = f4, row.names = FALSE)
 }
 
 f5 <- here("species_specific_code", "BS", species, phase, 
-           "area_occupied.RDS")
+           "area_occupied.csv")
 if (!file.exists(f5)) {
-eao <- get_eao(p, bias_correct = FALSE, area = p$data$area_km2)
-saveRDS(eao, file = f5)
+  eao <- get_eao(p, bias_correct = FALSE, area = p$data$area_km2)
+  write.csv(eao, file = f5, row.names = FALSE)
 }
 ```
