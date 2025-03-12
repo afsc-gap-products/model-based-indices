@@ -194,14 +194,14 @@ for (i in species_list){
   #### ESP products ----
   f4 <- here("species_specific_code", "GOA", species, phase, "cog.csv")
   if (!file.exists(f4)) {
-    cog <- get_cog(p, area = p$data$area_km2, format = "wide")
+    cog <- get_cog(p, bias_correct = TRUE, area = p$data$area_km2, format = "wide")
     write.csv(cog, file = f4, row.names = FALSE)
   }
   
   f5 <- here("species_specific_code", "GOA", species, phase, 
              "area_occupied.csv")
   if (!file.exists(f5)) {
-    eao <- get_eao(p, area = p$data$area_km2)
+    eao <- get_eao(p, bias_correct = TRUE, area = p$data$area_km2)
     write.csv(eao, file = f5, row.names = FALSE)
   }
 }
