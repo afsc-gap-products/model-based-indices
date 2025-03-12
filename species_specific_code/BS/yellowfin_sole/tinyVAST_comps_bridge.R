@@ -24,7 +24,8 @@ Data <- readRDS(here::here("species_specific_code", "BS", Species, "production",
 
 #change format of data to match new 
 Data <- dplyr::select(Data, region = Region, hauljoin = Hauljoin, year = Year, lon = Lon,
-               lat = Lat, cpue_n_km2 = Catch_KG)
+               lat = Lat, age = Age, cpue_n_km2 = Catch_KG)
+Data$year <- as.integer(Data$year)
 
 # Add year-age interaction
 Data$age <- factor(paste0("age_", Data$age))
