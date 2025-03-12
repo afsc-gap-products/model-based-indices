@@ -1,5 +1,5 @@
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## Compare GOA VAST input to output from the gapindex R package
+## Prepare model-based product data inputs from the gapindex R package
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ## Restart R Session before running
@@ -87,6 +87,8 @@ dat_allspp <- with(gapindex_cpue, data.frame(hauljoin = HAULJOIN,
                                              lat = LATITUDE_DD_START,
                                              X = E_km_z5,
                                              Y = N_km_z5,
+                                             depth_m = DEPTH_M,
+                                             bottom_temp_c = BOTTOM_TEMPERATURE_C,
                                              species_code = SPECIES_CODE,
                                              species = SPECIES_NAME,
                                              catch_kg = WEIGHT_KG, 
