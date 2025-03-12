@@ -109,7 +109,14 @@ cogs_plot <- cogs %>%
     metric == "DEPTH_M" ~ "Depth (m)",
     metric == "LATITUDE_DD_START" ~ "Latitude",
     metric == "LONGITUDE_DD_START" ~ "Longitude"
-  ))
+  )) %>%
+  # Remove rogue first dusky rockfish point
+  filter(!(species_code == "Dusky Rockfish" & year == 1990)) %>% 
+  # Make depth estimates negative for inverted axis when plotting
+  mutate(est = if_else(metric == "Depth (m)", -est, est),
+         upr = if_else(metric == "Depth (m)", -upr, upr),
+         lwr = if_else(metric == "Depth (m)", -lwr, lwr))
+
 
 ## Plot all variables as a time-series
 pal <- nationalparkcolors::park_palette("Saguaro")
@@ -120,7 +127,8 @@ ts_plot <- ggplot(cogs_plot, aes(x = year, y = est)) +
   theme(legend.title = element_blank()) +
   scale_color_manual(values = pal) +
   scale_fill_manual(values = pal) +
-  facet_wrap(~ metric, scales = "free_y")
+  scale_y_continuous(labels = function(est) abs(est)) +
+  facet_wrap(~ metric, scales = "free_y") 
 ts_plot
 
 ## Plot latitude & longitude together in a 'sparkleplot'
