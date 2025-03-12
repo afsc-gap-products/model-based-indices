@@ -9,8 +9,6 @@ library(here)
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
 
-channel <- gapindex::get_connected(check_access = FALSE) # enter credentials 
-
 species_list <- c("Gadus_macrocephalus", "Gadus_chalcogrammus",
                   "Sebastes_alutus", "Sebastes_polyspinis", 
                   "Squalus_suckleyi", "Atheresthes_stomias",
