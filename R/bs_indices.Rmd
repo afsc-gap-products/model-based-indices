@@ -104,7 +104,7 @@ if(sum(mins$min) == 0){
 			    )
 }
 
-f1 <- here("species_specific_code", "BS", species, phase, results, "fit_250_knots.RDS")
+f1 <- here("species_specific_code", "BS", species, phase, "results", "fit_250_knots.RDS")
 if (!file.exists(f1)) {
   
     if(species == "kamchatka_flounder"){
@@ -178,7 +178,7 @@ pred_grid_nbs <- left_join(pred_grid_nbs, env, by = "year")
 pred_grid <- left_join(pred_grid, env, by = "year")
 
 # get predictions
-f2 <- here("species_specific_code", "BS", species, phase, results, "predictions_250_knots.RData")
+f2 <- here("species_specific_code", "BS", species, phase, "results", "predictions_250_knots.RData")
 if (!file.exists(f2)) {
   if(species == "kamchatka_flounder"){
     p <- predict(fit, newdata = pred_grid_ebs, return_tmb_object = TRUE)
@@ -196,7 +196,7 @@ if (!file.exists(f2)) {
 # get indices
 gc()
 
-f3 <- here("species_specific_code", "BS", species, phase, results, "indices_250_knots.RData")
+f3 <- here("species_specific_code", "BS", species, phase, "results", "indices_250_knots.RData")
 if (!file.exists(f3)) {
   if(species == "kamchatka_flounder"){
     ind <- get_index(p, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
@@ -226,7 +226,7 @@ Make maps and diagnostics:
 ```{r plots, echo=TRUE}
 ## Plot predicted density maps and fit diagnostics ----
 # q-q plot
-pdf(file = here("species_specific_code", "BS", species, phase, results, "qq.pdf"),
+pdf(file = here("species_specific_code", "BS", species, phase, "results", "qq.pdf"),
     width = 5, height = 5)
   sims <- simulate(fit, nsim = 500, type = "mle-mvn") 
   sims |> dharma_residuals(fit, test_uniformity = FALSE)
@@ -245,7 +245,7 @@ ggplot(subset(fit$data, !is.na(resids) & is.finite(resids)), aes(X, Y, col = res
   facet_wrap(~year) +
   coord_fixed() +
   theme_bw()
-ggsave(file = here("species_specific_code", "BS", species, phase, results,
+ggsave(file = here("species_specific_code", "BS", species, phase, "results",
                    "residuals_map.pdf"),
        height = 9, width = 6.5, units = c("in"))
 
@@ -264,7 +264,7 @@ ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
   coord_fixed() +
   ggtitle(title) +
   theme_bw()
-ggsave(file = here("species_specific_code", "BS", species, phase, results,
+ggsave(file = here("species_specific_code", "BS", species, phase, "results",
                    "predictions_map.pdf"),
        height = 9, width = 6.5, units = c("in"))
 ```
@@ -331,7 +331,7 @@ if(species == "kamchatka_flounder"){
     coord_cartesian(expand = FALSE) + 
     ylab(ylab) +
     theme_bw()
-  ggsave(file = here("species_specific_code", "BS", species, phase, results, 
+  ggsave(file = here("species_specific_code", "BS", species, phase, "results", 
                    "index_comparison.pdf"), 
          height = 4, width = 6, units = c("in"))
   } else {
@@ -339,7 +339,7 @@ if(species == "kamchatka_flounder"){
       select(index, stratum, year, est, lwr, upr)
 
     #TODO: update prior index once we've moved on from VAST
-    old_i <- read.csv(here("species_specific_code", "BS", species, phase, results, "Index.csv")) %>%
+    old_i <- read.csv(here("species_specific_code", "BS", species, phase, "results", "Index.csv")) %>%
       mutate(index = "mb_old", year = as.numeric(Time), est = Estimate, 
         se = Std..Error.for.ln.Estimate., stratum = Stratum) %>% 
       filter(year %in% unique(new_i$year), stratum %in% unique(new_i$stratum)) %>%
@@ -361,7 +361,7 @@ if(species == "kamchatka_flounder"){
       coord_cartesian(expand = FALSE) + 
       ylab(ylab) +
       theme_bw()
-    ggsave(file = here("species_specific_code", "BS", species, phase, results,
+    ggsave(file = here("species_specific_code", "BS", species, phase, "results",
                        "index_comparison_both.pdf"), 
            height = 4, width = 6, units = c("in"))
     
@@ -374,7 +374,7 @@ if(species == "kamchatka_flounder"){
       coord_cartesian(expand = FALSE) + 
       ylab(ylab) +
       theme_bw()
-    ggsave(file = here("species_specific_code", "BS", species, phase, results,
+    ggsave(file = here("species_specific_code", "BS", species, phase, "results",
                        "index_comparison_ebs.pdf"), 
            height = 4, width = 6, units = c("in"))
     
@@ -387,7 +387,7 @@ if(species == "kamchatka_flounder"){
       coord_cartesian(expand = FALSE) + 
       ylab(ylab) +
       theme_bw()
-    ggsave(file = here("species_specific_code", "BS", species, phase, results,
+    ggsave(file = here("species_specific_code", "BS", species, phase, "results",
                        "index_comparison_nbs.pdf"), 
            height = 4, width = 6, units = c("in"))
     
@@ -400,19 +400,19 @@ if(species == "kamchatka_flounder"){
       coord_cartesian(expand = FALSE) + 
       ylab(ylab) +
       theme_bw()
-    ggsave(file = here("species_specific_code", "BS", species, phase, results, "index.pdf"), 
+    ggsave(file = here("species_specific_code", "BS", species, phase, "results", "index.pdf"), 
            height = 4, width = 6, units = c("in"))
 }
 
 # create ESP products ----
-f4 <- here("species_specific_code", "BS", species, phase, results, "cog_bc.csv")
+f4 <- here("species_specific_code", "BS", species, phase, "results", "cog_bc.csv")
 if (!file.exists(f4)) {
   cog <- get_cog(p, bias_correct = TRUE, 
                  area = p$data$area_km2, format = "wide")
   write.csv(cog, file = f4, row.names = FALSE)
 }
 
-f5 <- here("species_specific_code", "BS", species, phase, results,
+f5 <- here("species_specific_code", "BS", species, phase, "results",
            "area_occupied_bc.csv")
 if (!file.exists(f5)) {
   eao <- get_eao(p, bias_correct = TRUE, area = p$data$area_km2)
