@@ -21,14 +21,14 @@ knitr::opts_chunk$set(
 
 ```{r packages, message=FALSE, warning=FALSE, cache=FALSE}
 #remotes::install_github("pbs-assess/sdmTMB")
-remotes::install_github("afsc-gap-products/coldpool")
+#remotes::install_github("afsc-gap-products/coldpool")
 library(sdmTMB)
 library(dplyr)
 library(ggplot2)
 library(here)
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
-sp <- 1 # specify species from species vector
+sp <- 3 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 ```
 
@@ -63,7 +63,7 @@ We also need to pull in the appropriate environmental covariate as this is used 
 
 ```{r covariate, echo = TRUE}
 
-env_df <- coldpool:::cold_pool_index
+env_df <- coldpool::cold_pool_index
   
 if(species == "yellowfin_sole"){
   env <- cbind(env_df, env = scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)) |>
@@ -104,7 +104,7 @@ if(sum(mins$min) == 0){
 			    )
 }
 
-f1 <- here("species_specific_code", "BS", species, phase, "fit.RDS")
+f1 <- here("species_specific_code", "BS", species, phase, "fit_250_knots.RDS")
 if (!file.exists(f1)) {
   
     if(species == "kamchatka_flounder"){
@@ -178,7 +178,7 @@ pred_grid_nbs <- left_join(pred_grid_nbs, env, by = "year")
 pred_grid <- left_join(pred_grid, env, by = "year")
 
 # get predictions
-f2 <- here("species_specific_code", "BS", species, phase, "predictions.RData")
+f2 <- here("species_specific_code", "BS", species, phase, "predictions_250_knots.RData")
 if (!file.exists(f2)) {
   if(species == "kamchatka_flounder"){
     p <- predict(fit, newdata = pred_grid_ebs, return_tmb_object = TRUE)
@@ -196,7 +196,7 @@ if (!file.exists(f2)) {
 # get indices
 gc()
 
-f3 <- here("species_specific_code", "BS", species, phase, "indices.RData")
+f3 <- here("species_specific_code", "BS", species, phase, "indices_250_knots.RData")
 if (!file.exists(f3)) {
   if(species == "kamchatka_flounder"){
     ind <- get_index(p, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
@@ -405,7 +405,7 @@ if(species == "kamchatka_flounder"){
 }
 
 # create ESP products ----
-f4 <- here("species_specific_code", "BS", species, phase, "cog.csv")
+f4 <- here("species_specific_code", "BS", species, phase, "cog_bc.csv")
 if (!file.exists(f4)) {
   cog <- get_cog(p, bias_correct = TRUE, 
                  area = p$data$area_km2, format = "wide")
@@ -413,7 +413,7 @@ if (!file.exists(f4)) {
 }
 
 f5 <- here("species_specific_code", "BS", species, phase, 
-           "area_occupied.csv")
+           "area_occupied_bc.csv")
 if (!file.exists(f5)) {
   eao <- get_eao(p, bias_correct = TRUE, area = p$data$area_km2)
   write.csv(eao, file = f5, row.names = FALSE)
