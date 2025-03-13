@@ -67,6 +67,9 @@ fit_sdmTMB <- sdmTMB(
   do_fit = TRUE
 )
 
+# apply additional optimization loops as needed to reduce gradients
+fit_sdmTMB <- run_extra_optimization(fit_sdmTMB)
+
 saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", Species, 
                                 phase, "results_age", "fit_sdmTMB_age.RDS"))
 
