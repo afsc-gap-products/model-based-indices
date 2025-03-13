@@ -63,14 +63,14 @@ We also need to pull in the appropriate environmental covariate as this is used 
 
 ```{r covariate, echo = TRUE}
 
-env_df <- coldpool:::cold_pool_index
+env_df <- coldpool::cold_pool_index
   
 if(species == "yellowfin_sole"){
-  env <- cbind(env_df, env = scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)) |>
+  env <- cbind(env_df, env = scale(coldpool::cold_pool_index$MEAN_BT_LT100M)) |>
     mutate(year = as.integer(YEAR)) |>
     select(year, env)
 } else {
-  env <- cbind(env_df, env = scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)) |>
+  env <- cbind(env_df, env = scale(coldpool::cold_pool_index$AREA_LTE2_KM2)) |>
     mutate(year = as.integer(YEAR)) |>
     select(year, env)
 }
