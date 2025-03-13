@@ -63,7 +63,7 @@ We also need to pull in the appropriate environmental covariate as this is used 
 
 ```{r covariate, echo = TRUE}
 
-env_df <- coldpool:::cold_pool_index
+env_df <- coldpool::cold_pool_index
   
 if(species == "yellowfin_sole"){
   env <- cbind(env_df, env = scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)) |>
