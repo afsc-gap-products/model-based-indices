@@ -64,11 +64,14 @@ fit_sdmTMB <- sdmTMB(
   extra_time = 2020L, 
   silent = FALSE,
   anisotropy = TRUE,
+  #control = sdmTMBcontrol(nlminb_loops = 2L, newton_loops = 2L),
   do_fit = TRUE
 )
 
 # apply additional optimization loops as needed to reduce gradients
-fit_sdmTMB <- run_extra_optimization(fit_sdmTMB)
+# fit_sdmTMB <- run_extra_optimization(fit_sdmTMB, 
+#                                      nlminb_loops = 1, 
+#                                      newton_loops = 1)
 
 saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", Species, 
                                 phase, "results_age", "fit_sdmTMB_age.RDS"))
