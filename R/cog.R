@@ -171,7 +171,9 @@ sparkle <- ggplot(data = cog_sparkle, aes(x = est_lon, y = est_lat, color = year
   geom_errorbarh(aes(xmin = lwr_lon, xmax = upr_lon, color = year), alpha = 0.4) +
   scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
   xlab("Longitude (°W)") + ylab("Latitude (°N)") +
-  facet_wrap(~species_code, scales = "free")
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 3)) +
+  facet_wrap(~species_code, scales = "free", ncol = 2)
 sparkle
 
 ## Plot points on a map
@@ -179,12 +181,12 @@ world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
 sf::sf_use_s2(FALSE)  # turn off spherical geometry
 map <- ggplot(data = world) +
   geom_sf() +
-  geom_point(data = cog_sparkle, aes(x = est_lon, y = est_lat, color = year), size = 1) +
+  geom_point(data = cog_sparkle, aes(x = est_lon, y = est_lat, color = year), size = 1.5) +
   geom_errorbar(data = cog_sparkle, aes(x = est_lon, y = est_lat, ymin = lwr_lat, ymax = upr_lat, color = year), alpha = 0.4) +
   geom_errorbarh(data = cog_sparkle, aes(x = est_lon, y = est_lat, xmin = lwr_lon, xmax = upr_lon, color = year), alpha = 0.4) +
-  coord_sf(xlim = c(-162, -139), ylim = c(54, 60), expand = FALSE) +
+  coord_sf(xlim = c(-162.5, -140), ylim = c(54, 60), expand = FALSE) +
   scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
-  scale_x_continuous(breaks = c(-160, -140)) +
+  scale_x_continuous(breaks = c(-160, -145)) +
   scale_y_continuous(breaks = c(55, 60)) +
   labs(x = NULL, y = NULL) +
   facet_wrap(~species_code, ncol = 2)
@@ -192,8 +194,8 @@ map
 
 ## Save plots
 ggsave(ts_plot, filename = here::here("output", "rf_cog_ts.png"), 
-       width = 190, height = 100, unit = "mm", dpi = 300)
+       width = 200, height = 110, unit = "mm", dpi = 300)
 ggsave(sparkle, filename = here::here("output", "rf_cog_sparkle.png"), 
-       width = 160, height = 100, unit = "mm", dpi = 300)
+       width = 180, height = 150, unit = "mm", dpi = 300)
 ggsave(map, filename = here::here("output", "rf_cog_map.png"), 
-       width = 150, height = 100, unit = "mm", dpi = 300)
+       width = 180, height = 140, unit = "mm", dpi = 300)
