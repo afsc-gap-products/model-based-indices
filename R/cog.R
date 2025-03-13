@@ -84,7 +84,7 @@ for (imetric in c("DEPTH_M", "BOTTOM_TEMPERATURE_C",
 
 write.csv(cogs, here::here("output", "rf_cogs.csv"), row.names = FALSE)
 
-## Plotting 
+## Plotting -------------------------------------------------------------------
 ## Sophia Wassermann
 library(dplyr)
 library(ggplot2)
@@ -111,16 +111,42 @@ cogs_plot <- cogs %>%
     metric == "LONGITUDE_DD_START" ~ "Longitude"
   )) %>%
   # Remove rogue first dusky rockfish point
-  filter(!(species_code == "Dusky Rockfish" & year == 1990)) %>% 
+  filter(!(species_code == "Dusky Rockfish" & year <= 1996)) %>% 
   # Make depth estimates negative for inverted axis when plotting
   mutate(est = if_else(metric == "Depth (m)", -est, est),
          upr = if_else(metric == "Depth (m)", -upr, upr),
          lwr = if_else(metric == "Depth (m)", -lwr, lwr))
 
-
 ## Plot all variables as a time-series
+# Transform latitude & longitude to UTM (for estimates, upper & lower bounds)
+utm_transform <- function(column) {
+  utm <- data.frame(Y = cogs_plot[cogs_plot$metric == "Latitude", column],
+                    X = cogs_plot[cogs_plot$metric == "Longitude", column],
+                        species_code = cogs_plot[cogs_plot$metric == "Longitude", "species_code"], 
+                        year = cogs_plot[cogs_plot$metric == "Longitude", "year"])
+  
+  sp::coordinates(utm) <- ~ X + Y
+  sp::proj4string(utm) <- sp::CRS("+proj=longlat +datum=WGS84")
+  utm <- as.data.frame(sp::spTransform(utm, sp::CRS("+proj=utm +zone=5 +units=km")))
+  colnames(utm)[c(3:4)] <- c("Eastings (km)", "Northings (km)")
+  
+  utm <- reshape2::melt(utm, 
+                        id.vars = c("species_code", "year"), 
+                        variable.name = "metric",
+                        value.name = column)
+  return(utm)
+}
+
+utm_out <- cbind.data.frame(utm_transform("est"),
+                            se = utm_transform("se")$se,
+                            lwr = utm_transform("lwr")$lwr,
+                            upr = utm_transform("upr")$upr)
+
+# Time series plot with special color palette
 pal <- nationalparkcolors::park_palette("Saguaro")
-ts_plot <- ggplot(cogs_plot, aes(x = year, y = est)) +
+ts_plot <- rbind.data.frame(cogs_plot %>% filter(!metric %in% c("Latitude", "Longitude")),
+                            utm_out[, c(3, 1, 2, 4:7)]) %>%
+  ggplot(., aes(x = year, y = est)) +
   geom_line(aes(color = species_code)) +
   geom_ribbon(aes(ymin = lwr, ymax = upr, fill = species_code), alpha = 0.4) +
   xlab("Year") + ylab("Weighted Mean") +
@@ -141,19 +167,11 @@ cog_sparkle <- cog_lat %>% left_join(cog_lon, by = c("species_code", "year"))
 
 sparkle <- ggplot(data = cog_sparkle, aes(x = est_lon, y = est_lat, color = year)) +
   geom_point() +
-  # With arrow
-  # geom_segment(data = cog_error2 %>% filter(Year >= this_year - 10), 
-  #              aes(x = X, y = Y, xend = X2, yend = Y2), 
-  #              alpha = 0.8, arrow = arrow(length = unit(0.03, "npc"))) +
-  # Without arrow
-  # geom_segment(data = cog_error2 %>% filter(Year >= this_year - 10), 
-  #              aes(x = X, y = Y, xend = X2, yend = Y2), 
-  #              alpha = 0.8) +
   geom_errorbar(aes(ymin = lwr_lat, ymax = upr_lat, color = year), alpha = 0.4) +
   geom_errorbarh(aes(xmin = lwr_lon, xmax = upr_lon, color = year), alpha = 0.4) +
   scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
   xlab("Longitude (°W)") + ylab("Latitude (°N)") +
-  facet_wrap(~species_code)
+  facet_wrap(~species_code, scales = "free")
 sparkle
 
 ## Plot points on a map
@@ -162,9 +180,9 @@ sf::sf_use_s2(FALSE)  # turn off spherical geometry
 map <- ggplot(data = world) +
   geom_sf() +
   geom_point(data = cog_sparkle, aes(x = est_lon, y = est_lat, color = year), size = 1) +
-  # geom_errorbar(aes(ymin = lwr_lat, ymax = upr_lat, color = year), alpha = 0.4) +
-  # geom_errorbarh(aes(xmin = lwr_lon, xmax = upr_lon, color = year), alpha = 0.4) +
-  coord_sf(xlim = c(-162, -135), ylim = c(54, 60), expand = FALSE) +
+  geom_errorbar(data = cog_sparkle, aes(x = est_lon, y = est_lat, ymin = lwr_lat, ymax = upr_lat, color = year), alpha = 0.4) +
+  geom_errorbarh(data = cog_sparkle, aes(x = est_lon, y = est_lat, xmin = lwr_lon, xmax = upr_lon, color = year), alpha = 0.4) +
+  coord_sf(xlim = c(-162, -139), ylim = c(54, 60), expand = FALSE) +
   scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
   scale_x_continuous(breaks = c(-160, -140)) +
   scale_y_continuous(breaks = c(55, 60)) +
@@ -172,6 +190,7 @@ map <- ggplot(data = world) +
   facet_wrap(~species_code, ncol = 2)
 map
 
+## Save plots
 ggsave(ts_plot, filename = here::here("output", "rf_cog_ts.png"), 
        width = 190, height = 100, unit = "mm", dpi = 300)
 ggsave(sparkle, filename = here::here("output", "rf_cog_sparkle.png"), 
