@@ -20,9 +20,10 @@ species <- 21740
 # this_year <- lubridate::year(Sys.Date())
 this_year <- 2024  # different year for debugging
 Species <- "pollock"
+phase <- c("hindcast","production")[1]
 speciesName <- paste0("Walleye_Pollock_age_", as.character(this_year), "_EBS-NBS")
-workDir <- here::here("species_specific_code", "BS", Species)
-Data <- read.csv(here("species_specific_code", "BS", Species, "data", 
+workDir <- here::here("species_specific_code", "BS", Species, phase)
+Data <- read.csv(here("species_specific_code", "BS", Species, phase, "data", 
                       paste0("VAST_ddc_alk_", this_year, ".csv")))
 
 # Set up sdmTMB model ---------------------------------------------------------
@@ -31,15 +32,13 @@ dat <-  transmute(Data,
                   cpue = CPUE_num, # converts cpue from kg/ha to kg/km^2
                   year = as.integer(Year),
                   age = as.integer(Age),
-                  vessel = "missing",
-                  effort = 1, # area swept is 1 when using CPUE instead of observed weight
                   Y = Lat,
-                  X = Lon,
-                  pass = 0) %>% 
+                  X = Lon) %>% 
   as.data.frame() %>%  # ensure not a tibble
   filter(year != 2020)  # drop dummy 2020 data
 
 dat$year_f <- as.factor(dat$year)
+dat$age_f <- as.factor(dat$age)
 
 # Transform lat & lon to UTM
 coordinates(dat) <- ~ X + Y
@@ -55,35 +54,42 @@ mesh <- make_mesh(dat, xy_cols = c("X", "Y"),
 
 # Fit sdmTMB model ------------------------------------------------------------
 fit_sdmTMB <- sdmTMB( 
-  cpue ~ year_f * age,
-  spatial_varying = ~ 0 + factor(age),
+  cpue ~ 0 + year_f * age_f,
   data = dat, 
   mesh = mesh,
   family = delta_gamma(type = "poisson-link"), 
   time = "year", 
-  spatial = "off",
-  spatiotemporal = "iid",
-  extra_time = 2020L, #  omit if dummy 2020 included in data
+  spatial = "on",
+  spatiotemporal = "ar1",
+  extra_time = 2020L, 
   silent = FALSE,
   anisotropy = TRUE,
+  #control = sdmTMBcontrol(nlminb_loops = 1L, newton_loops = 2L),
   do_fit = TRUE
 )
 
-saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", Species, "results", "fit_sdmTMB_age.RDS"))
+# apply additional optimization loops as needed to reduce gradients
+# fit_sdmTMB <- run_extra_optimization(fit_sdmTMB, 
+#                                      nlminb_loops = 0, 
+#                                      newton_loops = 1)
+
+saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", Species, 
+                                phase, "results_age", "fit_sdmTMB_age.RDS"))
 
 # Diagnostic plots ------------------------------------------------------------
 sanity(fit_sdmTMB)
 
 # q-q plot
-pdf(file = here("species_specific_code", "BS", Species, "qq.pdf"),
-    width = 5, height = 5)
+pdf(file = here("species_specific_code", "BS", Species, phase, "results_age", 
+                "qq.pdf"), width = 5, height = 5)
 sims <- simulate(fit_sdmTMB, nsim = 500, type = "mle-mvn") 
 sims |> dharma_residuals(fit_sdmTMB, test_uniformity = FALSE)
 dev.off()
 
 
 # Get abundance density indices for each year-age combination -----------------
-fit_sdmTMB <- readRDS(here("species_specific_code", "BS", Species, "results", "fit_sdmTMB_age.RDS"))
+fit_sdmTMB <- readRDS(here("species_specific_code", "BS", Species, phase, 
+                           "results_age",  "fit_sdmTMB_age.RDS"))
 
 # Load in grid for EBS, NBS, or entire Bering Sea
 load_grid <- function(region) {
@@ -123,7 +129,7 @@ ggplot(ind, aes(year, est)) +
   geom_line() +
   facet_wrap(~Age, scales = "fixed")
 
-write.csv(ind, here(workDir, "results", "sdmTMB_age_abundance.csv"))
+write.csv(ind, here(workDir, "results_age",  "sdmTMB_age_abundance.csv"))
 
 # Calculate proportion-at-age -------------------------------------------------
 prop <- ind %>% 
@@ -148,11 +154,11 @@ ggplot(prop, aes(x = Age, y = proportion, fill = color)) +
   theme(strip.text.x = element_blank()) +
   geom_text(x = 13, y = 0.45, aes(label = year), color = "grey30", size = 2.8)
 
-write.csv(prop, here(workDir, "results", "sdmTMB_age_prop.csv"))
+write.csv(prop, here(workDir, "results_age", "sdmTMB_age_prop.csv"))
 
 # Compare to production VAST model --------------------------------------------
 # Read in and reshape VAST comps
-vast_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
+vast_props <- read.csv(here(workDir, "results_age", "Comps", "proportions.csv"))
 colnames(vast_props)[1:15] <- 1:15
 vast_props <- reshape2::melt(vast_props, id.vars = c("Year", "Region"),
                              variable.name = "Age", value.name = "Proportion") %>%
@@ -189,7 +195,7 @@ props_summary <- ggplot(all_props, aes(x = age, y = proportion, color = model, f
   ylab("Proportion-at-age") 
 props_summary
 
-ggsave(props_compare, filename = here(workDir, "results", "sdmTMB_compare.png"),
+ggsave(props_compare, filename = here(workDir, "results_age", "sdmTMB_compare.png"),
        width=200, height=180, units="mm", dpi=300)
-ggsave(props_summary, filename = here(workDir, "results", "sdmTMB_summary.png"),
+ggsave(props_summary, filename = here(workDir, "results_age", "sdmTMB_summary.png"),
        width=200, height=120, units="mm", dpi=300)
