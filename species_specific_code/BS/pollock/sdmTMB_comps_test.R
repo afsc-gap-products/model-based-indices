@@ -64,13 +64,13 @@ fit_sdmTMB <- sdmTMB(
   extra_time = 2020L, 
   silent = FALSE,
   anisotropy = TRUE,
-  #control = sdmTMBcontrol(nlminb_loops = 2L, newton_loops = 2L),
+  #control = sdmTMBcontrol(nlminb_loops = 1L, newton_loops = 2L),
   do_fit = TRUE
 )
 
 # apply additional optimization loops as needed to reduce gradients
 # fit_sdmTMB <- run_extra_optimization(fit_sdmTMB, 
-#                                      nlminb_loops = 1, 
+#                                      nlminb_loops = 0, 
 #                                      newton_loops = 1)
 
 saveRDS(fit_sdmTMB, file = here("species_specific_code", "BS", Species, 
