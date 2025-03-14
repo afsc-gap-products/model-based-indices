@@ -28,7 +28,7 @@ library(ggplot2)
 library(here)
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
-sp <- 3 # specify species from species vector
+sp <- 1 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 ```
 
@@ -327,7 +327,7 @@ if(species == "kamchatka_flounder"){
     geom_ribbon(alpha = 0.1) +
     geom_line(alpha = 0.8) + 
     ylim(0, max(ind$upr)) +
-    ggtitle(paste(species, "EBS")) +
+    ggtitle("EBS") +
     coord_cartesian(expand = FALSE) + 
     ylab(ylab) +
     theme_bw()
@@ -357,7 +357,7 @@ if(species == "kamchatka_flounder"){
       geom_ribbon(alpha = 0.1) +
       geom_line(alpha = 0.8) + 
       ylim(0, max(both_i$upr)) +
-      ggtitle(paste(species, "EBS + NBS")) +
+      ggtitle("EBS + NBS") +
       coord_cartesian(expand = FALSE) + 
       ylab(ylab) +
       theme_bw()
@@ -370,7 +370,7 @@ if(species == "kamchatka_flounder"){
       geom_ribbon(alpha = 0.1) +
       geom_line(alpha = 0.8) + 
       ylim(0, max(both_i$upr)) +
-      ggtitle(paste(species, "EBS")) +
+      ggtitle("EBS") +
       coord_cartesian(expand = FALSE) + 
       ylab(ylab) +
       theme_bw()
@@ -383,7 +383,7 @@ if(species == "kamchatka_flounder"){
       geom_ribbon(alpha = 0.1) +
       geom_line(alpha = 0.8) + 
       ylim(0, max(both_i$upr)) +
-      ggtitle(paste(species, "NBS")) +
+      ggtitle("NBS") +
       coord_cartesian(expand = FALSE) + 
       ylab(ylab) +
       theme_bw()
@@ -396,7 +396,7 @@ if(species == "kamchatka_flounder"){
       geom_ribbon(alpha = 0.1) +
       geom_line(alpha = 0.8) + 
       ylim(0, max(new_i$upr)) +
-      ggtitle(species) +
+      #ggtitle(species) +
       coord_cartesian(expand = FALSE) + 
       ylab(ylab) +
       theme_bw()
