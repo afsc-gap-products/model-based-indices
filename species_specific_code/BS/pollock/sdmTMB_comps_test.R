@@ -63,7 +63,7 @@ fit_sdmTMB <- sdmTMB(
   spatiotemporal = "ar1",
   extra_time = 2020L, 
   silent = FALSE,
-  anisotropy = TRUE,
+  anisotropy = FALSE,
   #control = sdmTMBcontrol(nlminb_loops = 1L, newton_loops = 2L),
   do_fit = TRUE
 )
@@ -158,7 +158,7 @@ write.csv(prop, here(workDir, "results_age", "sdmTMB_age_prop.csv"))
 
 # Compare to production VAST model --------------------------------------------
 # Read in and reshape VAST comps
-vast_props <- read.csv(here(workDir, "results_age", "Comps", "proportions.csv"))
+vast_props <- read.csv(here(workDir, "results_age", "proportions.csv"))
 colnames(vast_props)[1:15] <- 1:15
 vast_props <- reshape2::melt(vast_props, id.vars = c("Year", "Region"),
                              variable.name = "Age", value.name = "Proportion") %>%
