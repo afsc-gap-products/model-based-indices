@@ -30,7 +30,7 @@ for (i in species_list){
   f1 <- here("species_specific_code", "GOA", species, phase, "fit.RDS")
   if (!file.exists(f1)) {
 
-    if(species == "Sebastes_polyspinis"){
+    if(species %in% c("Sebastes_polyspinis", "Sebastes_variabilis")){
       family <- delta_lognormal(type = "poisson-link")
     } else {
       family <- delta_gamma(type = "poisson-link")
