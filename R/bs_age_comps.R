@@ -12,18 +12,19 @@ library(dplyr)
 # Set up ----------------------------------------------------------------------
 phase <- c("hindcast", "production")[1] # specify analysis phase
 
-sp <- 3 # specify species from species vector
+sp <- 1 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 
 # Set year
 this_year <- as.numeric(format(Sys.Date(), "%Y"))
 if(phase == "hindcast") {this_year <- this_year - 1}  
 
+# Set working directory specific to species & phase
+workDir <- here("species_specific_code", "BS", species, phase)
 
 # Read in and format data -----------------------------------------------------
 if(species == "pollock"){
-  dat <- read.csv(here("species_specific_code", "BS", species, phase,
-                       "data", paste0("VAST_ddc_alk_", this_year, ".csv")))  
+  dat <- read.csv(here(workDir, "data", paste0("VAST_ddc_alk_", this_year, ".csv")))  
   dat <- transmute(dat,
                    cpue = CPUE_num * 100, # converts cpue from kg/ha to kg/km^2
                    year = as.integer(Year),
@@ -34,8 +35,7 @@ if(species == "pollock"){
 }
 
 if(species %in% c("yellowfin_sole", "pacific_cod")){
-  dat <- readRDS(here("species_specific_code", "BS", species, phase, 
-                      "data", "data_geostat_agecomps.RDS"))  
+  dat <- readRDS(here(workDir, "data", "data_geostat_agecomps.RDS"))  
   dat <- rename(dat, cpue = cpue_n_km2)
 }
 
@@ -55,6 +55,20 @@ dat <- st_transform(dat,
 # Add UTM coordinates as columns X & Y
 dat <- cbind(st_drop_geometry(dat), st_coordinates(dat))
 
+# For yellowfin sole and Pacific cod, drop data for levels with all zeros 
+if(species %in% c("yellowfin_sole", "pacific_cod")) {
+  N_z <- tapply(dat$cpue, 
+                INDEX = dat$year_age, 
+                FUN = \(x) sum(x > 0))
+  year_age_to_drop <- names(which(N_z == 0))
+  dat <- subset(dat, !(year_age %in% year_age_to_drop))
+  dat <- droplevels(dat)
+  
+  # Check results
+  tapply(dat$cpue,
+         INDEX = list(dat$age, dat$year), 
+         FUN = \(x) sum(x > 0))
+}
 
 # Inputs to tinyVAST ----------------------------------------------------------
 # Constant AR1 spatio-temporal term across ages & different variances for each age
@@ -80,9 +94,7 @@ control <- tinyVASTcontrol(getsd = FALSE,
 family <- setNames(lapply(ages, function(x) delta_gamma(type = "poisson-link")), 
                    paste0("age_", ages))
 
-
 # Fit model -------------------------------------------------------------------
-start.time <- Sys.time() 
 fit <- tinyVAST(
   data = dat,
   formula = cpue ~ 0 + year_age,  
@@ -97,4 +109,7 @@ fit <- tinyVAST(
   spatial_graph = old_mesh,
   control = control
 )
-stop.time <- Sys.time()
+
+# Save fit object
+saveRDS(fit, here(workDir, "results_age", paste0("tinyVAST_fit.RDS")))
+
