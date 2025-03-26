@@ -12,7 +12,7 @@ library(dplyr)
 # Set up ----------------------------------------------------------------------
 phase <- c("hindcast", "production")[1] # specify analysis phase
 
-sp <- 1 # specify species from species vector
+sp <- 2 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 
 # Set year
@@ -113,3 +113,25 @@ fit <- tinyVAST(
 # Save fit object
 saveRDS(fit, here(workDir, "results_age", paste0("tinyVAST_fit.RDS")))
 
+# Model diagnostics -----------------------------------------------------------
+# working off of this vignette: https://vast-lib.github.io/tinyVAST/articles/mgcv.html
+sim <- replicate(n = 100, expr = fit$obj$simulate()$y_i)
+
+res <- DHARMa::createDHARMa(simulatedResponse = sim, 
+                            observedResponse = dat$cpue, 
+                            fittedPredictedResponse = fitted(fit))
+
+res_data <- residuals(res)
+
+# q-q plot
+library(ggplot2)
+library(qqplotr)
+
+qqplot <- ggplot(data.frame(resid = res_data), aes(sample = resid)) +
+  stat_qq_band() +
+  stat_qq_line() +
+  stat_qq_point() +
+  theme_bw()
+
+ggsave(qqplot, filename = here(workDir, "results_age", "qq.png"),
+       width=130, height=130, units="mm", dpi=300)
