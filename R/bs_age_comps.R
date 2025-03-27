@@ -1,4 +1,4 @@
-# Run all Bering Sea age compositions 
+# Run all Bering Sea age compositions in tinyVAST
 # Author: Sophia Wassermann
 # Date: 26-3-2025
 
@@ -18,6 +18,7 @@ species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 this_year <- as.numeric(format(Sys.Date(), "%Y"))
 if(phase == "hindcast") {this_year <- this_year - 1}  
 
+# Set regions
 # Set working directory specific to species & phase
 workDir <- here("species_specific_code", "BS", species, phase)
 
@@ -139,51 +140,64 @@ qqplot <- ggplot(data.frame(resid = res_data), aes(sample = resid)) +
 ggsave(qqplot, filename = here(workDir, "results_age", "qq.png"),
        width=130, height=130, units="mm", dpi=300)
 
-# Index expansion -------------------------------------------------------------
+# Age composition expansion ---------------------------------------------------
 # Load fit object if needed
 fit <- readRDS(here(workDir, "results_age", "tinyVAST_fit.RDS"))
 
-# Read in coarsened extrapolation grid for desired region 
-# coarse_grid <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))  # EBS
-# coarse_grid <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))  # NBS
-coarse_grid <- read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))  # both regions
-
-# Get abundance
-N_jz <- expand.grid(age_f = fit$internal$variables, year = sort(unique(dat$year)))
-N_jz <- cbind(N_jz, "abundance" = NA, "SE" = NA)
-for (j in seq_len(nrow(N_jz))) {
-  if (N_jz[j, "age_f"] == 1) {
-    message("Integrating ", N_jz[j, "year"], " ", N_jz[j, "age_f"], ": ", Sys.time())
+get_abundance <- function(region) {
+  # Read in coarsened extrapolation grid
+  if(region == "EBS") {grid <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))}
+  if(region == "NBS") {grid <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))}
+  if(region == "both") {grid <-  read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))}
+  
+  N_jz <- expand.grid(age_f = fit$internal$variables, year = sort(unique(dat$year)))
+  N_jz <- cbind(N_jz, "abundance" = NA, "SE" = NA)
+  for(j in seq_len(nrow(N_jz))) {
+    if (N_jz[j, "age_f"] == 1) {
+      message("Integrating ", N_jz[j, "year"], " ", N_jz[j, "age_f"], ": ", Sys.time())
+    }
+    if(is.na(N_jz[j, "abundance"])) {
+      newdata <- data.frame(grid, 
+                            year = N_jz[j, "year"], 
+                            age_f = N_jz[j, "age_f"])
+      newdata$year_age <- paste(newdata$year, newdata$age_f, sep = ".")
+      # Area-expansion
+      index1 <- integrate_output(fit,
+                                 area = grid$area_km2,
+                                 newdata = newdata,
+                                 apply.epsilon = TRUE,
+                                 bias.correct = TRUE,
+                                 intern = TRUE)
+      N_jz[j, "abundance"] <- index1[3] / 1e9
+    }
   }
-  if (is.na(N_jz[j, "abundance"])) {
-    newdata <- data.frame(coarse_grid, 
-                          year = N_jz[j, "year"], 
-                          age_f = N_jz[j, "age_f"])
-    newdata$year_age <- paste(newdata$year, newdata$age_f, sep = ".")
-    # Area-expansion
-    index1 <- integrate_output(fit,
-                               area = coarse_grid$area_km2,
-                               newdata = newdata,
-                               apply.epsilon = TRUE,
-                               bias.correct = TRUE,
-                               intern = TRUE )
-    N_jz[j, 'abundance'] <- index1[3] / 1e9
-  }
+  
+  N_ct <- array(N_jz$abundance, 
+                dim = c(length(fit$internal$variables), length(unique(dat$year))),
+                dimnames = list(fit$internal$variables,sort(unique(dat$year))))
+  return(N_ct)
 }
 
-N_ct <- array(N_jz$abundance, 
-              dim = c(length(fit$internal$variables), length(unique(dat$year))),
-              dimnames = list(fit$internal$variables,sort(unique(dat$year))))
-
-# Save abundance estimate
-# write.csv(N_ct, here(workDir, "results", "tinyVAST_natage.csv"), row.names = FALSE)
+ebs <- get_abundance(region == "EBS")
+gc()
+nbs <- get_abundance(region == "NBS")
+gc()
+both <- get_abundance(region == "both")
 
 # Calculate proportions & plot ------------------------------------------------
-prop <- N_ct / outer(rep(1, nrow(N_ct)), colSums(N_ct))
-prop <- tibble::rownames_to_column(data.frame(t(prop)), "year")
+calc_props <- function(df, region) {
+  prop <- df / outer(rep(1, nrow(df)), colSums(df))
+  prop <- tibble::rownames_to_column(data.frame(t(prop)), "year")
+  prop$region <- region
+  return(prop)
+}
+
+props <- rbind.data.frame(calc_props(ebs, "EBS"), 
+                          calc_props(nbs, "NBS"), 
+                          calc_props(both, "both"))
 
 # Save proportions
-write.csv(prop, here(workDir, "results_age", "tinyVAST_props.csv"), row.names = FALSE)
+write.csv(props, here(workDir, "results_age", "tinyVAST_props.csv"), row.names = FALSE)
 
 # Plot proportions with colors to track cohort strength
 library(ggplot2)
@@ -194,24 +208,35 @@ if (!requireNamespace("ggsidekick", quietly = TRUE)) {
 library(ggsidekick)
 theme_set(theme_sleek())
 
-colors <- rep(1:(length(ages) + 1), length(min(prop$year):this_year))  # color ID for the plot
-colnames(prop) <- c("year", min(ages):max(ages))
-prop_plot <- reshape2::melt(prop, 
-                            id.vars = "year",
-                            variable.name = "age", 
-                            value.name = "proportion") %>%
-  arrange(year, age) %>%  # reformat to make colors work
-  mutate(color = colors[1:nrow(.)]) %>%  # colors tracking cohorts
-  ggplot(., aes(x = age, y = proportion, fill = color)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  viridis::scale_fill_viridis(option = "turbo") +  # colorblind-friendly rainbow palette
-  scale_x_discrete(breaks = pretty(ages)) +  # better breakpoints
-  # scale_y_continuous(limits = c(0, 0.5), breaks = c(0, 0.2, 0.4)) +
-  guides(fill = "none") +  # no legend 
-  facet_wrap(~ year, ncol = 4, dir = "v") +  # years fill column-wise for cohort tracking
-  theme(strip.text.x = element_blank()) +  # remove year label from top of plot & move to inside boxes
-  geom_text(x = 13, y = 0.45, aes(label = year), color = "grey30", size = 2.8)
-prop_plot
+plot_proportions <- function(region, save_plot = TRUE) {
+  colors <- rep(1:(length(ages) + 1), length(min(props$year):this_year))  # color ID for the plot
+  colnames(props) <- c("year", min(ages):max(ages), "region")
+  plot <- reshape2::melt(prop, 
+                              id.vars = c("year", "region"),
+                              variable.name = "age", 
+                              value.name = "proportion") %>%
+    filter(region == region) %>%  # Set region for plot
+    arrange(year, age) %>%  # reformat to make colors work
+    mutate(color = colors[1:nrow(.)]) %>%  # colors tracking cohorts
+    ggplot(., aes(x = age, y = proportion, fill = color)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    viridis::scale_fill_viridis(option = "turbo") +  # colorblind-friendly rainbow palette
+    scale_x_discrete(breaks = pretty(ages)) +  # better breakpoints
+    # scale_y_continuous(limits = c(0, 0.5), breaks = c(0, 0.2, 0.4)) +
+    guides(fill = "none") +  # no legend 
+    facet_wrap(~ year, ncol = 4, dir = "v") +  # years fill column-wise for cohort tracking
+    theme(strip.text.x = element_blank()) +  # remove year label from top of plot & move to inside boxes
+    geom_text(x = 13, y = 0.45, aes(label = year), color = "grey30", size = 2.8)
+  
+  return(plot)
+  
+  if(save_plot == TRUE) {
+    ggsave(plot, filename = here(workDir, "results_age", paste0("Age_comp_", region, ".png")),
+           width=120, height=180, units="mm", dpi=300)
+  }
+ 
+}
 
-ggsave(prop_plot, filename = here(workDir, "results_age", "Age_comp.png"),
-       width=120, height=180, units="mm", dpi=300)
+plot_proportions(region = "EBS")
+plot_proportions(region = "NBS")
+plot_proportions(region = "Both")
