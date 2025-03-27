@@ -110,8 +110,12 @@ fit <- tinyVAST(
   control = control
 )
 
-# Save fit object
-saveRDS(fit, here(workDir, "results_age", paste0("tinyVAST_fit.RDS")))
+# Save fit object (create directory for results first, if it doesn't exist)
+if (!dir.exists(here(workDir, "results_age"))) {
+  dir.create(here(workDir, "results_age"))
+}
+
+saveRDS(fit, here(workDir, "results_age", "tinyVAST_fit.RDS"))
 
 # Model diagnostics -----------------------------------------------------------
 # working off of this vignette: https://vast-lib.github.io/tinyVAST/articles/mgcv.html
@@ -135,3 +139,54 @@ qqplot <- ggplot(data.frame(resid = res_data), aes(sample = resid)) +
 
 ggsave(qqplot, filename = here(workDir, "results_age", "qq.png"),
        width=130, height=130, units="mm", dpi=300)
+
+# Index expansion -------------------------------------------------------------
+# Load fit object if needed
+fit <- readRDS(here(workDir, "results_age", "tinyVAST_fit.RDS"))
+
+# Read in coarsened extrapolation grid for desired region 
+# coarse_grid <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))  # EBS
+# coarse_grid <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))  # NBS
+coarse_grid <- read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))  # both regions
+
+# Get abundance
+N_jz <- expand.grid(age_f = fit$internal$variables, year = sort(unique(dat$year)))
+N_jz <- cbind(N_jz, "abundance" = NA, "SE" = NA)
+for (j in seq_len(nrow(N_jz))) {
+  if (N_jz[j, "age_f"] == 1) {
+    message("Integrating ", N_jz[j, "year"], " ", N_jz[j, "age_f"], ": ", Sys.time())
+  }
+  if (is.na(N_jz[j, "abundance"])) {
+    newdata <- data.frame(coarse_grid, 
+                          year = N_jz[j, "year"], 
+                          age_f = N_jz[j, "age_f"])
+    newdata$year_age <- paste(newdata$year, newdata$age_f, sep = ".")
+    # Area-expansion
+    index1 <- integrate_output(fit,
+                               area = coarse_grid$area_km2,
+                               newdata = newdata,
+                               apply.epsilon = TRUE,
+                               bias.correct = TRUE,
+                               intern = TRUE )
+    N_jz[j, 'abundance'] <- index1[3] / 1e9
+  }
+}
+
+N_ct <- array(N_jz$abundance, 
+              dim = c(length(fit$internal$variables), length(unique(dat$year))),
+              dimnames = list(fit$internal$variables,sort(unique(dat$year))))
+N_ct <- N_ct / outer(rep(1, nrow(N_ct)), colSums(N_ct))
+
+# Save abundance estimate
+# write.csv(N_ct, here(workDir, "results", "tinyVAST_natage.csv"), row.names = FALSE)
+
+
+# Reformat and calculate proportions ------------------------------------------
+rownames(N_ct) <- min(ages):max(ages)
+tiny_out <- tibble::rownames_to_column(data.frame(t(N_ct)), "VALUE")
+tiny_out <- tiny_out[, c(2:16, 1)]
+age_names <- c("Year")
+colnames(tiny_out) <- c(as.character(unique(dat$age_f)), "Year")
+
+# Save proportions
+write.csv(tiny_out, here(workDir, "results_age", "tinyVAST_props.csv"), row.names = FALSE)
