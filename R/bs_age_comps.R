@@ -8,7 +8,6 @@ library(sf)
 library(here)
 library(dplyr)
 
-
 # Set up ----------------------------------------------------------------------
 phase <- c("hindcast", "production")[1] # specify analysis phase
 
@@ -175,18 +174,44 @@ for (j in seq_len(nrow(N_jz))) {
 N_ct <- array(N_jz$abundance, 
               dim = c(length(fit$internal$variables), length(unique(dat$year))),
               dimnames = list(fit$internal$variables,sort(unique(dat$year))))
-N_ct <- N_ct / outer(rep(1, nrow(N_ct)), colSums(N_ct))
 
 # Save abundance estimate
 # write.csv(N_ct, here(workDir, "results", "tinyVAST_natage.csv"), row.names = FALSE)
 
-
-# Reformat and calculate proportions ------------------------------------------
-rownames(N_ct) <- min(ages):max(ages)
-tiny_out <- tibble::rownames_to_column(data.frame(t(N_ct)), "VALUE")
-tiny_out <- tiny_out[, c(2:16, 1)]
-age_names <- c("Year")
-colnames(tiny_out) <- c(as.character(unique(dat$age_f)), "Year")
+# Calculate proportions & plot ------------------------------------------------
+prop <- N_ct / outer(rep(1, nrow(N_ct)), colSums(N_ct))
+prop <- tibble::rownames_to_column(data.frame(t(prop)), "year")
 
 # Save proportions
-write.csv(tiny_out, here(workDir, "results_age", "tinyVAST_props.csv"), row.names = FALSE)
+write.csv(prop, here(workDir, "results_age", "tinyVAST_props.csv"), row.names = FALSE)
+
+# Plot proportions with colors to track cohort strength
+library(ggplot2)
+# Set ggplot theme
+if (!requireNamespace("ggsidekick", quietly = TRUE)) {
+  devtools::install_github("seananderson/ggsidekick")
+}
+library(ggsidekick)
+theme_set(theme_sleek())
+
+colors <- rep(1:(length(ages) + 1), length(min(prop$year):this_year))  # color ID for the plot
+colnames(prop) <- c("year", min(ages):max(ages))
+prop_plot <- reshape2::melt(prop, 
+                            id.vars = "year",
+                            variable.name = "age", 
+                            value.name = "proportion") %>%
+  arrange(year, age) %>%  # reformat to make colors work
+  mutate(color = colors[1:nrow(.)]) %>%  # colors tracking cohorts
+  ggplot(., aes(x = age, y = proportion, fill = color)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  viridis::scale_fill_viridis(option = "turbo") +  # colorblind-friendly rainbow palette
+  scale_x_discrete(breaks = pretty(ages)) +  # better breakpoints
+  # scale_y_continuous(limits = c(0, 0.5), breaks = c(0, 0.2, 0.4)) +
+  guides(fill = "none") +  # no legend 
+  facet_wrap(~ year, ncol = 4, dir = "v") +  # years fill column-wise for cohort tracking
+  theme(strip.text.x = element_blank()) +  # remove year label from top of plot & move to inside boxes
+  geom_text(x = 13, y = 0.45, aes(label = year), color = "grey30", size = 2.8)
+prop_plot
+
+ggsave(prop_plot, filename = here(workDir, "results_age", "Age_comp.png"),
+       width=120, height=180, units="mm", dpi=300)
