@@ -315,7 +315,7 @@ Now, we can compare the index to the prior model.
 #   select(-AREA_ID)
 
 # automate switch between numbers and biomass on index plots
-if(species == "Gadus_macrocephalus"){
+if(species == "pacific_cod"){
   ylab <- "Abundance (n)"
 } else {
   ylab <- "Biomass (kg)"
