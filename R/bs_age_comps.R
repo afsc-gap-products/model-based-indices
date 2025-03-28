@@ -9,6 +9,13 @@ library(here)
 library(dplyr)
 library(ggplot2)
 
+# Set ggplot theme
+if (!requireNamespace("ggsidekick", quietly = TRUE)) {
+  devtools::install_github("seananderson/ggsidekick")
+}
+library(ggsidekick)
+theme_set(theme_sleek())
+
 # Set up ----------------------------------------------------------------------
 phase <- c("hindcast", "production")[1] # specify analysis phase
 
@@ -141,7 +148,8 @@ qqplot <- ggplot(data.frame(resid = res_data), aes(sample = resid)) +
   stat_qq_band() +
   stat_qq_line() +
   stat_qq_point() +
-  theme_bw()
+  xlim(0, 1) + ylim(0, 1)
+# qqplot
 
 ggsave(qqplot, filename = here(workDir, "results_age", "qq.png"),
        width=130, height=130, units="mm", dpi=300)
@@ -213,14 +221,6 @@ props <- calc_props(abundance)
 write.csv(props, here(workDir, "results_age", "tinyVAST_props.csv"), row.names = FALSE)
 
 # Plot proportions with colors to track cohort strength
-library(ggplot2)
-# Set ggplot theme
-if (!requireNamespace("ggsidekick", quietly = TRUE)) {
-  devtools::install_github("seananderson/ggsidekick")
-}
-library(ggsidekick)
-theme_set(theme_sleek())
-
 plot_proportions <- function(area = region, save_plot = TRUE) {
   props <- props %>% filter(region == area)  # in case there are proportions calculated for multiple areas
   colors <- rep(1:(length(ages) + 1), length(min(props$year):this_year))  # color ID for the plot
