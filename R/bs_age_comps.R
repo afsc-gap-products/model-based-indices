@@ -222,8 +222,7 @@ library(ggsidekick)
 theme_set(theme_sleek())
 
 plot_proportions <- function(area = region, save_plot = TRUE) {
-  props <- props %>% filter(region == area)
-  if(area == "Both")
+  props <- props %>% filter(region == area)  # in case there are proportions calculated for multiple areas
   colors <- rep(1:(length(ages) + 1), length(min(props$year):this_year))  # color ID for the plot
   colnames(props) <- c("year", min(ages):max(ages), "region")
   plot <- reshape2::melt(props, 
@@ -251,4 +250,4 @@ plot_proportions <- function(area = region, save_plot = TRUE) {
   }
 }
 
-plot_proportions("EBS")
+plot_proportions()
