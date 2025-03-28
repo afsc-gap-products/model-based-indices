@@ -7,6 +7,7 @@ library(fmesher)
 library(sf)
 library(here)
 library(dplyr)
+library(ggplot2)
 
 # Set up ----------------------------------------------------------------------
 phase <- c("hindcast", "production")[1] # specify analysis phase
@@ -18,7 +19,9 @@ species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 this_year <- as.numeric(format(Sys.Date(), "%Y"))
 if(phase == "hindcast") {this_year <- this_year - 1}  
 
-# Set regions
+# Set region
+region <- "EBS"
+
 # Set working directory specific to species & phase
 workDir <- here("species_specific_code", "BS", species, phase)
 
@@ -128,7 +131,10 @@ res <- DHARMa::createDHARMa(simulatedResponse = sim,
 res_data <- residuals(res)
 
 # q-q plot
-library(ggplot2)
+if (!requireNamespace("qqplotr", quietly = TRUE)) {
+  install.packages("qqplotr")
+  install.packages("twosamples")  # needed to install this separately on VM
+}
 library(qqplotr)
 
 qqplot <- ggplot(data.frame(resid = res_data), aes(sample = resid)) +
@@ -142,9 +148,11 @@ ggsave(qqplot, filename = here(workDir, "results_age", "qq.png"),
 
 # Age composition expansion ---------------------------------------------------
 # Load fit object if needed
-fit <- readRDS(here(workDir, "results_age", "tinyVAST_fit.RDS"))
+if(!exists("fit")) {
+  fit <- readRDS(here(workDir, "results_age", "tinyVAST_fit.RDS"))
+}
 
-get_abundance <- function(region) {
+get_abundance <- function(region = region) {
   # Read in coarsened extrapolation grid
   if(region == "EBS") {grid <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))}
   if(region == "NBS") {grid <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))}
@@ -178,23 +186,28 @@ get_abundance <- function(region) {
   return(N_ct)
 }
 
-ebs <- get_abundance(region == "EBS")
-gc()
-nbs <- get_abundance(region == "NBS")
-gc()
-both <- get_abundance(region == "both")
+abundance <- get_abundance()
+
+# Run expansion for other regions
+# ebs <- get_abundance(region = "EBS")
+# gc()
+# nbs <- get_abundance(region = "NBS")
+# gc()
+# both <- get_abundance(region = "both")
 
 # Calculate proportions & plot ------------------------------------------------
-calc_props <- function(df, region) {
+calc_props <- function(df, area = region) {
   prop <- df / outer(rep(1, nrow(df)), colSums(df))
   prop <- tibble::rownames_to_column(data.frame(t(prop)), "year")
-  prop$region <- region
+  prop$region <- area
   return(prop)
 }
 
-props <- rbind.data.frame(calc_props(ebs, "EBS"), 
-                          calc_props(nbs, "NBS"), 
-                          calc_props(both, "both"))
+props <- calc_props(abundance)
+
+# props <- rbind.data.frame(calc_props(ebs, "EBS"), 
+#                           calc_props(nbs, "NBS"), 
+#                           calc_props(both, "both"))
 
 # Save proportions
 write.csv(props, here(workDir, "results_age", "tinyVAST_props.csv"), row.names = FALSE)
@@ -208,14 +221,15 @@ if (!requireNamespace("ggsidekick", quietly = TRUE)) {
 library(ggsidekick)
 theme_set(theme_sleek())
 
-plot_proportions <- function(region, save_plot = TRUE) {
+plot_proportions <- function(area = region, save_plot = TRUE) {
+  props <- props %>% filter(region == area)
+  if(area == "Both")
   colors <- rep(1:(length(ages) + 1), length(min(props$year):this_year))  # color ID for the plot
   colnames(props) <- c("year", min(ages):max(ages), "region")
-  plot <- reshape2::melt(prop, 
+  plot <- reshape2::melt(props, 
                               id.vars = c("year", "region"),
                               variable.name = "age", 
                               value.name = "proportion") %>%
-    filter(region == region) %>%  # Set region for plot
     arrange(year, age) %>%  # reformat to make colors work
     mutate(color = colors[1:nrow(.)]) %>%  # colors tracking cohorts
     ggplot(., aes(x = age, y = proportion, fill = color)) +
@@ -223,6 +237,7 @@ plot_proportions <- function(region, save_plot = TRUE) {
     viridis::scale_fill_viridis(option = "turbo") +  # colorblind-friendly rainbow palette
     scale_x_discrete(breaks = pretty(ages)) +  # better breakpoints
     # scale_y_continuous(limits = c(0, 0.5), breaks = c(0, 0.2, 0.4)) +
+    # ylab(paste0("proportion (", area, ")")) +   # define the region in the y-axis legend
     guides(fill = "none") +  # no legend 
     facet_wrap(~ year, ncol = 4, dir = "v") +  # years fill column-wise for cohort tracking
     theme(strip.text.x = element_blank()) +  # remove year label from top of plot & move to inside boxes
@@ -231,12 +246,9 @@ plot_proportions <- function(region, save_plot = TRUE) {
   return(plot)
   
   if(save_plot == TRUE) {
-    ggsave(plot, filename = here(workDir, "results_age", paste0("Age_comp_", region, ".png")),
+    ggsave(plot, filename = here(workDir, "results_age", paste0("Age_comp_", area, ".png")),
            width=120, height=180, units="mm", dpi=300)
   }
- 
 }
 
-plot_proportions(region = "EBS")
-plot_proportions(region = "NBS")
-plot_proportions(region = "Both")
+plot_proportions("EBS")
