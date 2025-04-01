@@ -21,15 +21,26 @@ knitr::opts_chunk$set(
 
 ```{r packages, message=FALSE, warning=FALSE, cache=FALSE}
 #remotes::install_github("pbs-assess/sdmTMB")
-#remotes::install_github("afsc-gap-products/coldpool")
+
 library(sdmTMB)
 library(dplyr)
 library(ggplot2)
 library(here)
+library(devtools)
+
+# Install coldpool package, if not already installed.
+if (!requireNamespace("coldpool", quietly = TRUE)) {
+  devtools::install_github("afsc-gap-products/coldpool")
+}
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
-sp <- 1 # specify species from species vector
+sp <- 2 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
+
+# Set year
+this_year <- as.numeric(format(Sys.Date(), "%Y"))
+if(phase == "hindcast") {this_year <- this_year - 1}  
+
 ```
 
 We will fit geostatistical spatiotemporal models with sdmTMB for the purposes of index standardization. We will use data from the EBS/NBS AFSC GAP bottom trawl surveys. The density units we will work in are either kg/km^2^ or n/km^2^, for biomass or numerical abundance. 
@@ -42,17 +53,17 @@ if(species == "pacific_cod"){
 }
 if(species == "pollock"){
   dat <- read.csv(here("species_specific_code", "BS", species, phase,
-                       "data", "VAST_ddc_all_2024.csv"))  
+                       "data", paste0("VAST_ddc_all_", this_year, ".csv")))  
   dat <- dplyr::transmute(dat,
-                         cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
-                         year = as.integer(year),
-                         lat = start_latitude,
-                         lon = start_longitude
-                         )
+                          cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
+                          year = as.integer(year),
+                          lat = start_latitude,
+                          lon = start_longitude
+                          )
 }
 if(species %in% c("yellowfin_sole", "kamchatka_flounder")){
   dat <- readRDS(here("species_specific_code", "BS", species, phase, 
-                       "data", "data_geostat_index.RDS"))  
+                      "data", "data_geostat_index.RDS"))  
   dat <- rename(dat, cpue = cpue_kg_km2)
 }
 
