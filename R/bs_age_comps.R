@@ -154,6 +154,26 @@ qqplot <- ggplot(data.frame(resid = res_data), aes(sample = resid)) +
 ggsave(qqplot, filename = here(workDir, "results_age", "qq.png"),
        width=130, height=130, units="mm", dpi=300)
 
+# Spatial residuals
+world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
+sf_use_s2(FALSE)  # turn off spherical geometry
+map_list <- list()
+for(i in min(ages):max(ages)) {
+  i <- 1
+  df <- cbind.data.frame(dat, residuals = res$scaledResiduals) %>%
+    filter(age == i)
+  map <- ggplot(data = world) +
+    geom_sf() +
+    geom_tile(data = df, aes(x = X, y = Y, fill = residuals)) +
+    scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0.5) +
+    coord_sf(xlim = c(-179, -157), ylim = c(54, 65), expand = FALSE) +
+    scale_x_continuous(breaks = c(-178, -158)) +
+    scale_y_continuous(breaks = c(55, 64)) +
+    facet_wrap(~year)
+  map
+  map_list <- append(map_list, map)
+}
+
 # Age composition expansion ---------------------------------------------------
 # Load fit object if needed
 if(!exists("fit")) {
