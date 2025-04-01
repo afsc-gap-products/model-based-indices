@@ -26,8 +26,8 @@ species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 this_year <- as.numeric(format(Sys.Date(), "%Y"))
 if(phase == "hindcast") {this_year <- this_year - 1}  
 
-# Set region
-region <- "EBS"
+# Set region (one of "EBS", "NBS", or "both")
+region <- "both"
 
 # Set working directory specific to species & phase
 workDir <- here("species_specific_code", "BS", species, phase)
@@ -95,7 +95,7 @@ for(i in min(ages):max(ages)) {
 old_mesh <- sdmTMB::make_mesh(dat, 
                               xy_cols = c("X", "Y"), 
                               mesh = readRDS(file = here("meshes/bs_vast_mesh_50_knots.RDS")),
-                              fmesher_func = fm_mesh_2d()) # unsure if this is needed or what it is doing?
+                              fmesher_func = fm_mesh_2d()) 
 
 control <- tinyVASTcontrol(getsd = FALSE,
                            profile = c("alpha_j"),
@@ -111,7 +111,7 @@ fit <- tinyVAST(
   sem = "",
   dsem = dsem,
   family = family,
-  delta_options = list(delta_formula = ~ 0 + factor(year_age)),  # 2nd linear predictor
+  delta_options = list(delta_formula = ~ 0 + year_age), # 2nd linear predictor
   space_column = c("X", "Y"), 
   variable_column = "age_f",
   time_column = "year",
