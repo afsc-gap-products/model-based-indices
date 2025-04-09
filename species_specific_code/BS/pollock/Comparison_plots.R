@@ -322,13 +322,13 @@ comp_trends
 #        width=170, height=120, units="mm", dpi=300)
 # ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_difference.png"),
 #        width=170, height=120, units="mm", dpi=300)
-# ggsave(all_props, filename = here(workDir, "results", save_dir, "age_comp_compare.png"),
-#        width=200, height=180, units="mm", dpi=300)
-# ggsave(summary_props, filename = here(workDir, "results", save_dir, "age_comp_summary.png"),
-#        width=200, height=120, units="mm", dpi=300)
-# ggsave(comp_diff, filename = here(workDir, "results", save_dir, "age_comp_diff.png"),
-#        width=200, height=200, units="mm", dpi=300)
-# ggsave(per_diff, filename = here(workDir, "results", save_dir, "age_comp_per_diff.png"),
-#        width=200, height=200, units="mm", dpi=300)
-# ggsave(comp_trends, filename = here(workDir, "results", save_dir, "age_comp_trends.png"),
-#        width=260, height=120, units="mm", dpi=300)
+ggsave(sum_props$barplot, filename = here(save_dir, "tinyVAST_by_year.png"),
+       width=200, height=180, units="mm", dpi=300)
+ggsave(sum_props$boxplot, filename = here(save_dir, "tinyVAST_summary.png"),
+       width=200, height=120, units="mm", dpi=300)
+ggsave(comp_diff, filename = here(save_dir, "comp_diff.png"),
+       width=200, height=200, units="mm", dpi=300)
+ggsave(per_diff, filename = here(save_dir, "comp_per_diff.png"),
+       width=200, height=200, units="mm", dpi=300)
+ggsave(comp_trends, filename = here(save_dir, "comp_trends.png"),
+       width=260, height=120, units="mm", dpi=300)
