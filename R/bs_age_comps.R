@@ -127,51 +127,6 @@ if (!dir.exists(here(workDir, "results_age"))) {
 
 saveRDS(fit, here(workDir, "results_age", "tinyVAST_fit.RDS"))
 
-# Model diagnostics -----------------------------------------------------------
-# working off of this vignette: https://vast-lib.github.io/tinyVAST/articles/mgcv.html
-sim <- replicate(n = 100, expr = fit$obj$simulate()$y_i)
-
-res <- DHARMa::createDHARMa(simulatedResponse = sim, 
-                            observedResponse = dat$cpue, 
-                            fittedPredictedResponse = fitted(fit))
-
-res_data <- residuals(res)
-
-# q-q plot
-if (!requireNamespace("qqplotr", quietly = TRUE)) {
-  install.packages("qqplotr")
-  install.packages("twosamples")  # needed to install this separately on VM
-}
-library(qqplotr)
-
-qqplot <- ggplot(data.frame(resid = res_data), aes(sample = resid)) +
-  stat_qq_band() +
-  stat_qq_line() +
-  stat_qq_point() +
-  xlim(0, 1) + ylim(0, 1)
-# qqplot
-
-ggsave(qqplot, filename = here(workDir, "results_age", "qq.png"),
-       width = 130, height = 130, units = "mm", dpi = 300)
-
-# Spatial residuals
-map_list <- list()
-if (!dir.exists(here(workDir, "results_age", "spatial_residuals"))) {
-  dir.create(here(workDir, "results_age", "spatial_residuals"))
-}
-for(i in min(ages):max(ages)) {
-  df <- cbind.data.frame(dat, residuals = res$scaledResiduals) %>%
-    filter(age == i) 
-  map <- ggplot() +
-    geom_point(data = df, aes(x = X, y = Y, color = residuals), shape = 15, size = 0.9) +
-    scale_color_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0.5) +
-    xlab("eastings") + ylab("northings") + ggtitle(paste0("age ", i)) +
-    facet_wrap(~year)
-  map_list[[i]] <- map
-  ggsave(map, filename = here(workDir, "results_age", "spatial_residuals", paste0("age_", i, ".png")),
-         width = 300, height = 300, units = "mm", dpi = 300)
-}
-
 # Age composition expansion ---------------------------------------------------
 # Load fit object if needed
 if(!exists("fit")) {
@@ -269,3 +224,48 @@ plot_proportions <- function(area = region, save_plot = TRUE) {
 }
 
 plot_proportions()
+
+# Model diagnostics -----------------------------------------------------------
+# working off of this vignette: https://vast-lib.github.io/tinyVAST/articles/mgcv.html
+sim <- replicate(n = 100, expr = fit$obj$simulate()$y_i)
+
+res <- DHARMa::createDHARMa(simulatedResponse = sim, 
+                            observedResponse = dat$cpue, 
+                            fittedPredictedResponse = fitted(fit))
+
+res_data <- residuals(res)
+
+# q-q plot
+if (!requireNamespace("qqplotr", quietly = TRUE)) {
+  install.packages("qqplotr")
+  install.packages("twosamples")  # needed to install this separately on VM
+}
+library(qqplotr)
+
+qqplot <- ggplot(data.frame(resid = res_data), aes(sample = resid)) +
+  stat_qq_band() +
+  stat_qq_line() +
+  stat_qq_point() +
+  xlim(0, 1) + ylim(0, 1)
+# qqplot
+
+ggsave(qqplot, filename = here(workDir, "results_age", "qq.png"),
+       width = 130, height = 130, units = "mm", dpi = 300)
+
+# Spatial residuals
+map_list <- list()
+if (!dir.exists(here(workDir, "results_age", "spatial_residuals"))) {
+  dir.create(here(workDir, "results_age", "spatial_residuals"))
+}
+for(i in min(ages):max(ages)) {
+  df <- cbind.data.frame(dat, residuals = res$scaledResiduals) %>%
+    filter(age == i) 
+  map <- ggplot() +
+    geom_point(data = df, aes(x = X, y = Y, color = residuals), shape = 15, size = 0.9) +
+    scale_color_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0.5) +
+    xlab("eastings") + ylab("northings") + ggtitle(paste0("age ", i)) +
+    facet_wrap(~year)
+  map_list[[i]] <- map
+  ggsave(map, filename = here(workDir, "results_age", "spatial_residuals", paste0("age_", i, ".png")),
+         width = 300, height = 300, units = "mm", dpi = 300)
+}
