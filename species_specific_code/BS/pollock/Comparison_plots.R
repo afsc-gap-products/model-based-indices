@@ -20,7 +20,7 @@ workDir <- here("species_specific_code", "BS", "pollock")
 this_year <- 2024
 
 # save_dir <- paste0(this_year, " Production")
-save_dir <- "tinyVAST"
+save_dir <- here(workDir, "hindcast", "results_age")
 
 
 # Compare Indices of Abundance ------------------------------------------------
@@ -132,37 +132,32 @@ index_diff
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
 # old_props <- read.csv(here(workDir, "results", "2023 Production", "Comps", "proportions.csv"))
-new_props <- cbind(read.csv(here(workDir, "results", "Comps", "proportions.csv")), distribution = "VAST")[, -1]
-# tiny_tweedie <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props.csv")), distribution = "Tweedie")
-# tiny_dg <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg.csv")), distribution = "Delta Gamma")
-# tiny_mesh <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_mesh.csv")), distribution = "Tweedie")
-# tiny_mesh_dg <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_mesh_dg.csv")), distribution = "Delta Gamma")
-# tiny_logn <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_logn.csv")), distribution = "Lognormal")
-# tiny_bc <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_bc.csv")), distribution = "Tweedie")
-# tiny_dg_bc <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_dg_bc.csv")), distribution = "Delta Gamma")
-tiny_mesh_dglink <- cbind(read.csv(here(workDir, "results", "tinyVAST", "tinyVAST_props_mesh_dglink.csv")), distribution = "DG (poisson-link)")[, -17]
-sdm_props <- dcast(cbind(read.csv(here(workDir, "results", "sdmTMB_age_prop.csv"))[, 2:4]), formula = year ~ Age)
-# tiny_coarse <- cbind(read.csv(here(workDir, "results", "tinyVAST_props_coarse_2024.csv")), distribution = "DG (poisson-link)")
-gapindex_comps_raw <- read.csv(here(workDir, "results", "Comps", "gapindex_comps_2024.csv"))
+new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
+tiny_props <- read.csv(here(workDir, "hindcast", "results_age", "tinyVAST_props.csv"))
+# sdm_props <- dcast(cbind(read.csv(here(workDir, "results", "sdmTMB_age_prop.csv"))[, 2:4]), formula = year ~ Age)
+# gapindex_comps_raw <- read.csv(here(workDir, "results", "Comps", "gapindex_comps_2024.csv"))
 
-# Reshape sdmTMB comps 
-colnames(sdm_props)[1] <- "Year"
-sdm_props$distribution <- "sdmTMB"
-sdm_props <- sdm_props[, c(2:16, 1, 17)]
+# # Reshape sdmTMB comps 
+# colnames(sdm_props)[1] <- "Year"
+# sdm_props$distribution <- "sdmTMB"
+# sdm_props <- sdm_props[, c(2:16, 1, 17)]
+# 
+# # Reshape gapindex comps
+# gapindex_comps <- gapindex_comps_raw %>% 
+#   filter(Region == "Both")
+# gapindex_comps <- gapindex_comps[, -4] %>%
+#   dcast(formula = YEAR ~ AGE) 
+# colnames(gapindex_comps)[1] <- "Year"
+# gapindex_comps <- gapindex_comps[, c(2:16, 1)]
+# gapindex_comps$distribution <- "gapindex"
 
-# Reshape gapindex comps
-gapindex_comps <- gapindex_comps_raw %>% 
-  filter(Region == "Both")
-gapindex_comps <- gapindex_comps[, -4] %>%
-  dcast(formula = YEAR ~ AGE) 
-colnames(gapindex_comps)[1] <- "Year"
-gapindex_comps <- gapindex_comps[, c(2:16, 1)]
-gapindex_comps$distribution <- "gapindex"
-
-# Update old_props to match tinyVAST test output - only EBS
+# Reshape VAST props to match tinyVAST props
 tiny_years <- c(1980:2019, 2021:this_year)
 new_props <- new_props %>% filter(Year %in% tiny_years & Region == "Both")
-new_props <- new_props[, -17]
+new_props <- new_props[, c(16, 1:15, 17)]
+colnames(new_props)[c(1, 16, 17)] <- c("year", "age_15", "region")
+
+# Reshape VAST
 
 # Set names for old and new comps
 # names_comps <- c("original", "original", "original", "VAST mesh", "VAST mesh", "original", "bias correction", "bias correction")
@@ -172,55 +167,45 @@ compare_props <- function(props, names, last_year) {
   df <- data.frame()
   for(i in 1:length(props)) {
     prop <- props[[i]]
-    colnames(prop)[1:15] <- 1:15
-    prop <- melt(prop, id.vars = c("Year", "distribution"),
-                 variable.name = "Age", value.name = "Proportion")
+    prop <- prop[, -17]
+    colnames(prop)[2:16] <- 1:15
+    prop <- melt(prop, id.vars = "year",
+                 variable.name = "age", value.name = "proportion")
     prop$version <- names[i]
     df <- rbind.data.frame(df, prop)
   }
   
-  barplot <- ggplot(df, aes(x = Age, y = Proportion, fill = version)) +
+  barplot <- ggplot(df, aes(x = age, y = proportion, fill = version)) +
     geom_bar(stat = "identity", position = "dodge") +
     scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
     scale_x_discrete(breaks = c(1, 5, 10, 15)) +
-    ylab("Proportion-at-age") +
-    facet_wrap(~ Year, ncol = 6, dir = "v")
+    ylab("proportion-at-age") +
+    facet_wrap(~ year, ncol = 6, dir = "v")
   
-  boxplot <- ggplot(df, aes(x = Age, y = Proportion, color = version, fill = version)) +
+  boxplot <- ggplot(df, aes(x = age, y = proportion, color = version, fill = version)) +
     geom_boxplot(alpha = 0.5) +
     scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
     scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
     scale_x_discrete(breaks = c(1, 5, 10, 15)) +
-    ylab("Proportion-at-age") 
+    ylab("proportion-at-age") 
 
   return(list(barplot = barplot, boxplot = boxplot))
 }
 
-# comp_all_plots <- compare_props(props = list(new_props, tiny_tweedie, tiny_dg, 
-#                                              tiny_mesh, tiny_mesh_dg, tiny_logn, 
-#                                              tiny_bc, tiny_dg_bc, sdm_props),
-#                                 names = c("VAST", "1 - original", "1 - original", 
-#                                           "3 - VAST mesh", "3 - VAST mesh", "1 - original", 
-#                                           "2 - bias correction", "2 - bias correction", "sdmTMB"))
 
-# summary_props_all <- comp_all_plots$boxplot + 
-#   facet_wrap(~ distribution)
-# summary_props_all
-
-sum_props_sub <- compare_props(props = list(tiny_mesh_dglink, sdm_props, gapindex_comps),
-                               names = c("tinyVAST", "sdmTMB", "gapindex"))
-sum_props_sub$barplot
-sum_props_sub$boxplot
+sum_props <- compare_props(props = list(tiny_props, new_props),
+                           names = c("tinyVAST", "VAST"))
+sum_props$barplot
+sum_props$boxplot
 
 # Plot difference between two models ------------------------------------------
 comp_difference <- function(new, old, names, save_results = FALSE) {
   # new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
-  
   # Get difference between new and old props
-  check_props <- round(new[,1:15] - old[,1:15], 4)
-  check_props_tab <- cbind(check_props, new[,16:17])
+  check_props <- round(new[, 2:16] - old[, 2:16], 4)
+  check_props_tab <- cbind(check_props, year = new[, 1])
   check_props_abs <- abs(check_props)
-  check_props_abs_tab <-  cbind(check_props_abs, new[,16:17])
+  check_props_abs_tab <-  cbind(check_props_abs, year = new[, 1])
   
   if(save_results == TRUE) {  # save to drive, if you want. Check file paths.
     options(scipen=999)
@@ -229,38 +214,37 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
   }
   
   colnames(check_props_tab)[1:15] <- 1:15
-  props_plot <- melt(check_props_tab, id.vars = c("Year", "Region"), 
-                     variable.name = "Age", value.name = "Proportion") %>%
+  props_plot <- melt(check_props_tab, id.vars = "year", 
+                     variable.name = "age", value.name = "proportion") %>%
     # add column for coloring the bars in the plot based on positive/negative
-    mutate(sign = case_when(Proportion >= 0 ~ "positive",
-                            Proportion < 0 ~ "negative"))
+    mutate(sign = case_when(proportion >= 0 ~ "positive",
+                            proportion < 0 ~ "negative"))
   
   # Plot both regions together and without 2020
-  label <- paste0("Difference between ", names[1], " and ", names[2])
-  plot <- ggplot(props_plot, aes(x = Age, y = Proportion, fill = sign)) +
+  label <- paste0("difference between ", names[1], " and ", names[2])
+  plot <- ggplot(props_plot, aes(x = age, y = proportion, fill = sign)) +
     geom_bar(stat = "identity", show.legend = FALSE) +
     scale_fill_manual(values = c("cornflowerblue", "darkred")) +
     scale_x_discrete(breaks = c(1, 5, 10, 15)) +
     ylab(label) +
-    facet_wrap(~ Year, ncol = 6, dir = "v") 
+    facet_wrap(~ year, ncol = 6, dir = "v") 
   
   return(plot)
 }
 
-comp_diff <- comp_difference(new = tiny_mesh, old = new_props,
-                             names = c("Tweedie/old mesh", "VAST"),
+comp_diff <- comp_difference(new = tiny_props, old = new_props,
+                             names = c("tinyVAST", "VAST"),
                              save_results = FALSE)
 comp_diff
 
 # Percent difference
 comp_percent_diff <- function(new, old, names, save_results = FALSE) {
   # new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
-  
-  # Get difference between new and old props
-  check_props <- round((((new[,1:15] - old[,1:15]) / old[,1:15]) *100), 4)
-  check_props_tab <- cbind(check_props, new[,16:17])
+# Get difference between new and old props
+  check_props <- round((((new[, 2:16] - old[, 2:16]) / old[, 2:16]) *100), 4)
+  check_props_tab <- cbind(check_props, year = new[, 1])
   check_props_abs <- abs(check_props)
-  check_props_abs_tab <-  cbind(check_props_abs, new[,16:17])
+  check_props_abs_tab <-  cbind(check_props_abs, year = new[, 1])
   
   if(save_results == TRUE) {  # save to drive, if you want. Check file paths.
     options(scipen=999)
@@ -269,26 +253,26 @@ comp_percent_diff <- function(new, old, names, save_results = FALSE) {
   }
   
   colnames(check_props_tab)[1:15] <- 1:15
-  props_plot <- melt(check_props_tab, id.vars = c("Year", "Region"), 
-                     variable.name = "Age", value.name = "Proportion") %>%
+  props_plot <- melt(check_props_tab, id.vars = "year", 
+                     variable.name = "age", value.name = "proportion") %>%
     # add column for coloring the bars in the plot based on positive/negative
-    mutate(sign = case_when(Proportion >= 0 ~ "positive",
-                            Proportion < 0 ~ "negative"))
+    mutate(sign = case_when(proportion >= 0 ~ "positive",
+                            proportion < 0 ~ "negative"))
   
   # Plot both regions together and without 2020
-  label <- paste0("Percent difference between ", names[1], " and ", names[2])
-  plot <- ggplot(props_plot, aes(x = Age, y = Proportion, fill = sign)) +
+  label <- paste0("percent difference between ", names[1], " and ", names[2])
+  plot <- ggplot(props_plot, aes(x = age, y = proportion, fill = sign)) +
     geom_bar(stat = "identity", show.legend = FALSE) +
     scale_fill_manual(values = c("cornflowerblue", "darkred")) +
     scale_x_discrete(breaks = c(1, 5, 10, 15)) +
     ylab(label) +
-    facet_wrap(~ Year, ncol = 6) 
+    facet_wrap(~ year, ncol = 6) 
   
   return(plot)
 }
 
-per_diff <- comp_percent_diff(new = tiny_mesh, old = new_props,
-                              names = c("Tweedie/old mesh", "VAST"),
+per_diff <- comp_percent_diff(new = tiny_props, old = new_props,
+                              names = c("tinyVAST", "VAST"),
                               save_results = FALSE)
 per_diff
 
@@ -297,21 +281,21 @@ comp_trends <- function(new, old, names) {
   # new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
   
   # Get difference between new and old props
-  check_props <- round(new[,1:15] - old[,1:15], 4)
-  check_props_tab <- cbind(check_props, new[,16:17])
-  check_props_abs <- round(abs(new[,1:15] - old[,1:15]), 4)
-  check_props_abs_tab <-  cbind(check_props_abs, new[,16:17])
+  check_props <- round(new[, 2:16] - old[, 2:16], 4)
+  check_props_tab <- cbind(check_props, year = new[, 1])
+  check_props_abs <- abs(check_props)
+  check_props_abs_tab <-  cbind(check_props_abs, year = new[, 1])
   
   colnames(check_props_tab)[1:15] <- 1:15
-  props <- melt(check_props_tab, id.vars = c("Year", "Region"), 
-                     variable.name = "Age", value.name = "Proportion") %>%
+  props <- melt(check_props_tab, id.vars = c("year"), 
+                     variable.name = "age", value.name = "proportion") %>%
     # add column for coloring the bars in the plot based on positive/negative
-    mutate(sign = case_when(Proportion >= 0 ~ "positive",
-                            Proportion < 0 ~ "negative"))
+    mutate(sign = case_when(proportion >= 0 ~ "positive",
+                            proportion < 0 ~ "negative"))
   
   # Plot difference over ages
-  label <- paste0("Difference between ", names[1], " and ", names[2])
-  plot_age <- ggplot(props, aes(x = Age, y = Proportion, color = sign)) +
+  label <- paste0("difference between ", names[1], " and ", names[2])
+  plot_age <- ggplot(props, aes(x = age, y = proportion, color = sign)) +
     # geom_violin() +
     geom_jitter(height = 0, width = 0.1, alpha = 0.6, show.legend = FALSE) +
     scale_color_manual(values = c("cornflowerblue", "darkred")) +
@@ -319,7 +303,7 @@ comp_trends <- function(new, old, names) {
     ylab(label) 
   
   # Plot difference over years
-  plot_year <- ggplot(props, aes(x = Year, y = Proportion, color = sign)) +
+  plot_year <- ggplot(props, aes(x = year, y = proportion, color = sign)) +
     # geom_violin() +
     geom_jitter(height = 0, width = 0.1, alpha = 0.6, show.legend = FALSE) +
     scale_color_manual(values = c("cornflowerblue", "darkred")) +
@@ -329,27 +313,9 @@ comp_trends <- function(new, old, names) {
   return(plot_both)
 }
 
-comp_trends <- comp_trends(new = tiny_mesh, old = new_props,
-                           names = c("Tweedie/old mesh", "VAST"))
+comp_trends <- comp_trends(new = tiny_props, old = new_props,
+                           names = c("tinyVAST", "VAST"))
 comp_trends
-
-# tinyVAST plots save ---------------------------------------------------------
-ggsave(summary_props_all, filename = here(workDir, "results", save_dir, "tiny_summary.png"),
-       width=180, height=120, units="mm", dpi=300)
-ggsave(sum_tweedie_all, filename = here(workDir, "results", save_dir, "tweedie_compare.png"),
-       width=200, height=180, units="mm", dpi=300)
-ggsave(sum_tweedie_sum, filename = here(workDir, "results", save_dir, "tweedie_summary.png"),
-       width=200, height=120, units="mm", dpi=300)
-ggsave(comp_diff, filename = here(workDir, "results", save_dir, "tweedie_mesh_diff.png"),
-       width=200, height=200, units="mm", dpi=300)
-ggsave(per_diff, filename = here(workDir, "results", save_dir, "tweedie_mesh_per_diff.png"),
-       width=200, height=200, units="mm", dpi=300)
-ggsave(comp_trends, filename = here(workDir, "results", save_dir, "tweedie_mesh_trends.png"),
-       width=260, height=120, units="mm", dpi=300)
-
-sum_props_sub$boxplot
-ggsave(sum_props_sub$boxplot, filename = here(workDir, "results", save_dir, "tinyVAST_summary.png"),
-       width=200, height=120, units="mm", dpi=300)
 
 # Save plots ------------------------------------------------------------------
 # ggsave(index_comp, filename = here(workDir, "results", save_dir, "index_comparison.png"),
