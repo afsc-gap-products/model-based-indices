@@ -133,7 +133,7 @@ if(!exists("fit")) {
   fit <- readRDS(here(workDir, "results_age", "tinyVAST_fit.RDS"))
 }
 
-get_abundance <- function(region = region) {
+get_abundance <- function(region) {
   # Read in coarsened extrapolation grid
   if(region == "EBS") {grid <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))}
   if(region == "NBS") {grid <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))}
@@ -167,7 +167,7 @@ get_abundance <- function(region = region) {
   return(N_ct)
 }
 
-abundance <- get_abundance()
+abundance <- get_abundance(region = region)
 
 # Run expansion for other regions
 # ebs <- get_abundance(region = "EBS")
