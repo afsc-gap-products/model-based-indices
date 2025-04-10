@@ -43,7 +43,6 @@ for (i in 1:nrow(species_df)){
           -- Identify what tables to pull data from
           FROM GAP_PRODUCTS.BIOMASS
           WHERE AREA_ID = 99903 -- GOA REGION
-          AND YEAR < 2025 -- REMOVE THIS LINE AFTER 2025 GOA MOCK DATA HAVE BEEN REMOVED
           AND SPECIES_CODE = ', species_df$species_code[i]
     )
   } else {
@@ -58,7 +57,6 @@ for (i in 1:nrow(species_df)){
           -- Identify what tables to pull data from
           FROM GAP_PRODUCTS.BIOMASS
           WHERE AREA_ID = 99903 -- GOA REGION
-          AND YEAR < 2025 -- REMOVE THIS LINE AFTER 2025 GOA MOCK DATA HAVE BEEN REMOVED
           AND SPECIES_CODE = ', species_df$species_code[i]
     )
   }
