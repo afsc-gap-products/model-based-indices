@@ -429,4 +429,35 @@ if (!file.exists(f5)) {
   eao <- get_eao(p, bias_correct = FALSE, area = p$data$area_km2)
   write.csv(eao, file = f5, row.names = FALSE)
 }
+
+# Joint variance-covariance matrix for pollock ----
+if (species == "pollock") {
+  obj <- p$obj  # extract TMB object
+  sdrep <- TMB::sdreport(obj)  # get sdreport
+  
+  # Calculate biomass-per-year manually
+  bio_pred <- p$data %>%
+    group_by(year) %>%
+    summarize(biomass = sum(exp(est1 + est2) * area_km2))
+  
+  # Define a derived quantity as a function of the model's parameters & random effects
+  biomass_fn <- function(par, random) {
+    # Compute predicted density
+    est1 <- obj$report(par, random)$est1
+    est2 <- obj$report(par, random)$est2
+    
+    # Combine with grid info to compute biomass by year
+    years <- rep()
+    by_year <- splot(data.frame(est = (est1 + est2), 
+                                area_km2 = pred_grid$area_km2, 
+                                year = pred_grid$year), 
+                     grid$year)
+    biomass <- sapply(by_year, function(x) sum(exp(x$est) * x$area_km))
+    return(biomass)
+  }
+  
+  biom_sd <- RTMB::reportSD(biomass_fn, obj)
+  biom_sd$cov
+}
+
 ```
