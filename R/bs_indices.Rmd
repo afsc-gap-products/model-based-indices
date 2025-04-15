@@ -87,13 +87,15 @@ if(species == "yellowfin_sole"){
 }
 
 dat <- left_join(dat, env, by = "year") 
+
+# Final data manipulation steps
+dat$year_f <- as.factor(dat$year)
+
+dat <- add_utm_columns(dat, ll_names = c("lon", "lat"), utm_crs = 32602, units = "km")
 ```
 Now we fit the model in sdmTMB:
 
 ```{r fit, echo = TRUE, results = 'hide'}
-dat$year_f <- as.factor(dat$year)
-
-dat <- add_utm_columns(dat, ll_names = c("lon", "lat"), utm_crs = 32602, units = "km")
 
 # detect if any years have occurrences at every haul and fix params as needed
 mins <- dat %>% group_by(year) %>% summarize(min = min(cpue))
