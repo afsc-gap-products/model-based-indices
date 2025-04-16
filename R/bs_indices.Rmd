@@ -437,29 +437,35 @@ if (species == "pollock") {
   obj <- p$obj  # extract TMB object
   sdrep <- TMB::sdreport(obj)  # get sdreport
   
-  # Calculate biomass-per-year manually
-  bio_pred <- p$data %>%
-    group_by(year) %>%
-    summarize(biomass = sum(exp(est1 + est2) * area_km2))
+  # Simulate from joint posterior
+  sims_out <- simulate(fit, newdata = pred_grid, nsim = 500, return_tmb_object = FALSE)
   
-  # Define a derived quantity as a function of the model's parameters & random effects
-  biomass_fn <- function(par, random) {
-    # Compute predicted density
-    est1 <- obj$report(par, random)$est1
-    est2 <- obj$report(par, random)$est2
-    
-    # Combine with grid info to compute biomass by year
-    years <- rep()
-    by_year <- splot(data.frame(est = (est1 + est2), 
-                                area_km2 = pred_grid$area_km2, 
-                                year = pred_grid$year), 
-                     grid$year)
-    biomass <- sapply(by_year, function(x) sum(exp(x$est) * x$area_km))
-    return(biomass)
-  }
+  sims <- data.frame(sims_out)
+  colnames(sims) <- paste0("sim_", seq_len(ncol(sims)))
   
-  biom_sd <- RTMB::reportSD(biomass_fn, obj)
-  biom_sd$cov
+  sims$year <- pred_grid$year
+  sims$area_km2 <- pred_grid$area_km2
+  
+  # Multiply each simulated value by area
+  biomass_sims <- sims %>%
+    tidyr::pivot_longer(cols = starts_with("sim_"), names_to = "sim", values_to = "density") %>%
+    mutate(biomass = density * area_km2) %>%
+    group_by(sim, year) %>%
+    summarise(total_biomass = sum(biomass), .groups = "drop")
+  
+  # Pivot to wide: rows = simulations, columns = years
+  biomass_wide <- tidyr::pivot_wider(biomass_sims, names_from = year, values_from = total_biomass)
+  
+  # Compute mean biomass per year
+  biomass_means <- colMeans(biomass_wide[,-1])
+  
+  # Compute variance-covariance matrix
+  biomass_cov <- cov(biomass_wide[,-1])
+  
+  # Standard errors
+  biomass_se <- sqrt(diag(biomass_cov))
+  
+  write.csv(biomass_cov, here("species_specific_code", "BS", species, phase, "results", "biomass_kg_vcov.csv"))
 }
 
 ```
