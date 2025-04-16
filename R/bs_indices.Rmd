@@ -87,13 +87,15 @@ if(species == "yellowfin_sole"){
 }
 
 dat <- left_join(dat, env, by = "year") 
+
+# Final data manipulation steps
+dat$year_f <- as.factor(dat$year)
+
+dat <- add_utm_columns(dat, ll_names = c("lon", "lat"), utm_crs = 32602, units = "km")
 ```
 Now we fit the model in sdmTMB:
 
 ```{r fit, echo = TRUE, results = 'hide'}
-dat$year_f <- as.factor(dat$year)
-
-dat <- add_utm_columns(dat, ll_names = c("lon", "lat"), utm_crs = 32602, units = "km")
 
 # detect if any years have occurrences at every haul and fix params as needed
 mins <- dat %>% group_by(year) %>% summarize(min = min(cpue))
@@ -429,4 +431,41 @@ if (!file.exists(f5)) {
   eao <- get_eao(p, bias_correct = FALSE, area = p$data$area_km2)
   write.csv(eao, file = f5, row.names = FALSE)
 }
+
+# Joint variance-covariance matrix for pollock ----
+if (species == "pollock") {
+  obj <- p$obj  # extract TMB object
+  sdrep <- TMB::sdreport(obj)  # get sdreport
+  
+  # Simulate from joint posterior
+  sims_out <- simulate(fit, newdata = pred_grid, nsim = 500, return_tmb_object = FALSE)
+  
+  sims <- data.frame(sims_out)
+  colnames(sims) <- paste0("sim_", seq_len(ncol(sims)))
+  
+  sims$year <- pred_grid$year
+  sims$area_km2 <- pred_grid$area_km2
+  
+  # Multiply each simulated value by area
+  biomass_sims <- sims %>%
+    tidyr::pivot_longer(cols = starts_with("sim_"), names_to = "sim", values_to = "density") %>%
+    mutate(biomass = density * area_km2) %>%
+    group_by(sim, year) %>%
+    summarise(total_biomass = sum(biomass), .groups = "drop")
+  
+  # Pivot to wide: rows = simulations, columns = years
+  biomass_wide <- tidyr::pivot_wider(biomass_sims, names_from = year, values_from = total_biomass)
+  
+  # Compute mean biomass per year
+  biomass_means <- colMeans(biomass_wide[,-1])
+  
+  # Compute variance-covariance matrix
+  biomass_cov <- cov(biomass_wide[,-1])
+  
+  # Standard errors
+  biomass_se <- sqrt(diag(biomass_cov))
+  
+  write.csv(biomass_cov, here("species_specific_code", "BS", species, phase, "results", "biomass_kg_vcov.csv"))
+}
+
 ```
