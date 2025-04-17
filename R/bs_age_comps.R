@@ -164,7 +164,7 @@ get_abundance <- function(region) {
   N_ct <- array(N_jz$abundance, 
                 dim = c(length(fit$internal$variables), length(unique(dat$year))),
                 dimnames = list(fit$internal$variables,sort(unique(dat$year))))
-  return(N_ct)
+  return(list(abundance = N_ct, obj = index1))
 }
 
 abundance <- get_abundance(region = region)
