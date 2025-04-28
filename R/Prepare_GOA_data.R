@@ -27,7 +27,7 @@ data_dir <- paste0("data/GOA/", phase, "/")
 if (!dir.exists(paths = data_dir)) dir.create(path = data_dir, recursive = TRUE)
 
 year_start <- 1990
-year_end <- 2023
+year_end <- 2025
 
 species_df <- data.frame(SPECIES_CODE = c(310, 10110, 21720, 21740, 30060, 
                                           30420, 30152),
