@@ -158,19 +158,12 @@ for (i in species_list){
       ind <- readRDS(f3)
     }
   
-    ### compare indices plot (change loading of old index after hindcast) ----
+    ### compare indices plot ----
     new_i <- ind %>% mutate(index = "mb_new") %>% select(index, year, est, lwr, upr)
-    old_i <- read.csv(here("species_specific_code", "GOA", 
-                           species, phase, "Index.csv")) %>%
-      mutate(index = "mb_old", year = as.numeric(Time), est = Estimate, 
-             se = Std..Error.for.ln.Estimate.) %>% 
-      filter(year %in% unique(new_i$year)) %>%
-      mutate(lwr = exp(log(est) + qnorm(0.025) * se),
-             upr = exp(log(est) + qnorm(0.975) * se)) %>%
-      select(index, year, est, lwr, upr)
-    both_i <- bind_rows(new_i, old_i) %>% 
-      filter(est > 0)
-    both_i[both_i < 0] <- 0
+    old_i <- readRDS(here("species_specific_code", "GOA", 
+                           species, "hindcast", "index.RDS")) %>%
+      mutate(index = "mb_old")
+    both_i <- bind_rows(new_i, old_i)
       
     if(species == "Gadus_macrocephalus"){
       ylab <- "Abundance (n)"

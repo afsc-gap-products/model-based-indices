@@ -350,20 +350,9 @@ if(species == "kamchatka_flounder"){
   } else {
     new_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_new") %>% 
       select(index, stratum, year, est, lwr, upr)
-
-    #TODO: update prior index once we've moved on from VAST
-    old_i <- read.csv(here("species_specific_code", "BS", species, phase, "results", "Index.csv")) %>%
-      mutate(index = "mb_old", year = as.numeric(Time), est = Estimate, 
-        se = Std..Error.for.ln.Estimate., stratum = Stratum) %>% 
-      filter(year %in% unique(new_i$year), stratum %in% unique(new_i$stratum)) %>%
-      select(index, stratum, year, est, se) %>% 
-      mutate(lwr = exp(log(est) + qnorm(0.025) * se),
-             upr = exp(log(est) + qnorm(0.975) * se)) %>%
-      select(index, stratum, year, est, lwr, upr)
-    
-    both_i <- bind_rows(new_i, old_i) %>% 
-      filter(est > 0)
-    both_i[both_i < 0] <- 0
+    old_i <- load(here("species_specific_code", "BS", species, "hindcast", "results", "indices_250_knots.RData")) %>%
+      mutate(index = "mb_old")
+    both_i <- bind_rows(new_i, old_i)
     
     ggplot(filter(both_i, stratum == "Both"), aes(x = year, y = est, ymin = lwr, 
                                                   ymax = upr, colour = index)) + 
