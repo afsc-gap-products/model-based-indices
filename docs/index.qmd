@@ -4,7 +4,6 @@ author: "Sophia Wassermann"
 format:
   html:
     embed-resources: true
-editor: visual
 ---
 
 # Introduction
