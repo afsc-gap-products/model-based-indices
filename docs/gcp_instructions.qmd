@@ -1,0 +1,263 @@
+---
+title: "GCP Instructions"
+author: "Sophia Wassermann"
+format:
+  html:
+    embed-resources: true
+editor: visual
+---
+
+# Introduction
+
+Before beginning this process, please check with Sophia Wassermann, Emily Markowitz, or OFIS to confirm that a computing instance and an Rstudio server have been set up for your username.
+
+Here are some helpful [slides](https://docs.google.com/presentation/d/1zFZtpu5bvlDldryqZ71AcgBuDGbT61Pn9y2YhF9nqF0/edit#slide=id.g34cfb14b403_0_3)
+
+# Initital Setup
+
+<!-- ## Setting up Google Cloud Provider (GCP) -->
+
+<!-- GCP is accessed through the command line on your local machine. First, you will need to install Google Cloud CLI: "language-specific Cloud Client Libraries" that make it "easier for you to interact with Google Cloud APIs in your language of choice". Full instructions are [here](https://cloud.google.com/sdk/docs/install-sdk#installing_the_latest_version). The installation instructions are specific to your operating system (OS), with options for each OS under 'Installing the latest gcloud CLI version'. -->
+
+<!-- Proceed with default settings until: -->
+
+<!-- -   In Windows, on the final step of running the GoogleCloudInstaller, you can un-check the boxes for creating a Start Menu & Desktop shortcut. -->
+<!-- -   When prompted, specify `ggn-nmfs-afscdsm-dev-1` as the default project to use. -->
+<!-- -   There is no need to configure compute region and zone. -->
+
+## Connecting to your instance
+
+Because usage of GCP is metered, you will need to start and, importantly **stop**, your instance every time you want to use it.
+
+1.  Navigate to the [AFSC dev server on GCP](https://console.cloud.google.com/compute/instances?project=ggn-nmfs-afscdsm-dev-1&cloudshell=true&authuser=0).
+
+2.  The first time you navigate to Google Cloud and connect to your instance, there will be many authorization windows. Please accept them. Make sure you are connecting via your NOAA account.
+
+3.  You should be in the 'Instances' pane, with a list of instances associated with people's names. Click on the check box in the line associated with your username.
+
+4.  Press START / RESUME in the blue menu bar above the list of instances. After a moment, the status icon for the instance will be a green circle with a checkmark instead of a gray circle with a square.
+
+5.  In a text editor, copy in the following connection code, substituting `[SERVER NAME]` with the one that has been configured for you (MAYBE DO IN TEXT EDITOR FIRST - NO BRACKETS): `gcloud compute ssh --ssh-flag="-4 -L 8787:localhost:8787" [YOUR-NAME]-sdm-node --project=ggn-nmfs-afscdsm-dev-1 --zone=us-east4-c --tunnel-through-iap`
+
+    e.g. `gcloud compute ssh --ssh-flag="-4 -L 8787:localhost:8787" sophia-wassermann-sdm-node --project=ggn-nmfs-afscdsm-dev-1 --zone=us-east4-c --tunnel-through-iap`
+
+    I recommend saving this connection string to a text file on your local computer. You will need to use it every time you connect to your instance.
+
+6.  You will use the 'google cloud shell' for the following steps. This may load automatically as a black box across the bottom of your screen when you start your instance, or you may need to click on the 'Activate Cloud Shell' buttom in the menu bar at the top right. It is the square with symbols inside. You may also need to authorize the cloud shell by pressing 'Authorize'.
+
+7. Copy the connection code from step 5 into the the cloud shell.
+
+8. The first time you connect, you will need to create an ssh key pair. Follow the promps. You do not need to create a passphrase (can press 'enter/return' without entering anything).
+
+<!-- 6.  On your local machine, open command prompt (Windows) or terminal (Mac/Linux). -->
+
+<!-- 7.  Copy the connection string into command prompt & hit enter. -->
+
+<!-- 8.  A 'PuTTY' window will open. When you connect for the first time, a 'PuTTY Security Alert' window will follow because you need to set up an ssh key pair. Click 'Accept' in this window. -->
+
+9.  When you are done with your session, make sure to turn off the instance by pressing 'STOP' in the blue menu bar. The connection to the command line and Rstudio will be terminated and the status icon will return to the gray square. This is **very** important for keeping operating costs reasonable.
+
+## Connecting to Rstudio Server
+
+These instances have been built with a container image on top of rocker:rstudio that comes preconfigured with packages to run tinyVAST and sdmTMB workloads and to manage data ingress and egress through Oracle and Google Drive. This means that all further setup and operations are conducted from inside an Rstudio Server. Connecting is very easy, as the basic requirements and connections have already been set up by OFIS.
+
+To connect:
+
+1.  Once you have connected to your instance through step 8 above, open a new tab in your browser and navigate to `https://ssh.cloud.google.com/devshell/proxy?authuser=0&port=8787`. You can bookmark this page for future reference.
+
+2.  Log in using the username and password 'rstudio'
+
+You should now be able to use Rstudio as you would on your local machine.
+
+## Configuring SSH for github
+
+Configuring an SSH key for your instance is required to push to github. It is possible to clone repositories using https, but you will not be able to push any changes. You will need to do the following in the Terminal within Rstudio Server.
+
+1.  Generate a new SSH key and add it to the ssh-agent, following the [instructions for **Linux** on github](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent). You do not need to specify a 'file in which to save the key' or a passphrase.
+
+2.  Once you have created the key and added it to the ssh-agent, follow the [github instructions for adding a new SSH key to your github account](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account), again following the Linux instructions. Make sure to save the key with an informative title, such as `gcp-rstudio-20250402`.
+
+3.  Back in the Rstudio Server terminal, clone the github repository using SSH, using the command `git clone`. Make sure you are in the directory where you want the repo to be cloned; it will default to your 'home' directory, which will be fine for most circumstances. If you have created a folder within which you would like the repo to live, you can navigate inside of it with the command `cd`, followed by the directory name, in the Rstudio Server terminal. The address for a repository can be copied from its github page if you click the green `<> Code` button and select SSH.
+
+    e.g. `git clone git@github.com:afsc-gap-products/model-based-indices.git`
+
+4.  To connect the git integration in Rstudio with your cloned repository, you need to create an Rstudio Project associated with it. Click on the File menu in Rstudio Server -\> 'New Project' -\> 'Existing Directory' -\> browse to the cloned repo.
+
+## Configuring Google Drive
+
+Each instance is set up with a connection to a Google Drive associated with a unique email account. To connect the instance to your google account, you will need to run the following code to authenticate your credentials. The code will prompt you to provide your email address for Google Drive (which is likely your NOAA email).
+
+```{r, eval = FALSE}
+library(gargle)
+library(googledrive)
+
+# googledrive::drive_auth(path="/etc/sa_key.json")  # connect to default account
+
+# Connect to google drive using your (probably NOAA) email
+gdrive_email <- rstudioapi::showPrompt(title = "Email",
+                                       message = "Email for Google Drive",
+                                       default = "")
+
+drive_auth(token = credentials_user_oauth2(
+  scopes = "https://www.googleapis.com/auth/drive", 
+  email = gdrive_email))
+
+drive_user()  # check user account
+```
+
+# Testing
+
+Below are some code snippets for testing the basic function of the instance and its installed packages.
+
+## Oracle connection
+
+You will need an oracle account that has access to the AFSC schemas to use the following code as-written. To streamline the process, you can save a file to your instance that contains your username and password. I created an R script in my home directory on the instance with the content:
+
+```{r, eval = FALSE}
+
+oracle_user <- "USERNAME"
+oracle_password <- "password"
+
+```
+
+If you prefer to type your username and password in when accessing Oracle, the following code will prompt you for the information when needed. OFIS has configured two methods for connecting to Oracle. Both are presented below, but only one is necessary to connect.
+
+```{r, eval = FALSE}
+if(file.exists("~/oracle_credentials.R")) { 
+  source("~/oracle_credentials.R")
+} else {
+  oracle_user <- rstudioapi::showPrompt(title = "Username",
+                                        message = "Oracle Username",
+                                        default = "")
+  oracle_pw <- rstudioapi::showPrompt(title = "Password",
+                                      message = "Oracle Password",
+                                      default = "")
+}
+
+# Two different options for connecting to Oracle
+channel <- RODBC::odbcDriverConnect(
+  connection = paste0("Driver=/opt/oracle/instantclient_12_2/libsqora.so.12.1;DBQ=raja.afsc.noaa.gov:1521/afsc;UID=", 
+                      oracle_user, ";PWD=", oracle_pw),
+  rows_at_time = 1
+  )
+
+con <- DBI::dbConnect(
+  odbc::odbc(),
+  .connection_string = paste0("Driver=/opt/oracle/instantclient_12_2/libsqora.so.12.1;DBQ=raja.afsc.noaa.gov:1521/afsc;UID=", 
+                              oracle_user, ";PWD=", oracle_pw)
+  )
+```
+
+## sdmTMB
+
+If you will be working with sdmTMB, run the following test [from their website](https://pbs-assess.github.io/sdmTMB/index.html#basic-use).
+
+```{r, eval = FALSE}
+
+library(sdmTMB)
+
+mesh <- make_mesh(pcod, xy_cols = c("X", "Y"), cutoff = 10)
+
+fit <- sdmTMB(
+  density ~ s(depth),
+  data = pcod,
+  mesh = mesh,
+  family = tweedie(link = "log"),
+  spatial = "on"
+)
+
+fit  # if this prints, everything should be working!
+
+```
+
+## tinyVAST
+
+This test takes a few minutes to run. It is based on the [age composition expansion vignette](https://vast-lib.github.io/tinyVAST/articles/web_only/age_composition_expansion.html).
+
+```{r, eval = FALSE}
+
+library(tinyVAST)
+library(fmesher)
+library(sf)
+
+format_data <- function() {
+  # Pull & format data
+  data(bering_sea_pollock_ages)
+  Data <- subset(bering_sea_pollock_ages, Year >= 2021)
+  Data$Age <- factor(paste0("Age_",Data$Age))
+  Data$Year_Age <- interaction(Data$Year, Data$Age)
+  
+  # Project to UTM
+  Data <- st_as_sf(Data, 
+                   coords = c('Lon','Lat'),
+                   crs = st_crs(4326))
+  Data <- st_transform(Data, crs = st_crs("+proj=utm +zone=2 +units=km"))
+  Data <- cbind(st_drop_geometry(Data), st_coordinates(Data))
+  
+  return(Data)
+}
+
+Data <- format_data()
+
+# Set up tinyVAST settings
+sem <- ""
+
+dsem <- "
+  Age_1 -> Age_1, 1, lag1
+  Age_2 -> Age_2, 1, lag1
+  Age_3 -> Age_3, 1, lag1
+  Age_4 -> Age_4, 1, lag1
+  Age_5 -> Age_5, 1, lag1
+  Age_6 -> Age_6, 1, lag1
+  Age_7 -> Age_7, 1, lag1
+  Age_8 -> Age_8, 1, lag1
+  Age_9 -> Age_9, 1, lag1
+  Age_10 -> Age_10, 1, lag1
+  Age_11 -> Age_11, 1, lag1
+  Age_12 -> Age_12, 1, lag1
+  Age_13 -> Age_13, 1, lag1
+  Age_14 -> Age_14, 1, lag1
+  Age_15 -> Age_15, 1, lag1
+"
+
+mesh <- fm_mesh_2d(loc = Data[,c("X","Y")],
+                   cutoff = 50)
+control <- tinyVASTcontrol(getsd = FALSE,
+                           profile = c("alpha_j"),  
+                           trace = 0)
+family <- list(
+  Age_1 = tweedie(),
+  Age_2 = tweedie(),
+  Age_3 = tweedie(),
+  Age_4 = tweedie(),
+  Age_5 = tweedie(), 
+  Age_6 = tweedie(),
+  Age_7 = tweedie(),
+  Age_8 = tweedie(),
+  Age_9 = tweedie(),
+  Age_10 = tweedie(),
+  Age_11 = tweedie(),
+  Age_12 = tweedie(),
+  Age_13 = tweedie(),
+  Age_14 = tweedie(),
+  Age_15 = tweedie()     
+)
+
+# Fit tinyVAST model
+myfit <- tinyVAST(
+  data = Data,
+  formula = Abundance_per_hectare ~ 0 + Year_Age,
+  sem = sem,
+  dsem = dsem,
+  family = family,
+  space_column = c("X", "Y"), 
+  variable_column = "Age",
+  time_column = "Year",
+  distribution_column = "Age",
+  spatial_graph = mesh,
+  control = control
+)
+
+myfit  # if this prints, everything is groovy!
+
+```
