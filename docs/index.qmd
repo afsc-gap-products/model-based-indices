@@ -10,7 +10,10 @@ format:
 
 Before beginning this process, please check with Sophia Wassermann, Emily Markowitz, or OFIS to confirm that a computing instance and an Rstudio server have been set up for your username.
 
-Here are some helpful [slides](https://docs.google.com/presentation/d/1zFZtpu5bvlDldryqZ71AcgBuDGbT61Pn9y2YhF9nqF0/edit#slide=id.g34cfb14b403_0_3)
+Resources: 
+
+ - Here are some helpful [slides](https://docs.google.com/presentation/d/1zFZtpu5bvlDldryqZ71AcgBuDGbT61Pn9y2YhF9nqF0/edit#slide=id.g34cfb14b403_0_3)
+ - [R Script for testing GCP (also included below)](https://github.com/afsc-gap-products/model-based-indices/blob/main/docs/gcp_testing.R)
 
 # Initital Setup
 
