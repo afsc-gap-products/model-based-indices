@@ -1,3 +1,7 @@
+library(dplyr)
+library(ggplot2)
+library(viridis)
+library(here)
 
 # Install packages if needed
 if (!requireNamespace("gapindex", quietly = TRUE)) {
@@ -186,6 +190,16 @@ rf_cog_ts <- plot_cogs(cogs)
 rf_cog_ts
 
 # Upload to Google Drive ------------------------------------------------------
-googledrive::drive_upload(media = here::here("output", "rf_cog_ts.png"),
-                          path = googledrive::as_id("110aNyTqYl5O9bO-sUg3RkyB-kx7POz3-_"))
+# Update stale Google Drive authorization if needed
+# gdrive_email <- rstudioapi::showPrompt(title = "Email",
+#                                        message = "Email for Google Drive",
+#                                        default = "")
+# googledrive::drive_auth(
+#   token = gargle::credentials_user_oauth2(
+#   scopes = "https://www.googleapis.com/auth/drive", 
+#   email = gdrive_email
+# ))
+# googledrive::drive_user()  # check user account
 
+googledrive::drive_upload(media = here::here("output", "rf_cog_ts.png"),
+                          path = googledrive::as_id("1H1VsixlYaOKNH7DxpdBbZAC2utagRiNp"))
