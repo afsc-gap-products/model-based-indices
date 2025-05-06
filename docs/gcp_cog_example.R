@@ -182,3 +182,10 @@ plot_cogs <- function(df) {
   return(ts_plot)
 }
 
+rf_cog_ts <- plot_cogs(cogs)
+rf_cog_ts
+
+# Upload to Google Drive ------------------------------------------------------
+googledrive::drive_upload(media = here::here("output", "rf_cog_ts.png"),
+                          path = googledrive::as_id("110aNyTqYl5O9bO-sUg3RkyB-kx7POz3-_"))
+
