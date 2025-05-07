@@ -6,7 +6,6 @@ model-based-indices.Rproj
 *.RDS
 .Rdat
 *.txt
-*.png
 *.gif
 *.csv
 *.PDF
