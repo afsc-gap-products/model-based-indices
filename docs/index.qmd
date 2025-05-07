@@ -1,10 +1,34 @@
 ---
 title: "GCP Instructions"
-author: "Sophia Wassermann"
+author:
+    - name: Sophia Wassermann
+      email: Sophia.Wassermann AT noaa.gov 
+      orcid: 0000-0002-4323-5227
+      note: https://github.com/sowasser
+      affiliations:
+        - name: NOAA Fisheres Alaska Fisheries Science Center
+          department: Groundfish Assessment Program
+    - name: Emily Markowitz
+      email: Emily.Markowitz AT noaa.gov 
+      orcid: 0000-0001-5757-4230
+      note: https://github.com/EmilyMarkowitz-NOAA
+      affiliations:
+        - name: NOAA Fisheres Alaska Fisheries Science Center
+          department: Groundfish Assessment Program
 format:
   html:
     embed-resources: true
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 3
+    number_sections: true
+    theme: lumen
 ---
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+library(here)
+```
 
 # Introduction
 
@@ -33,11 +57,17 @@ Because usage of GCP is metered, you will need to start and, importantly **stop*
 
 1.  Navigate to the [AFSC dev server on GCP](https://console.cloud.google.com/compute/instances?project=ggn-nmfs-afscdsm-dev-1&cloudshell=true&authuser=0).
 
+![](`r here::here("docs/img/gcp_node_page.png")`)
+
 2.  The first time you navigate to Google Cloud and connect to your instance, there will be many authorization windows. Please accept them. Make sure you are connecting via your NOAA account.
 
 3.  You should be in the 'Instances' pane, with a list of instances associated with people's names. Click on the check box in the line associated with your username.
 
 4.  Press START / RESUME in the blue menu bar above the list of instances. After a moment, the status icon for the instance will be a green circle with a checkmark instead of a gray circle with a square.
+
+![](`r here::here("docs/img/gcp_instances_page_3.png")`)
+
+![](`r here::here("docs/img/gcp_instances_page_4.png")`)
 
 5.  In a text editor, copy in the following connection code, substituting `[SERVER NAME]` with the one that has been configured for you (MAYBE DO IN TEXT EDITOR FIRST - NO BRACKETS): `gcloud compute ssh --ssh-flag="-4 -L 8787:localhost:8787" [YOUR-NAME]-sdm-node --project=ggn-nmfs-afscdsm-dev-1 --zone=us-east4-c --tunnel-through-iap`
 
@@ -45,11 +75,18 @@ Because usage of GCP is metered, you will need to start and, importantly **stop*
 
     I recommend saving this connection string to a text file on your local computer. You will need to use it every time you connect to your instance.
 
+![](`r here::here("docs/img/gcp_instances_page_5.png")`)
+
 6.  You will use the 'google cloud shell' for the following steps. This may load automatically as a black box across the bottom of your screen when you start your instance, or you may need to click on the 'Activate Cloud Shell' buttom in the menu bar at the top right. It is the square with symbols inside. You may also need to authorize the cloud shell by pressing 'Authorize'.
+
+!["Google Cloud Shell terminal button"](`r here::here("docs/img/gcp_instances_page_terminalbutton.png")`)
 
 7. Copy the connection code from step 5 into the the cloud shell.
 
+![](`r here::here("docs/img/gcp_instances_page_6.png")`)
+
 8. The first time you connect, you will need to create an ssh key pair. Follow the promps. You do not need to create a passphrase (can press 'enter/return' without entering anything).
+
 
 <!-- 6.  On your local machine, open command prompt (Windows) or terminal (Mac/Linux). -->
 
@@ -71,19 +108,61 @@ To connect:
 
 You should now be able to use Rstudio as you would on your local machine.
 
+![](`r here::here("docs/img/gcp_rstudio_login.png")`)
+
+![](`r here::here("docs/img/gcp_rstudio_gui.png")`)
+
 ## Configuring SSH for github
 
 Configuring an SSH key for your instance is required to push to github. It is possible to clone repositories using https, but you will not be able to push any changes. You will need to do the following in the Terminal within Rstudio Server.
 
 1.  Generate a new SSH key and add it to the ssh-agent, following the [instructions for **Linux** on github](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent). You do not need to specify a 'file in which to save the key' or a passphrase.
 
-2.  Once you have created the key and added it to the ssh-agent, follow the [github instructions for adding a new SSH key to your github account](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account), again following the Linux instructions. Make sure to save the key with an informative title, such as `gcp-rstudio-20250402`.
+` ssh-keygen -t ed25519 -C "your_email@example.com"`
+
+[Enter]
+
+[Enter]
+
+` eval "$(ssh-agent -s)"`
+
+` ssh-add ~/.ssh/id_ed25519`
+
+![](`r here::here("docs/img/gcp_rstudio_gui_3.png")`)
+
+2.  Once you have created the key and added it to the ssh-agent, follow the [github instructions for adding a new SSH key to your github account](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account), again following the Linux instructions. Make sure to save the key with an informative title, such as `gcp-rstudio-20250507`.
+
+In the RStudio Terminal, type the following to get your SSH key string. 
+
+` cat ~/.ssh/id_ed25519.pub`
+
+Then navigate to your GitHub online account. 
+
+![](`r here::here("docs/img/gcp_github_ssh_3.png")`)
+
+![](`r here::here("docs/img/gcp_github_ssh_1.png")`)
+
+![](`r here::here("docs/img/gcp_github_ssh_2.png")`)
+
+![](`r here::here("docs/img/gcp_github_ssh_4.png")`)
 
 3.  Back in the Rstudio Server terminal, clone the github repository using SSH, using the command `git clone`. Make sure you are in the directory where you want the repo to be cloned; it will default to your 'home' directory, which will be fine for most circumstances. If you have created a folder within which you would like the repo to live, you can navigate inside of it with the command `cd`, followed by the directory name, in the Rstudio Server terminal. The address for a repository can be copied from its github page if you click the green `<> Code` button and select SSH.
 
-    e.g. `git clone git@github.com:afsc-gap-products/model-based-indices.git`
+    e.g., `git clone git@github.com:afsc-gap-products/model-based-indices.git`
+
+![](`r here::here("docs/img/gcp_github_ssh_5.png")`)
 
 4.  To connect the git integration in Rstudio with your cloned repository, you need to create an Rstudio Project associated with it. Click on the File menu in Rstudio Server -\> 'New Project' -\> 'Existing Directory' -\> browse to the cloned repo.
+
+![](`r here::here("docs/img/gcp_github_ssh_6.png")`)
+
+![](`r here::here("docs/img/gcp_github_ssh_7.png")`)
+
+![](`r here::here("docs/img/gcp_github_ssh_8.png")`)
+
+![](`r here::here("docs/img/gcp_github_ssh_9.png")`)
+
+![](`r here::here("docs/img/gcp_github_ssh_10.png")`)
 
 ## Configuring Google Drive
 
