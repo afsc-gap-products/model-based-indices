@@ -97,27 +97,23 @@ old_mesh <- sdmTMB::make_mesh(dat,
                               mesh = readRDS(file = here("meshes/bs_vast_mesh_50_knots.RDS")),
                               fmesher_func = fm_mesh_2d()) 
 
-control <- tinyVASTcontrol(getsd = FALSE,
-                           profile = c("alpha_j"),
-                           trace = 0)
-
-family <- setNames(lapply(ages, function(x) delta_gamma(type = "poisson-link")), 
-                   paste0("age_", ages))
-
 # Fit model -------------------------------------------------------------------
 fit <- tinyVAST(
   data = dat,
   formula = cpue ~ 0 + year_age,  
   sem = "",
   dsem = dsem,
-  family = family,
+  family = setNames(lapply(ages, function(x) delta_gamma(type = "poisson-link")), 
+                    paste0("age_", ages)),
   delta_options = list(delta_formula = ~ 0 + year_age), # 2nd linear predictor
   space_column = c("X", "Y"), 
   variable_column = "age_f",
   time_column = "year",
   distribution_column = "age_f",
   spatial_graph = old_mesh,
-  control = control
+  control = tinyVASTcontrol(getsd = FALSE,
+                            profile = c("alpha_j"),
+                            trace = 0)
 )
 
 # Save fit object (create directory for results first, if it doesn't exist)
