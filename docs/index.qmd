@@ -210,7 +210,7 @@ You will need an oracle account that has access to the AFSC schemas to use the f
 ```{r, eval = FALSE}
 
 oracle_user <- "USERNAME"
-oracle_password <- "password"
+oracle_pw <- "password"
 
 ```
 
