@@ -22,7 +22,7 @@ library(here)
 channel <- gapindex::get_connected(check_access = F)
 
 ## specify whether hindcast or production phase, create data folder
-phase <- c("hindcast", "production")[1]
+phase <- c("hindcast", "production")[2]
 data_dir <- paste0("data/GOA/", phase, "/")
 if (!dir.exists(paths = data_dir)) dir.create(path = data_dir, recursive = TRUE)
 

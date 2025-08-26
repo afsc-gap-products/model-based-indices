@@ -7,12 +7,12 @@ library(dplyr)
 library(ggplot2)
 library(here)
 
-phase <- c("hindcast", "production")[1] # specify analysis phase
+phase <- c("hindcast", "production")[2] # specify analysis phase
 
 species_list <- c("Gadus_macrocephalus", "Gadus_chalcogrammus",
                   "Sebastes_alutus", "Sebastes_polyspinis", 
-                  "Squalus_suckleyi", "Atheresthes_stomias",
-                  "Sebastes_variabilis")
+                  "Atheresthes_stomias",
+                  "Sebastes_variabilis") #"Squalus_suckleyi", 
 
 for (i in species_list){
   species <- i
@@ -148,7 +148,7 @@ for (i in species_list){
          height = 9, width = 6.5, units = c("in"))
   
   ## compute index ----
-  if(species != "Gadus_chalcogrammus"){
+  if(!(species %in% c("Gadus_chalcogrammus", "Atheresthes_stomias"))){
     
     f3 <- here("species_specific_code", "GOA", species, phase, "index.RDS")
     if (!file.exists(f3)) {
