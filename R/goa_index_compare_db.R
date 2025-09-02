@@ -1,26 +1,26 @@
 # Plot all GOA sdmTMB indices compared to design-based indices ----
 # Author: Lewis Barnett
-# Date: 12-3-2025
+# Date: 2-9-2025
 
 library(dplyr)
 library(ggplot2)
 library(here)
 
-phase <- c("hindcast", "production")[1] # specify analysis phase
+phase <- c("hindcast", "production")[2] # specify analysis phase
 
 channel <- gapindex::get_connected(check_access = FALSE) # enter credentials 
 
 species_df <- data.frame(species_name = c("Gadus_macrocephalus", 
                                           "Sebastes_alutus", 
                                           "Sebastes_polyspinis", 
-                                          "Squalus_suckleyi", 
-                                          "Atheresthes_stomias", 
+                                          #"Squalus_suckleyi", 
+                                          #"Atheresthes_stomias", 
                                           "Sebastes_variabilis"), 
                          species_code = c("21720",
                                           "30060",
                                           "30420",
-                                          "310",
-                                          "10110",
+                                          #"310",
+                                          #"10110",
                                           "30152")
                          )
 
