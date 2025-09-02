@@ -65,8 +65,9 @@ for (i in species_list){
         spatiotemporal = "iid",
         anisotropy = TRUE
       )
+    }
     
-    } else {
+    if(!(species %in% c("Gadus_chalcogrammus", "Gadus_macrocephalus"))){
       mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
                          mesh = readRDS(file = here("meshes", "goa_vast_mesh.RDS")))
       fit <- sdmTMB( 
