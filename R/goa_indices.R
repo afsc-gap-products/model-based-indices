@@ -1,6 +1,6 @@
 # Run all GOA sdmTMB indices ----
 # Author: Lewis Barnett
-# Date: 25-2-2025
+# Date: 2-9-2025
 
 library(sdmTMB)
 library(dplyr)
