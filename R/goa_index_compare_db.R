@@ -81,7 +81,7 @@ for (i in 1:nrow(species_df)){
     geom_ribbon(alpha = 0.1) +
     geom_line(alpha = 0.8) + 
     ylim(0, max(both_i$upr)) +
-    ggtitle(species) +
+    #ggtitle(species) +
     coord_cartesian(expand = FALSE) + 
     ylab(ylab) +
     theme_bw()
