@@ -6,6 +6,7 @@ library(sdmTMB)
 library(dplyr)
 library(ggplot2)
 library(here)
+library(gridExtra)
 
 phase <- c("hindcast", "production")[2] # specify analysis phase
 
@@ -35,47 +36,47 @@ for (i in species_list){
     } else {
       family <- delta_gamma(type = "poisson-link")
     }
-    
+
     if(species == "Gadus_macrocephalus"){
       dat <- subset(dat, !is.na(cpue_n_km2))
-      mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
+      mesh <-  make_mesh(dat, xy_cols = c("X", "Y"),
                          mesh = readRDS(file = here("meshes", "goa_vast_mesh.RDS")))
-      fit <- sdmTMB( 
+      fit <- sdmTMB(
         cpue_n_km2 ~ 0 + year_f,
-        data = dat, 
+        data = dat,
         mesh = mesh,
-        family = family, 
-        time = "year", 
+        family = family,
+        time = "year",
         spatial = "on",
         spatiotemporal = "iid",
         anisotropy = TRUE
       )
     }
-    
+
     if(species == "Gadus_chalcogrammus"){
       dat <- subset(dat, lon < -140)
       mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 500, type = "kmeans")
-      fit <- sdmTMB( 
+      fit <- sdmTMB(
         cpue_kg_km2 ~ 0 + year_f,
-        data = dat, 
+        data = dat,
         mesh = mesh,
-        family = family, 
-        time = "year", 
+        family = family,
+        time = "year",
         spatial = "on",
         spatiotemporal = "iid",
         anisotropy = TRUE
       )
     }
-    
+
     if(!(species %in% c("Gadus_chalcogrammus", "Gadus_macrocephalus"))){
-      mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
+      mesh <-  make_mesh(dat, xy_cols = c("X", "Y"),
                          mesh = readRDS(file = here("meshes", "goa_vast_mesh.RDS")))
-      fit <- sdmTMB( 
+      fit <- sdmTMB(
         cpue_kg_km2 ~ 0 + year_f,
-        data = dat, 
+        data = dat,
         mesh = mesh,
-        family = family, 
-        time = "year", 
+        family = family,
+        time = "year",
         spatial = "on",
         spatiotemporal = "iid",
         anisotropy = TRUE
@@ -85,16 +86,16 @@ for (i in species_list){
   } else {
     fit <- readRDS(f1)
   }
-  
+
   sanity(fit)
   summary(fit)
-  
+
   ## make predictions ----
   # load grid and process prediction grid for all years desired
   grid <- read.csv(file = "extrapolation_grids/goa_2025_interpolation_grid.csv")
   pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
   pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
-  
+
   if(species == "Gadus_chalcogrammus"){
     pred_grid <- subset(pred_grid, lon < -140)
   }
@@ -106,7 +107,7 @@ for (i in species_list){
   } else {
     p <- readRDS(f2)
   }
-  
+
   ## Plot predicted density maps and fit diagnostics ----
   # q-q plot
   pdf(file = here("species_specific_code", "GOA", species, phase, "qq.pdf"),
@@ -114,7 +115,7 @@ for (i in species_list){
     sims <- simulate(fit, nsim = 500, type = "mle-mvn")
     sims |> dharma_residuals(fit, test_uniformity = FALSE)
   dev.off()
-  
+
   # residuals on map plot, by year
   resids <- sims |>
     dharma_residuals(fit, test_uniformity = FALSE, return_DHARMa = TRUE)
@@ -129,7 +130,7 @@ for (i in species_list){
   ggsave(file = here("species_specific_code", "GOA", species, phase,
                      "residuals_map.pdf"),
          height = 9, width = 6.5, units = c("in"))
-  
+
   # predictions on map plot, by year
   if(species == "Gadus_macrocephalus"){
     title <- "Predicted densities (n / square km)"
@@ -147,10 +148,10 @@ for (i in species_list){
   ggsave(file = here("species_specific_code", "GOA", species, phase,
                      "predictions_map.pdf"),
          height = 9, width = 6.5, units = c("in"))
-  
+
   ## compute index ----
   if(!(species %in% c("Gadus_chalcogrammus", "Atheresthes_stomias"))){
-    
+
     f3 <- here("species_specific_code", "GOA", species, phase, "index.RDS")
     if (!file.exists(f3)) {
       ind <- get_index(p, bias_correct = TRUE, area = p$data$area_km2)
@@ -158,41 +159,66 @@ for (i in species_list){
     } else {
       ind <- readRDS(f3)
     }
-  
+
     ### compare indices plot ----
     new_i <- ind %>% mutate(index = "mb_new") %>% select(index, year, est, lwr, upr)
-    old_i <- readRDS(here("species_specific_code", "GOA", 
+    old_i <- readRDS(here("species_specific_code", "GOA",
                            species, "hindcast", "index.RDS")) %>%
       mutate(index = "mb_old")
     both_i <- bind_rows(new_i, old_i)
-      
+
     if(species == "Gadus_macrocephalus"){
       ylab <- "Abundance (n)"
     } else {
       ylab <- "Biomass (kg)"
     }
-    ggplot(both_i, aes(x = year, y = est, ymin = lwr, ymax = upr, 
-                       colour = index)) + 
+    ggplot(both_i, aes(x = year, y = est, ymin = lwr, ymax = upr,
+                       colour = index)) +
       geom_ribbon(alpha = 0.1) +
-      geom_line(alpha = 0.8) + 
-      geom_point() + 
+      geom_line(alpha = 0.8) +
+      geom_point() +
       xlim(min(both_i$year) - 0.5, max(both_i$year) + 0.5) +
       ylim(0, max(both_i$upr)) +
       #ggtitle(species) +
-      coord_cartesian(expand = FALSE) + 
+      coord_cartesian(expand = FALSE) +
       xlab("Year") +
       ylab(ylab) +
       theme_bw()
-    ggsave(file = here("species_specific_code", "GOA", species, phase, 
-                       "index_bridge.pdf"), 
+    ggsave(file = here("species_specific_code", "GOA", species, phase,
+                       "index_bridge.pdf"),
            height = 4, width = 6, units = c("in"))
   }
-  
+
   #### ESP products ----
   f4 <- here("species_specific_code", "GOA", species, phase, "cog.csv")
   if (!file.exists(f4)) {
     cog <- get_cog(p, bias_correct = FALSE, area = p$data$area_km2, format = "wide")
     write.csv(cog, file = f4, row.names = FALSE)
+  } else {
+    cog <- read.csv(file = f4)
+    
+    cog_x <- ggplot(cog, aes(x = year, y = est_x, ymin = lwr_x, ymax = upr_x)) +
+      geom_ribbon(alpha = 0.1) +
+      geom_line(alpha = 0.8) + 
+      geom_point() + 
+      xlim(min(cog$year) - 0.5, max(cog$year) + 0.5) +
+      ylim(0, max(cog$upr_x)) +
+      ylab("Center of Gravity (Eastings, km)") +
+      xlab("Year")
+    
+    cog_y <- ggplot(cog, aes(x = year, y = est_y, ymin = lwr_y, ymax = upr_y)) +
+      geom_ribbon(alpha = 0.1) +
+      geom_line(alpha = 0.8) + 
+      geom_point() + 
+      xlim(min(cog$year) - 0.5, max(cog$year) + 0.5) +
+      ylim(min(cog$lwr_y), max(cog$upr_y)) +
+      ylab("Center of Gravity (Northings, km)") +
+      xlab("Year")
+    
+    pdf(file = here("species_specific_code", "GOA", species, phase, 
+                    "cog.pdf"), width = 6, height = 6)
+    gridExtra::grid.arrange(cog_x, cog_y, ncol = 1)
+    dev.off()
   }
   
   f5 <- here("species_specific_code", "GOA", species, phase, 
@@ -200,5 +226,20 @@ for (i in species_list){
   if (!file.exists(f5)) {
     eao <- get_eao(p, bias_correct = FALSE, area = p$data$area_km2)
     write.csv(eao, file = f5, row.names = FALSE)
+  } else {
+    eao <- read.csv(file = f5)
+    eao_plot <- ggplot(eao, aes(x = year, 
+                                y = est, 
+                                ymin = lwr, 
+                                ymax = upr)) +
+      geom_ribbon(alpha = 0.1) +
+      geom_line(alpha = 0.8) + 
+      geom_point() + 
+      xlim(min(eao$year) - 0.5, max(eao$year) + 0.5) +
+      ylab("Effective Area Occupied (km2)") +
+      xlab("Year")
+    ggsave(file = here("species_specific_code", "GOA", species, phase, 
+                       "eao.pdf"), 
+           height = 4, width = 4, units = c("in"))
   }
 }
