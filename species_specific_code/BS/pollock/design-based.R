@@ -19,7 +19,7 @@ if (file.exists("Z:/Projects/ConnectToOracle.R")) {
 }
 
 # check to see if connection has been established
-odbcGetInfo(channel_products)
+odbcGetInfo(channel)
 
 
 # Design-based comps from gapindex --------------------------------------------
