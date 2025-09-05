@@ -109,9 +109,9 @@ for (i in species_list){
   
   ## Plot predicted density maps and fit diagnostics ----
   # q-q plot
-  pdf(file = here("species_specific_code", "GOA", species, phase, "qq.pdf"), 
+  pdf(file = here("species_specific_code", "GOA", species, phase, "qq.pdf"),
       width = 5, height = 5)
-    sims <- simulate(fit, nsim = 500, type = "mle-mvn") 
+    sims <- simulate(fit, nsim = 500, type = "mle-mvn")
     sims |> dharma_residuals(fit, test_uniformity = FALSE)
   dev.off()
   
@@ -119,15 +119,15 @@ for (i in species_list){
   resids <- sims |>
     dharma_residuals(fit, test_uniformity = FALSE, return_DHARMa = TRUE)
   fit$data$resids <- resids$scaledResiduals
-  
+
   ggplot(subset(fit$data, !is.na(resids) & is.finite(resids)), aes(X, Y, col = resids)) +
     scale_colour_gradient2(name = "residuals", midpoint = 0.5) +
-    geom_point(size = 0.7) + 
-    facet_wrap(~year, ncol = 2) + 
+    geom_point(size = 0.7) +
+    facet_wrap(~year, ncol = 2) +
     coord_fixed() +
     theme_bw()
-  ggsave(file = here("species_specific_code", "GOA", species, phase, 
-                     "residuals_map.pdf"), 
+  ggsave(file = here("species_specific_code", "GOA", species, phase,
+                     "residuals_map.pdf"),
          height = 9, width = 6.5, units = c("in"))
   
   # predictions on map plot, by year
@@ -136,7 +136,7 @@ for (i in species_list){
   } else {
     title <- "Predicted densities (kg / square km)"
   }
-  
+
   ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
     geom_tile() +
     scale_fill_viridis_c(trans = "sqrt", name = "") +
@@ -144,8 +144,8 @@ for (i in species_list){
     coord_fixed() +
     ggtitle(title) +
     theme_bw()
-  ggsave(file = here("species_specific_code", "GOA", species, phase, 
-                     "predictions_map.pdf"), 
+  ggsave(file = here("species_specific_code", "GOA", species, phase,
+                     "predictions_map.pdf"),
          height = 9, width = 6.5, units = c("in"))
   
   ## compute index ----
@@ -175,9 +175,12 @@ for (i in species_list){
                        colour = index)) + 
       geom_ribbon(alpha = 0.1) +
       geom_line(alpha = 0.8) + 
+      geom_point() + 
+      xlim(min(both_i$year) - 0.5, max(both_i$year) + 0.5) +
       ylim(0, max(both_i$upr)) +
       #ggtitle(species) +
       coord_cartesian(expand = FALSE) + 
+      xlab("Year") +
       ylab(ylab) +
       theme_bw()
     ggsave(file = here("species_specific_code", "GOA", species, phase, 

@@ -80,9 +80,12 @@ for (i in 1:nrow(species_df)){
                      colour = index)) + 
     geom_ribbon(alpha = 0.1) +
     geom_line(alpha = 0.8) + 
+    geom_point() + 
+    xlim(min(both_i$year) - 0.5, max(both_i$year) + 0.5) +
     ylim(0, max(both_i$upr)) +
     #ggtitle(species) +
     coord_cartesian(expand = FALSE) + 
+    xlab("Year") +
     ylab(ylab) +
     theme_bw()
   ggsave(file = here("species_specific_code", "GOA", species, phase, 
