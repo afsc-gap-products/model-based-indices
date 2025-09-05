@@ -32,4 +32,5 @@ VAST_results/
 !meshes/*
 !extrapolation_grids/*
 */png
-!docs/*.png
+!docs/img/*.png
+*.png
