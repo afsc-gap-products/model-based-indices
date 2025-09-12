@@ -8,6 +8,10 @@ library(dplyr)
 library(ggplot2)
 library(here)
 library(devtools)
+library(sf)
+
+# install_github("afsc-gap-products/akgfmaps", build_vignettes = TRUE)
+library(akgfmaps)
 
 # Get pollock CPUE data -------------------------------------------------------
 phase <- "hindcast" # determines (combined w/ the year) which cycle the data are from
@@ -50,8 +54,8 @@ f1 <- here("species_specific_code", "BS", "pollock", phase, "results", "fit_250_
 if (file.exists(f1)) {
   fit <- readRDS(f1)
   } else {
-    mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
-                       mesh = readRDS(file = here("meshes/bs_vast_mesh_250_knots.RDS")))
+    mesh <-  make_mesh(dat, xy_cols = c("lon", "lat"), 
+                       mesh = readRDS(file = here("meshes", "bs_vast_mesh_250_knots.RDS")))
     fit <- sdmTMB( 
       cpue ~ 0 + year_f,
       spatial_varying = ~ env,
@@ -66,16 +70,36 @@ if (file.exists(f1)) {
       anisotropy = TRUE,
       control = control
     )
-    }
+  }
+
+# Check fit
+sanity(fit)
+# summary(fit)
 
 # Make predictions and index --------------------------------------------------
-# check fit before proceeding
-sanity(fit)
-summary(fit)
-# diagnose estimation issues due to model structure
-#TMBhelper::check_estimability(fit$tmb_obj)
-
 # TODO: make new prediction grid!
+load(here("species_specific_code", "BS", "pollock", "research", "Pribilof_polygons.RData"))
+# Projected crs = 3338, unprojected crs = 4326
+
+pribs_polygon <- final_combined_hr_polygons_projected_sf$geometry[1]
+# pribs_coords <- data.frame(st_coordinates(final_combined_hr_polygons_projected_sf$geometry[1]))
+
+# # Set spatial area
+# bbox = c(xmin = min(pribs_coords$X),
+#          ymin = min(pribs_coords$Y),
+#          xmax = max(pribs_coords$X),
+#          ymax = max(pribs_coords$Y))
+
+# EBS 
+grid <- make_2d_grid(obj = pribs_polygon,
+                     resolution = c(3704, 3704),  # default resolution - 2x2nm
+                     # bbox = bbox,
+                     output_type = "point",
+                     include_tile_center = TRUE) %>%
+  st_transform(crs = "EPSG:32602")
+
+grid[, c('LON_UTM', "LAT_UTM")] <- st_coordinates(grid)
+
 
 # replicate prediction grid for each year in data
 pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
@@ -83,7 +107,7 @@ pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
 
 # get prediction
 p <- predict(fit, newdata = pred_grid, return_tmb_object = TRUE)
-save(p, file = f2)
+# save(p, file = f2)
 
 # get index
 ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
