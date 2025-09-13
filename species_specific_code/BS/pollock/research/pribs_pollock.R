@@ -21,12 +21,11 @@ if(phase == "hindcast") {this_year <- this_year - 1}
 
 dat <- read.csv(here("species_specific_code", "BS", "pollock", phase,
                      "data", paste0("VAST_ddc_all_", this_year, ".csv")))  
-dat <- dplyr::transmute(dat,
-                        cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
-                        year = as.integer(year),
-                        lat = start_latitude,
-                        lon = start_longitude
-)
+dat <- transmute(dat,
+                 cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
+                 year = as.integer(year),
+                 lat = start_latitude,
+                 lon = start_longitude)
 
 
 # detect if any years have occurrences at every haul and fix params as needed
@@ -49,13 +48,28 @@ if(sum(mins$min) == 0){
   )
 }
 
+# Set up cold pool covariate
+# devtools::install_github("afsc-gap-products/coldpool")
+env_df <- coldpool::cold_pool_index
+
+env <- cbind(env_df, env = scale(coldpool::cold_pool_index$AREA_LTE2_KM2)) %>%
+  mutate(year = as.integer(YEAR)) %>%
+  select(year, env)
+
+dat <- left_join(dat, env, by = "year") 
+
+# Final data manipulation steps
+dat$year_f <- as.factor(dat$year)
+
+dat <- add_utm_columns(dat, ll_names = c("lon", "lat"), utm_crs = 32602, units = "km")
+
 # Fit model (if needed) -------------------------------------------------------
 f1 <- here("species_specific_code", "BS", "pollock", phase, "results", "fit_250_knots.RDS")
 if (file.exists(f1)) {
   fit <- readRDS(f1)
   } else {
-    mesh <-  make_mesh(dat, xy_cols = c("lon", "lat"), 
-                       mesh = readRDS(file = here("meshes", "bs_vast_mesh_250_knots.RDS")))
+    mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
+                       mesh = fmesher::fm_as_fm(readRDS(file = here("meshes", "bs_vast_mesh_250_knots.RDS"))))
     fit <- sdmTMB( 
       cpue ~ 0 + year_f,
       spatial_varying = ~ env,
@@ -74,7 +88,7 @@ if (file.exists(f1)) {
 
 # Check fit
 sanity(fit)
-# summary(fit)
+summary(fit)
 
 # Make predictions and index --------------------------------------------------
 # TODO: make new prediction grid!
