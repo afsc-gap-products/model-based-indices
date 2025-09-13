@@ -19,6 +19,8 @@ phase <- "hindcast" # determines (combined w/ the year) which cycle the data are
 this_year <- as.numeric(format(Sys.Date(), "%Y"))
 if(phase == "hindcast") {this_year <- this_year - 1}  
 
+results_wd <- here("species_specific_code", "BS", "pollock", "research", "250kts")
+
 dat <- read.csv(here("species_specific_code", "BS", "pollock", phase,
                      "data", paste0("VAST_ddc_all_", this_year, ".csv")))  
 dat <- transmute(dat,
@@ -91,7 +93,6 @@ sanity(fit)
 summary(fit)
 
 # Make predictions and index --------------------------------------------------
-# TODO: make new prediction grid!
 load(here("species_specific_code", "BS", "pollock", "research", "Pribilof_polygons.RData"))
 # Projected crs = 3338, unprojected crs = 4326
 
@@ -104,32 +105,48 @@ pribs_polygon <- final_combined_hr_polygons_projected_sf$geometry[1]
 #          xmax = max(pribs_coords$X),
 #          ymax = max(pribs_coords$Y))
 
-# EBS 
 grid <- make_2d_grid(obj = pribs_polygon,
                      resolution = c(3704, 3704),  # default resolution - 2x2nm
                      # bbox = bbox,
                      output_type = "point",
                      include_tile_center = TRUE) %>%
-  st_transform(crs = "EPSG:32602")
+  st_transform(crs = "EPSG:32602") 
 
 grid[, c('LON_UTM', "LAT_UTM")] <- st_coordinates(grid)
+
+grid <- data.frame(grid) %>%
+  select(LON_UTM, LAT_UTM, AREA) %>%
+  mutate(X = LON_UTM / 1000,
+         Y = LAT_UTM / 1000,
+         area_km2 = as.numeric(AREA)/1e6) %>%
+  select(X, Y, area_km2)
+grid <- as.data.frame(as.matrix(grid)) # drop attributes
+
+ggplot(grid, aes(X, Y, colour = area_km2)) +
+  geom_tile(width = 2, height = 2, fill = NA) +
+  scale_colour_viridis_c(direction = -1) +
+  geom_point(size = 0.5) +
+  coord_fixed()
 
 
 # replicate prediction grid for each year in data
 pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
 pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
 
+# join with environmental covariate (cold pool)
+pred_grid <- left_join(pred_grid, env, by = "year")
+
 # get prediction
 p <- predict(fit, newdata = pred_grid, return_tmb_object = TRUE)
-# save(p, file = f2)
+save(p, file = here(results_wd, "pred.Rdata"))
 
 # get index
 ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
-ind$stratum <- "Both"
+ind$stratum <- "Pribilofs"
 
 # Plot predicted density maps and fit diagnostics -----------------------------
 # q-q plot
-pdf(file = here("species_specific_code", "BS", species, phase, "results", "qq.pdf"),
+pdf(file = here(results_wd, "qq.pdf"),
     width = 5, height = 5)
 sims <- simulate(fit, nsim = 500, type = "mle-mvn") 
 sims |> dharma_residuals(fit, test_uniformity = FALSE)
@@ -148,16 +165,10 @@ ggplot(subset(fit$data, !is.na(resids) & is.finite(resids)), aes(X, Y, col = res
   facet_wrap(~year) +
   coord_fixed() +
   theme_bw()
-ggsave(file = here("species_specific_code", "BS", species, phase, "results",
-                   "residuals_map.pdf"),
+ggsave(file = here(results_wd, "residuals_map.pdf"),
        height = 9, width = 6.5, units = c("in"))
 
 # predictions on map plot, by year
-if(species == "Gadus_macrocephalus"){
-  title <- "Predicted densities (n / square km)"
-} else {
-  title <- "Predicted densities (kg / square km)"
-}
 ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
   geom_tile(width = 10, height = 10) +
   scale_fill_viridis_c(trans = "sqrt", name = "") +
@@ -165,9 +176,7 @@ ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
   scale_y_continuous(breaks = c(6000, 6500, 7000)) +
   facet_wrap(~year) +
   coord_fixed() +
-  ggtitle(title) +
+  ggtitle("Predicted densitites (kg / square km)") +
   theme_bw()
-ggsave(file = here("species_specific_code", "BS", species, phase, "results",
-                   "predictions_map.pdf"),
+ggsave(file = here(results_wd, "predictions_map.pdf"),
        height = 9, width = 6.5, units = c("in"))
-
