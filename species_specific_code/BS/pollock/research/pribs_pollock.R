@@ -13,6 +13,10 @@ library(sf)
 # install_github("afsc-gap-products/akgfmaps", build_vignettes = TRUE)
 library(akgfmaps)
 
+# devtools::install_github("seananderson/ggsidekick")
+library(ggsidekick)
+theme_set(theme_sleek())
+
 # Get pollock CPUE data -------------------------------------------------------
 phase <- "hindcast" # determines (combined w/ the year) which cycle the data are from
 
@@ -127,7 +131,8 @@ ggplot(grid, aes(X, Y, colour = area_km2)) +
   scale_colour_viridis_c(direction = -1) +
   geom_point(size = 0.5) +
   coord_fixed()
-
+ggsave(file = here(results_wd, "pred_grid.pdf"),
+       height = 4, width = 4.5, units = c("in"))
 
 # replicate prediction grid for each year in data
 pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
@@ -143,6 +148,17 @@ save(p, file = here(results_wd, "pred.Rdata"))
 # get index
 ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
 ind$stratum <- "Pribilofs"
+write.csv(ind, file = here(results_wd, "index.csv"), row.names = FALSE)
+
+# Plot index, scaled from kg to Mt
+ggplot(ind, aes(x = year, y = (est / 1e9))) +
+  geom_point() +
+  geom_line() +
+  ylim(0, NA) +
+  geom_ribbon(aes(ymin = (lwr / 1e9), ymax = (upr / 1e9)), alpha = 0.4) +
+  xlab("") + ylab("Biomass (Mt)") 
+ggsave(file = here(results_wd, "index.pdf"), 
+       height = 3, width = 5, units = "in")
 
 # Plot predicted density maps and fit diagnostics -----------------------------
 # q-q plot
@@ -163,10 +179,9 @@ ggplot(subset(fit$data, !is.na(resids) & is.finite(resids)), aes(X, Y, col = res
   scale_x_continuous(breaks = c(250, 750)) +
   scale_y_continuous(breaks = c(6000, 6500, 7000)) +
   facet_wrap(~year) +
-  coord_fixed() +
-  theme_bw()
+  coord_fixed() 
 ggsave(file = here(results_wd, "residuals_map.pdf"),
-       height = 9, width = 6.5, units = c("in"))
+       height = 9, width = 6.5, units = "in")
 
 # predictions on map plot, by year
 ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
@@ -176,7 +191,6 @@ ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
   scale_y_continuous(breaks = c(6000, 6500, 7000)) +
   facet_wrap(~year) +
   coord_fixed() +
-  ggtitle("Predicted densitites (kg / square km)") +
-  theme_bw()
+  ggtitle("Predicted densitites (kg / square km)") 
 ggsave(file = here(results_wd, "predictions_map.pdf"),
-       height = 9, width = 6.5, units = c("in"))
+       height = 9, width = 6.5, units = "in")
