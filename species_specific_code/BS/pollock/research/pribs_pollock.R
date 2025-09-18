@@ -99,64 +99,70 @@ summary(fit)
 # Make predictions and index --------------------------------------------------
 load(here("species_specific_code", "BS", "pollock", "research", "Pribilof_polygons.RData"))
 # Projected crs = 3338, unprojected crs = 4326
+final_combined_hr_polygons_projected_sf$associated_circle_radius_meters[1] <- "Pribilofs"
 
-pribs_polygon <- final_combined_hr_polygons_projected_sf$geometry[1]
-# pribs_coords <- data.frame(st_coordinates(final_combined_hr_polygons_projected_sf$geometry[1]))
+index_by_area <- function(area) {
+  polygon <- final_combined_hr_polygons_projected_sf$geometry[area]
+  dir_name <- paste0("radius", final_combined_hr_polygons_projected_sf$associated_circle_radius_meters[area])
+  dir.create(here(results_wd, dir_name), recursive = TRUE, showWarnings = FALSE)
+  
+  grid <- make_2d_grid(obj = polygon,
+                       resolution = c(3704, 3704),  # default resolution - 2x2nm
+                       output_type = "point",
+                       include_tile_center = TRUE) %>%
+    st_transform(crs = "EPSG:32602") 
+  
+  grid[, c('LON_UTM', "LAT_UTM")] <- st_coordinates(grid)
+  
+  grid <- data.frame(grid) %>%
+    select(LON_UTM, LAT_UTM, AREA) %>%
+    mutate(X = LON_UTM / 1000,
+           Y = LAT_UTM / 1000,
+           area_km2 = as.numeric(AREA)/1e6) %>%
+    select(X, Y, area_km2)
+  grid <- as.data.frame(as.matrix(grid)) # drop attributes
+  
+  ggplot(grid, aes(X, Y, colour = area_km2)) +
+    geom_tile(width = 2, height = 2, fill = NA) +
+    scale_colour_viridis_c(direction = -1) +
+    geom_point(size = 0.5) +
+    coord_fixed()
+  ggsave(file = here(results_wd, dir_name, "pred_grid.pdf"),
+         height = 4, width = 4.5, units = c("in"))
+  
+  # replicate prediction grid for each year in data
+  pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
+  pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
+  
+  # join with environmental covariate (cold pool)
+  pred_grid <- left_join(pred_grid, env, by = "year")
+  
+  # get prediction
+  p <- predict(fit, newdata = pred_grid, return_tmb_object = TRUE)
+  save(p, file = here(results_wd, dir_name, "pred.Rdata"))
+  
+  # get index
+  ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
+  ind$stratum <- paste0("radius = ", final_combined_hr_polygons_projected_sf$associated_circle_radius_meters[area])
+  write.csv(ind, file = here(results_wd, dir_name, "index.csv"), row.names = FALSE)
+  
+  return(ind)
+}
 
-# # Set spatial area
-# bbox = c(xmin = min(pribs_coords$X),
-#          ymin = min(pribs_coords$Y),
-#          xmax = max(pribs_coords$X),
-#          ymax = max(pribs_coords$Y))
-
-grid <- make_2d_grid(obj = pribs_polygon,
-                     resolution = c(3704, 3704),  # default resolution - 2x2nm
-                     # bbox = bbox,
-                     output_type = "point",
-                     include_tile_center = TRUE) %>%
-  st_transform(crs = "EPSG:32602") 
-
-grid[, c('LON_UTM', "LAT_UTM")] <- st_coordinates(grid)
-
-grid <- data.frame(grid) %>%
-  select(LON_UTM, LAT_UTM, AREA) %>%
-  mutate(X = LON_UTM / 1000,
-         Y = LAT_UTM / 1000,
-         area_km2 = as.numeric(AREA)/1e6) %>%
-  select(X, Y, area_km2)
-grid <- as.data.frame(as.matrix(grid)) # drop attributes
-
-ggplot(grid, aes(X, Y, colour = area_km2)) +
-  geom_tile(width = 2, height = 2, fill = NA) +
-  scale_colour_viridis_c(direction = -1) +
-  geom_point(size = 0.5) +
-  coord_fixed()
-ggsave(file = here(results_wd, "pred_grid.pdf"),
-       height = 4, width = 4.5, units = c("in"))
-
-# replicate prediction grid for each year in data
-pred_grid <- replicate_df(grid, "year_f", unique(dat$year_f))
-pred_grid$year <- as.integer(as.character(factor(pred_grid$year_f)))
-
-# join with environmental covariate (cold pool)
-pred_grid <- left_join(pred_grid, env, by = "year")
-
-# get prediction
-p <- predict(fit, newdata = pred_grid, return_tmb_object = TRUE)
-save(p, file = here(results_wd, "pred.Rdata"))
-
-# get index
-ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
-ind$stratum <- "Pribilofs"
-write.csv(ind, file = here(results_wd, "index.csv"), row.names = FALSE)
+# Produce index for each of the areas
+indices <- data.frame()
+for(i in 1:nrow(final_combined_hr_polygons_projected_sf)) {
+  rbind.data.frame(indices, index_by_area(i))
+}
 
 # Plot index, scaled from kg to Mt
-ggplot(ind, aes(x = year, y = (est / 1e9))) +
+ggplot(indicies, aes(x = year, y = (est / 1e9))) +
   geom_point() +
   geom_line() +
   ylim(0, NA) +
   geom_ribbon(aes(ymin = (lwr / 1e9), ymax = (upr / 1e9)), alpha = 0.4) +
-  xlab("") + ylab("Biomass (Mt)") 
+  xlab("") + ylab("Biomass (Mt)") +
+  facet_wrap(~stratum)
 ggsave(file = here(results_wd, "index.pdf"), 
        height = 3, width = 5, units = "in")
 
