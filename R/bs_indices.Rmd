@@ -278,7 +278,7 @@ ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
   ggtitle(title) +
   theme_bw()
 ggsave(file = here("species_specific_code", "BS", species, phase, "results",
-                   "predictions_map.png"),
+                   "predictions_map.pdf"),
        height = 9, width = 6.5, units = c("in"))
 ```
 
@@ -350,8 +350,10 @@ if(species == "kamchatka_flounder"){
   } else {
     new_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_new") %>% 
       select(index, stratum, year, est, lwr, upr)
-    old_i <- load(here("species_specific_code", "BS", species, "hindcast", "results", "indices_250_knots.RData")) %>%
-      mutate(index = "mb_old")
+    
+    load(here("species_specific_code", "BS", species, "hindcast", "results", "indices_250_knots.RData"))
+    old_i <-  bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_old") %>% 
+      select(index, stratum, year, est, lwr, upr)
     both_i <- bind_rows(new_i, old_i)
     
     ggplot(filter(both_i, stratum == "Both"), aes(x = year, y = est, ymin = lwr, 
@@ -364,7 +366,7 @@ if(species == "kamchatka_flounder"){
       ylab(ylab) +
       theme_bw()
     ggsave(file = here("species_specific_code", "BS", species, phase, "results",
-                       "index_comparison_both.pdf"), 
+                       "index_bridge_both.pdf"), 
            height = 4, width = 6, units = c("in"))
     
     ggplot(filter(both_i, stratum == "EBS"), aes(x = year, y = est, ymin = lwr, 
@@ -377,7 +379,7 @@ if(species == "kamchatka_flounder"){
       ylab(ylab) +
       theme_bw()
     ggsave(file = here("species_specific_code", "BS", species, phase, "results",
-                       "index_comparison_ebs.pdf"), 
+                       "index_bridge_ebs.pdf"), 
            height = 4, width = 6, units = c("in"))
     
     ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, 
@@ -390,7 +392,7 @@ if(species == "kamchatka_flounder"){
       ylab(ylab) +
       theme_bw()
     ggsave(file = here("species_specific_code", "BS", species, phase, "results",
-                       "index_comparison_nbs.pdf"), 
+                       "index_bridge_nbs.pdf"), 
            height = 4, width = 6, units = c("in"))
     
     # plot new index only for all regions
