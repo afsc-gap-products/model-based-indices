@@ -25,9 +25,10 @@ library(sdmTMB)
 library(dplyr)
 library(ggplot2)
 library(here)
-library(devtools)
-# Install/update coldpool package
-remotes::install_github("afsc-gap-products/coldpool")
+# Install coldpool package, if not already installed. Must update each year.
+if (!requireNamespace("coldpool", quietly = TRUE)) {
+  remotes::install_github("afsc-gap-products/coldpool")
+}
 
 phase <- c("hindcast", "production")[2] # specify analysis phase
 sp <- 3 # specify species from species vector
