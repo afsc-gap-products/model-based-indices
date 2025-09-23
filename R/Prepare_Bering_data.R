@@ -16,14 +16,14 @@ channel <- gapindex::get_connected(check_access = F)
 ##   Species-Specific Constants. Toggle species row
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## specify whether hindcast or production phase
-phase <- c("hindcast", "production")[1]
+phase <- c("hindcast", "production")[2]
 
 species_info <- data.frame(species_name = c("yellowfin_sole", "Pacific_cod"),
                            species_code = c(10210, 21720),
                            start_year = 1982,
                            current_year = 2025,
                            plus_group = c(20, 12), 
-                           start_year_age = c(1982, 1994))[2, ]
+                           start_year_age = c(1982, 1994))[1, ]
 
 ## Set constants
 start_year <- species_info$start_year

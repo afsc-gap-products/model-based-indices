@@ -146,7 +146,7 @@ for (i in species_list){
     ggtitle(title) +
     theme_bw()
   ggsave(file = here("species_specific_code", "GOA", species, phase,
-                     "predictions_map.pdf"),
+                     "predictions_map.png"),
          height = 9, width = 6.5, units = c("in"))
 
   ## compute index ----

@@ -33,8 +33,8 @@ if (!requireNamespace("coldpool", quietly = TRUE)) {
   devtools::install_github("afsc-gap-products/coldpool")
 }
 
-phase <- c("hindcast", "production")[1] # specify analysis phase
-sp <- 2 # specify species from species vector
+phase <- c("hindcast", "production")[2] # specify analysis phase
+sp <- 3 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 
 # Set year
@@ -209,7 +209,7 @@ if (!file.exists(f2)) {
 # get indices
 gc()
 
-f3 <- here("species_specific_code", "BS", species, phase, "results", "indices_250_knots.RData")
+f3 <- here("species_specific_code", "BS", species, phase, "results", "indices.RData")
 if (!file.exists(f3)) {
   if(species == "kamchatka_flounder"){
     ind <- get_index(p, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
@@ -278,7 +278,7 @@ ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
   ggtitle(title) +
   theme_bw()
 ggsave(file = here("species_specific_code", "BS", species, phase, "results",
-                   "predictions_map.pdf"),
+                   "predictions_map.png"),
        height = 9, width = 6.5, units = c("in"))
 ```
 
