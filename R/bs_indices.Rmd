@@ -117,7 +117,7 @@ if(sum(mins$min) == 0){
 			    )
 }
 
-f1 <- here("species_specific_code", "BS", species, phase, "results", "fit_250_knots.RDS")
+f1 <- here("species_specific_code", "BS", species, phase, "results", "fit.RDS")
 if (!file.exists(f1)) {
   
     if(species == "kamchatka_flounder"){
@@ -191,7 +191,7 @@ pred_grid_nbs <- left_join(pred_grid_nbs, env, by = "year")
 pred_grid <- left_join(pred_grid, env, by = "year")
 
 # get predictions
-f2 <- here("species_specific_code", "BS", species, phase, "results", "predictions_250_knots.RData")
+f2 <- here("species_specific_code", "BS", species, phase, "results", "predictions.RData")
 if (!file.exists(f2)) {
   if(species == "kamchatka_flounder"){
     p <- predict(fit, newdata = pred_grid_ebs, return_tmb_object = TRUE)
