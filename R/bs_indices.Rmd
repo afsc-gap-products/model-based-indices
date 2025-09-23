@@ -114,6 +114,9 @@ if(sum(mins$min) == 0){
 			    )
 }
 
+dir <- here("species_specific_code", "BS", species, phase, "results", "/")
+  if (!dir.exists(paths = dir)) dir.create(path = dir, recursive = TRUE)
+
 f1 <- here("species_specific_code", "BS", species, phase, "results", "fit.RDS")
 if (!file.exists(f1)) {
   
