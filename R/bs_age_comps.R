@@ -17,9 +17,9 @@ library(ggsidekick)
 theme_set(theme_sleek())
 
 # Set up ----------------------------------------------------------------------
-phase <- c("hindcast", "production")[1] # specify analysis phase
+phase <- c("hindcast", "production")[2] # specify analysis phase
 
-sp <- 2 # specify species from species vector
+sp <- 3 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 
 # Set year
