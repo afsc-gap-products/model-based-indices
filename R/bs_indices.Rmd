@@ -209,7 +209,7 @@ if (!file.exists(f2)) {
 # get indices
 gc()
 
-f3 <- here("species_specific_code", "BS", species, phase, "results", "indices.RData")
+f3 <- here("species_specific_code", "BS", species, phase, "results", "indices.RDS")
 if (!file.exists(f3)) {
   if(species == "kamchatka_flounder"){
     ind <- get_index(p, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
@@ -228,7 +228,8 @@ if (!file.exists(f3)) {
     ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = pred_grid_nbs$area_km2)
     ind_nbs$stratum <- "NBS"
     
-    save(ind, ind_ebs, ind_nbs, file = f3)
+    ind_all <- bind_rows(ind, ind_ebs, ind_nbs)
+    saveRDS(ind_all, file = f3)
   }
 } else {
 load(f3)
@@ -348,7 +349,7 @@ if(species == "kamchatka_flounder"){
                    "index_comparison.pdf"), 
          height = 4, width = 6, units = c("in"))
   } else {
-    new_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_new") %>% 
+    new_i <- ind_all %>% mutate(index = "mb_new") %>% 
       select(index, stratum, year, est, lwr, upr)
     
     load(here("species_specific_code", "BS", species, "hindcast", "results", "indices_250_knots.RData"))
