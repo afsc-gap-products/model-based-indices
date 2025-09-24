@@ -259,15 +259,31 @@ map_list <- list()
 if (!dir.exists(here(workDir, "results_age", "spatial_residuals"))) {
   dir.create(here(workDir, "results_age", "spatial_residuals"))
 }
-for(i in min(ages):max(ages)) {
-  df <- cbind.data.frame(dat, residuals = res$scaledResiduals) %>%
-    filter(age == i) 
-  map <- ggplot() +
-    geom_point(data = df, aes(x = X, y = Y, color = residuals), shape = 15, size = 0.9) +
-    scale_color_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0.5) +
-    xlab("eastings") + ylab("northings") + ggtitle(paste0("age ", i)) +
-    facet_wrap(~year)
-  map_list[[i]] <- map
-  ggsave(map, filename = here(workDir, "results_age", "spatial_residuals", paste0("age_", i, ".png")),
-         width = 300, height = 300, units = "mm", dpi = 300)
+
+if(species == "pacific_cod"){ 
+    for(i in min(ages):max(ages)) {
+    df <- cbind.data.frame(dat, residuals = res$scaledResiduals) %>%
+      filter(age == i) 
+    map <- ggplot() +
+      geom_point(data = df, aes(x = X, y = Y, color = residuals), shape = 15, size = 0.9) +
+      scale_color_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0.5) +
+      xlab("eastings") + ylab("northings") + ggtitle(paste0("age ", i)) +
+      facet_wrap(~year)
+    map_list[[i+1]] <- map # accounting for age 0s in cod for indexing
+    ggsave(map, filename = here(workDir, "results_age", "spatial_residuals", paste0("age_", i, ".png")),
+           width = 300, height = 300, units = "mm", dpi = 300)
+    }
+  }else{
+    for(i in min(ages):max(ages)) {
+      df <- cbind.data.frame(dat, residuals = res$scaledResiduals) %>%
+        filter(age == i) 
+      map <- ggplot() +
+        geom_point(data = df, aes(x = X, y = Y, color = residuals), shape = 15, size = 0.9) +
+        scale_color_gradient2(low = "darkred", mid = "white", high = "darkblue", midpoint = 0.5) +
+        xlab("eastings") + ylab("northings") + ggtitle(paste0("age ", i)) +
+        facet_wrap(~year)
+      map_list[[i]] <- map
+      ggsave(map, filename = here(workDir, "results_age", "spatial_residuals", paste0("age_", i, ".png")),
+             width = 300, height = 300, units = "mm", dpi = 300)
+  }
 }
