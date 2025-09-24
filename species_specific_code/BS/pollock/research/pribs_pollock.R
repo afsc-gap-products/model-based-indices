@@ -23,8 +23,13 @@ phase <- "hindcast" # determines (combined w/ the year) which cycle the data are
 this_year <- as.numeric(format(Sys.Date(), "%Y"))
 if(phase == "hindcast") {this_year <- this_year - 1}  
 
-results_wd <- here("species_specific_code", "BS", "pollock", "research", "250kts")
+kts <- 500  # Number of knots for the index model mesh
 
+# Make a new directory for the model output
+results_wd <- here("species_specific_code", "BS", "pollock", "research", paste0(kts, "kts"))
+dir.create(here(results_wd), recursive = TRUE, showWarnings = FALSE)
+
+# Read in data
 dat <- read.csv(here("species_specific_code", "BS", "pollock", phase,
                      "data", paste0("VAST_ddc_all_", this_year, ".csv")))  
 dat <- transmute(dat,
@@ -70,12 +75,14 @@ dat$year_f <- as.factor(dat$year)
 dat <- add_utm_columns(dat, ll_names = c("lon", "lat"), utm_crs = 32602, units = "km")
 
 # Fit model (if needed) -------------------------------------------------------
-f1 <- here("species_specific_code", "BS", "pollock", phase, "results", "fit_250_knots.RDS")
+f1 <- here("species_specific_code", "BS", "pollock", phase, "results", 
+           paste0("fit_", kts, "_knots.RDS"))
 if (file.exists(f1)) {
   fit <- readRDS(f1)
   } else {
     mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
-                       mesh = fmesher::fm_as_fm(readRDS(file = here("meshes", "bs_vast_mesh_250_knots.RDS"))))
+                       mesh = fmesher::fm_as_fm(readRDS(file = here("meshes", 
+                                                                    paste0("ebs_vast_mesh_", kts, "_knots.RDS")))))
     fit <- sdmTMB( 
       cpue ~ 0 + year_f,
       spatial_varying = ~ env,
