@@ -23,8 +23,13 @@ phase <- "hindcast" # determines (combined w/ the year) which cycle the data are
 this_year <- as.numeric(format(Sys.Date(), "%Y"))
 if(phase == "hindcast") {this_year <- this_year - 1}  
 
-results_wd <- here("species_specific_code", "BS", "pollock", "research", "250kts")
+kts <- 500  # Number of knots for the index model mesh
 
+# Make a new directory for the model output
+results_wd <- here("species_specific_code", "BS", "pollock", "research", paste0(kts, "kts"))
+dir.create(here(results_wd), recursive = TRUE, showWarnings = FALSE)
+
+# Read in data
 dat <- read.csv(here("species_specific_code", "BS", "pollock", phase,
                      "data", paste0("VAST_ddc_all_", this_year, ".csv")))  
 dat <- transmute(dat,
@@ -70,12 +75,14 @@ dat$year_f <- as.factor(dat$year)
 dat <- add_utm_columns(dat, ll_names = c("lon", "lat"), utm_crs = 32602, units = "km")
 
 # Fit model (if needed) -------------------------------------------------------
-f1 <- here("species_specific_code", "BS", "pollock", phase, "results", "fit_250_knots.RDS")
+f1 <- here("species_specific_code", "BS", "pollock", phase, "results", 
+           paste0("fit_", kts, "_knots.RDS"))
 if (file.exists(f1)) {
   fit <- readRDS(f1)
   } else {
     mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
-                       mesh = fmesher::fm_as_fm(readRDS(file = here("meshes", "bs_vast_mesh_250_knots.RDS"))))
+                       mesh = fmesher::fm_as_fm(readRDS(file = here("meshes", 
+                                                                    paste0("ebs_vast_mesh_", kts, "_knots.RDS")))))
     fit <- sdmTMB( 
       cpue ~ 0 + year_f,
       spatial_varying = ~ env,
@@ -161,25 +168,28 @@ index_by_area <- function(area) {
   
   # get index
   ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
-  ind$stratum <- paste0("radius = ", final_combined_hr_polygons_projected_sf$associated_circle_radius_meters[area])
+  ind$stratum <- final_combined_hr_polygons_projected_sf$associated_circle_radius_meters[area]
   write.csv(ind, file = here(results_wd, dir_name, "index.csv"), row.names = FALSE)
   
   return(ind)
 }
 
 index_out <- lapply(1:nrow(final_combined_hr_polygons_projected_sf), index_by_area)
-indicies <- do.call(rbind, index_out)
+indices <- do.call(rbind, index_out)
+indices$stratum  <- factor(indices$stratum,
+                           levels = c("25", "50", "75", "100", "125", "150", "175", "200", "225", "250", "Pribilofs"),
+                           labels = c("25km", "50km", "75km", "100km", "125km", "150km", "175km", "200km", "225km", "250km", "Pribilofs")
+)
 
 # Plot index, scaled from kg to Mt
-ggplot(indicies, aes(x = year, y = (est / 1e9))) +
-  geom_point() +
+ggplot(indices, aes(x = year, y = (est / 1e9))) +
   geom_line() +
   ylim(0, NA) +
   geom_ribbon(aes(ymin = (lwr / 1e9), ymax = (upr / 1e9)), alpha = 0.4) +
   xlab("") + ylab("Biomass (Mt)") +
   facet_wrap(~stratum)
 ggsave(file = here(results_wd, "index.png"), 
-       height = 3, width = 5, units = "in")
+       height = 6, width = 10, units = "in")
 
 # Plot predicted density maps and fit diagnostics -----------------------------
 # q-q plot
