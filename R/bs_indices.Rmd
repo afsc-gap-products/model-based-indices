@@ -49,7 +49,7 @@ if(species == "pacific_cod"){
   dat <- rename(dat, cpue = cpue_n_km2)
 }
 if(species == "pollock"){
-  dat <- read.csv(here("species_specific_code", "BS", species, phase,
+  dat <- read.csv(here("species_specific_code", "BS", species, 
                        "data", paste0("VAST_ddc_all_", this_year, ".csv")))  
   dat <- dplyr::transmute(dat,
                           cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
