@@ -19,7 +19,7 @@ theme_set(theme_sleek())
 # Set up ----------------------------------------------------------------------
 phase <- c("hindcast", "production")[2] # specify analysis phase
 
-sp <- 3 # specify species from species vector
+sp <- 1 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 
 # Set year
@@ -215,7 +215,8 @@ plot_proportions <- function(area = region) {
     guides(fill = "none") +  # no legend 
     facet_wrap(~ year, ncol = 4, dir = "v") +  # years fill column-wise for cohort tracking
     theme(strip.text.x = element_blank()) +  # remove year label from top of plot & move to inside boxes
-    geom_text(x = 13, y = 0.45, aes(label = year), color = "grey30", size = 2.8)
+    geom_text(aes(x = max(ages) * 0.89, y = max(proportion) - 0.05, label = year), 
+              color = "grey30", size = 2.8)
   
   return(plot)
 }
