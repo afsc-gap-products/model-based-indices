@@ -234,23 +234,14 @@ res <- DHARMa::createDHARMa(simulatedResponse = sim,
                             observedResponse = dat$cpue, 
                             fittedPredictedResponse = fitted(fit))
 
-res_data <- residuals(res)
-
 # q-q plot
-if (!requireNamespace("qqplotr", quietly = TRUE)) {
-  install.packages("qqplotr")
-  install.packages("twosamples")  # needed to install this separately on VM
-}
-library(qqplotr)
-
-qqplot <- ggplot(data.frame(resid = res_data), aes(sample = resid)) +
-  stat_qq_band() +
-  stat_qq_line() +
-  stat_qq_point() +
-  xlim(0, 1) + ylim(0, 1)
-
-ggsave(qqplot, filename = here(workDir, "results_age", "qq.png"),
-       width = 130, height = 130, units = "mm", dpi = 300)
+png(file = here(workDir, "results_age", "qq.png"),
+    width = 130, height = 130, units = "mm", res = 300)
+DHARMa::plotQQunif(simulationOutput = res, 
+                   testOutliers = FALSE, 
+                   testUniformity = FALSE,
+                   testDispersion = FALSE)
+dev.off()
 
 # Spatial residuals
 map_list <- list()
