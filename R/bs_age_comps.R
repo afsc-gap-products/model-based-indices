@@ -19,7 +19,7 @@ theme_set(theme_sleek())
 # Set up ----------------------------------------------------------------------
 phase <- c("hindcast", "production")[2] # specify analysis phase
 
-sp <- 3 # specify species from species vector
+sp <- 2 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 
 # Set year
@@ -34,7 +34,8 @@ workDir <- here("species_specific_code", "BS", species, phase)
 
 # Read in and format data -----------------------------------------------------
 if(species == "pollock"){
-  dat <- read.csv(here(workDir, "data", paste0("VAST_ddc_alk_", this_year, ".csv")))  
+  dat <- read.csv(here("species_specific_code", "BS", "pollock", "data", 
+                       paste0("VAST_ddc_alk_", this_year, ".csv")))  
   dat <- transmute(dat,
                    cpue = CPUE_num * 100, # converts cpue from kg/ha to kg/km^2
                    year = as.integer(Year),
