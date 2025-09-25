@@ -137,10 +137,8 @@ get_abundance <- function(region) {
   if(region == "both") {grid <-  read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))}
   
   N_jz <- expand.grid(age_f = fit$internal$variables, year = sort(unique(dat$year)))
-  N_jz$year_age <- interaction(N_jz$year, N_jz$age)
   N_jz <- cbind(N_jz, "abundance" = NA, "SE" = NA)
-  
-  for(j in which(!(N_jz$year_age %in% year_age_to_drop))){
+  for(j in seq_len(nrow(N_jz))) {
     if (N_jz[j, "age_f"] == 1) {
       message("Integrating ", N_jz[j, "year"], " ", N_jz[j, "age_f"], ": ", Sys.time())
     }
@@ -159,7 +157,6 @@ get_abundance <- function(region) {
       N_jz[j, "abundance"] <- index1[3] / 1e9
     }
   }
-  N_jz[is.na(N_jz)] <- 0 # replace NAs for combinations with 0 encounters
   
   N_ct <- array(N_jz$abundance, 
                 dim = c(length(fit$internal$variables), length(unique(dat$year))),
