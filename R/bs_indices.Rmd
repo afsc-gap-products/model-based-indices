@@ -31,7 +31,7 @@ if (!requireNamespace("coldpool", quietly = TRUE)) {
 }
 
 phase <- c("hindcast", "production")[2] # specify analysis phase
-sp <- 3 # specify species from species vector
+sp <- 2 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 
 # Set year
@@ -122,8 +122,8 @@ if (!file.exists(f1)) {
   
     if(species == "kamchatka_flounder"){
       #make mesh just for EBS only, need to try out different numbers of knots
-        mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
-                     mesh = readRDS(file = here("meshes/ebs_vast_mesh_250_knots.RDS")))
+      mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
+                         mesh = fmesher::fm_as_fm(readRDS(file = here("meshes/ebs_vast_mesh_250_knots.RDS"))))
       #fit to EBS only, using IID spatiotemporal fields instead of "ar1"
       fit <- sdmTMB( 
         cpue ~ 0 + year_f,
@@ -141,7 +141,7 @@ if (!file.exists(f1)) {
     } else {
         #pass same mesh as prior model
         mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
-                     mesh = readRDS(file = here("meshes/bs_vast_mesh_250_knots.RDS")))
+                           mesh = fmesher::fm_as_fm(readRDS(file = here("meshes/ebs_vast_mesh_250_knots.RDS"))))
         fit <- sdmTMB( 
           cpue ~ 0 + year_f,
           spatial_varying = ~ env,
