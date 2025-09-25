@@ -196,7 +196,7 @@ props <- calc_props(abundance)
 write.csv(props, here(workDir, "results_age", "tinyVAST_props.csv"), row.names = FALSE)
 
 # Plot proportions with colors to track cohort strength
-plot_proportions <- function(area = region, save_plot = TRUE) {
+plot_proportions <- function(area = region) {
   props <- props %>% filter(region == area)  # in case there are proportions calculated for multiple areas
   colors <- rep(1:(length(ages) + 1), length(min(props$year):this_year))  # color ID for the plot
   colnames(props) <- c("year", min(ages):max(ages), "region")
@@ -218,14 +218,13 @@ plot_proportions <- function(area = region, save_plot = TRUE) {
     geom_text(x = 13, y = 0.45, aes(label = year), color = "grey30", size = 2.8)
   
   return(plot)
-  
-  if(save_plot == TRUE) {
-    ggsave(plot, filename = here(workDir, "results_age", paste0("Age_comp_", area, ".png")),
-           width=120, height=180, units="mm", dpi=300)
-  }
 }
 
-plot_proportions()
+props_plot <- plot_proportions()
+props_plot
+
+ggsave(props_plot, filename = here(workDir, "results_age", paste0("Age_comp_", region, ".png")),
+       width=120, height=180, units="mm", dpi=300)
 
 # Model diagnostics -----------------------------------------------------------
 # working off of this vignette: https://vast-lib.github.io/tinyVAST/articles/mgcv.html
@@ -249,7 +248,6 @@ qqplot <- ggplot(data.frame(resid = res_data), aes(sample = resid)) +
   stat_qq_line() +
   stat_qq_point() +
   xlim(0, 1) + ylim(0, 1)
-# qqplot
 
 ggsave(qqplot, filename = here(workDir, "results_age", "qq.png"),
        width = 130, height = 130, units = "mm", dpi = 300)
