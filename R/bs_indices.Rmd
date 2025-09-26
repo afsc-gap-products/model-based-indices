@@ -440,11 +440,11 @@ if (!file.exists(f5)) {
   eao <- get_eao(p, bias_correct = FALSE, area = p$data$area_km2)
   
   eao_ebs <- get_eao(p_ebs, bias_correct = FALSE, 
-               area = p_ebs$data$area_km2, format = "wide")
+               area = p_ebs$data$area_km2)
     eao$region <- "EBS"
     
   eao_nbs <- get_eao(p_nbs, bias_correct = FALSE, 
-               area = p_nbs$data$area_km2, format = "wide")
+               area = p_nbs$data$area_km2)
     eao$region <- "NBS"
       
   eao_all <- bind_rows(eao, eao_ebs, eao_nbs)
