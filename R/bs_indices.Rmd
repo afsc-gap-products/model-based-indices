@@ -230,6 +230,8 @@ if (!file.exists(f3)) {
     
     ind_all <- bind_rows(ind, ind_ebs, ind_nbs)
     saveRDS(ind_all, file = f3)
+    write.csv(ind_all, here("species_specific_code", "BS", species, phase, 
+                            "results", "indices.csv"), row.names = FALSE)
   }
 } else {
 load(f3)
