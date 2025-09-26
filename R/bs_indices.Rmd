@@ -213,20 +213,20 @@ f3 <- here("species_specific_code", "BS", species, phase, "results", "indices.RD
 if (!file.exists(f3)) {
   if(species == "kamchatka_flounder"){
     ind <- get_index(p, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
-    ind$stratum <- "EBS"
+    ind$region <- "EBS"
     
     save(ind, file = f3)
   } else {
     ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
-    ind$stratum <- "Both"
+    ind$region <- "Both"
     
     gc()
     ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
-    ind_ebs$stratum <- "EBS"
+    ind_ebs$region <- "EBS"
   
     gc()
     ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = pred_grid_nbs$area_km2)
-    ind_nbs$stratum <- "NBS"
+    ind_nbs$region <- "NBS"
     
     ind_all <- bind_rows(ind, ind_ebs, ind_nbs)
     saveRDS(ind_all, file = f3)
@@ -322,7 +322,7 @@ Now, we can compare the index to the prior model.
 # }
 # db_i <- RODBC::sqlQuery(channel = channel, query = query)
 # db_i <- db_i %>% 
-#   mutate(stratum = recode(AREA_ID, 
+#   mutate(region = recode(AREA_ID, 
 #                           `99900` = "EBS", 
 #                           `99902` = "NBS")) %>% 
 #   mutate(index = "db") %>%
@@ -350,14 +350,14 @@ if(species == "kamchatka_flounder"){
          height = 4, width = 6, units = c("in"))
   } else {
     new_i <- ind_all %>% mutate(index = "mb_new") %>% 
-      select(index, stratum, year, est, lwr, upr)
+      select(index, region, year, est, lwr, upr)
     
     load(here("species_specific_code", "BS", species, "hindcast", "results", "indices_250_knots.RData"))
     old_i <-  bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_old") %>% 
-      select(index, stratum, year, est, lwr, upr)
+      select(index, region, year, est, lwr, upr)
     both_i <- bind_rows(new_i, old_i)
     
-    ggplot(filter(both_i, stratum == "Both"), aes(x = year, y = est, ymin = lwr, 
+    ggplot(filter(both_i, region == "Both"), aes(x = year, y = est, ymin = lwr, 
                                                   ymax = upr, colour = index)) + 
       geom_ribbon(alpha = 0.1) +
       geom_line(alpha = 0.8) + 
@@ -370,7 +370,7 @@ if(species == "kamchatka_flounder"){
                        "index_bridge_both.pdf"), 
            height = 4, width = 6, units = c("in"))
     
-    ggplot(filter(both_i, stratum == "EBS"), aes(x = year, y = est, ymin = lwr, 
+    ggplot(filter(both_i, region == "EBS"), aes(x = year, y = est, ymin = lwr, 
                                                   ymax = upr, colour = index)) + 
       geom_ribbon(alpha = 0.1) +
       geom_line(alpha = 0.8) + 
@@ -383,7 +383,7 @@ if(species == "kamchatka_flounder"){
                        "index_bridge_ebs.pdf"), 
            height = 4, width = 6, units = c("in"))
     
-    ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, 
+    ggplot(filter(both_i, region == "NBS"), aes(x = year, y = est, ymin = lwr, 
                                                   ymax = upr, colour = index)) + 
       geom_ribbon(alpha = 0.1) +
       geom_line(alpha = 0.8) + 
@@ -397,7 +397,7 @@ if(species == "kamchatka_flounder"){
            height = 4, width = 6, units = c("in"))
     
     # plot new index only for all regions
-    ggplot(new_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = stratum)) + 
+    ggplot(new_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = region)) + 
       geom_ribbon(alpha = 0.1) +
       geom_line(alpha = 0.8) + 
       ylim(0, max(new_i$upr)) +
