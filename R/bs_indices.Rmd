@@ -31,7 +31,7 @@ if (!requireNamespace("coldpool", quietly = TRUE)) {
 }
 
 phase <- c("hindcast", "production")[2] # specify analysis phase
-sp <- 3 # specify species from species vector
+sp <- 1 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 
 # Set year
@@ -234,7 +234,7 @@ if (!file.exists(f3)) {
                             "results", "indices.csv"), row.names = FALSE)
   }
 } else {
-load(f3)
+readRDS(f3)
 }
 ```
 Make maps and diagnostics:
