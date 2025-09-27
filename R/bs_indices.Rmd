@@ -422,11 +422,11 @@ if (!file.exists(f4)) {
   
   # cog_ebs <- get_cog(p_ebs, bias_correct = FALSE, 
   #              area = p_ebs$data$area_km2, format = "wide")
-  #   cog$region <- "EBS"
+  #   cog_ebs$region <- "EBS"
   #   
   # cog_nbs <- get_cog(p_nbs, bias_correct = FALSE, 
   #              area = p_nbs$data$area_km2, format = "wide")
-  #   cog$region <- "NBS"
+  #   cog_nbs$region <- "NBS"
   #     
   # cog_all <- bind_rows(cog, cog_ebs, cog_nbs)
   # write.csv(cog_all, file = f4, row.names = FALSE)
@@ -438,14 +438,15 @@ f5 <- here("species_specific_code", "BS", species, phase, "results",
            "area_occupied.csv")
 if (!file.exists(f5)) {
   eao <- get_eao(p, bias_correct = FALSE, area = p$data$area_km2)
+    eao$region <- "Both"
   
   eao_ebs <- get_eao(p_ebs, bias_correct = FALSE, 
                area = p_ebs$data$area_km2)
-    eao$region <- "EBS"
+    eao_ebs$region <- "EBS"
     
   eao_nbs <- get_eao(p_nbs, bias_correct = FALSE, 
                area = p_nbs$data$area_km2)
-    eao$region <- "NBS"
+    eao_nbs$region <- "NBS"
       
   eao_all <- bind_rows(eao, eao_ebs, eao_nbs)
   write.csv(eao_all, file = f5, row.names = FALSE)
