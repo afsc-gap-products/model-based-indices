@@ -435,32 +435,137 @@ if (!file.exists(f4)) {
     cog <- read.csv(file = f4)
   }
 
-  #plot COG
-  cog_x <- ggplot(cog, aes(x = year, y = est_x, ymin = lwr_x, ymax = upr_x)) +
-    geom_ribbon(alpha = 0.1) +
-    geom_line(alpha = 0.8) + 
-    geom_point() + 
-    xlim(min(cog$year) - 0.5, max(cog$year) + 0.5) +
-    ylim(0, max(cog$upr_x)) +
-    ylab("Center of Gravity (Eastings, km)") +
-    xlab("Year") +
-    theme_bw()
-  cog_y <- ggplot(cog, aes(x = year, y = est_y, ymin = lwr_y, ymax = upr_y)) +
-    geom_ribbon(alpha = 0.1) +
-    geom_line(alpha = 0.8) + 
-    geom_point() + 
-    xlim(min(cog$year) - 0.5, max(cog$year) + 0.5) +
-    ylim(min(cog$lwr_y), max(cog$upr_y)) +
-    ylab("Center of Gravity (Northings, km)") +
-    xlab("Year") +
-    theme_bw()
+  # plot center of gravity as time series and sparkleplot
+  cog_plots <- function(results = cog, dir = saveDir, save_data = TRUE, save_plots = TRUE) {
+    cog_new <- rbind(cbind.data.frame(year = cog$year, est = cog$est_x, 
+                                      lwr = cog$lwr_x, upr = cog$upr_x, 
+                                      se = cog$se_x, unit = "Eastings (km)"),
+                   cbind.data.frame(year = cog$year, est = cog$est_y, 
+                                    lwr = cog$lwr_y, upr = cog$upr_y, 
+                                    se = cog$se_y, unit = "Northings (km)"))
   
-  pdf(file = here("species_specific_code", "BS", species, phase, "results",
-                  "cog.pdf"), width = 6, height = 6)
-  gridExtra::grid.arrange(cog_x, cog_y, ncol = 1)
-  dev.off()
   
-
+    ts <- ggplot(cog_new, aes(x = year, y = est)) +
+      geom_line() +
+      geom_ribbon(aes(ymin = (lwr), ymax = (upr)), alpha = 0.2) +
+      xlab("") + ylab("") +
+      facet_wrap(~ unit, ncol = 1, scales = "free_y") +
+      theme_bw()
+    
+    # Convert to lat/long using akgfmaps package and plot
+    cog_latlon <- cbind.data.frame(X = cog$est_x, Y = cog$est_y)
+    # CRS information for VAST outputs here: 
+    # https://github.com/James-Thorson-NOAA/FishStatsUtils/blob/main/R/project_coordinates.R
+    cog_latlon <- akgfmaps::transform_data_frame_crs(cog_latlon, 
+                                                     coords = c("X", "Y"), 
+                                                     in.crs = "+proj=utm +datum=WGS84 +units=km +zone=2",
+                                                     out.crs = "+proj=longlat +datum=WGS84")
+    cog_latlon$Year <- cog$year
+    
+    # Include error in COG estimate before transformation to get min & max values
+    cog_min <- cbind.data.frame(X = cog$lwr_x, Y = cog$lwr_y)
+    cog_min <- akgfmaps::transform_data_frame_crs(cog_min, 
+                                                  coords = c("X", "Y"), 
+                                                  in.crs = "+proj=utm +datum=WGS84 +units=km +zone=2",
+                                                  out.crs = "+proj=longlat +datum=WGS84")
+    
+    cog_max <- cbind.data.frame(X = cog$upr_x, Y = cog$upr_y)
+    cog_max <- akgfmaps::transform_data_frame_crs(cog_max, 
+                                                  coords = c("X", "Y"), 
+                                                  in.crs = "+proj=utm +datum=WGS84 +units=km +zone=2",
+                                                  out.crs = "+proj=longlat +datum=WGS84")
+    cog_error <- cbind.data.frame(cog_latlon, 
+                                  xmin = cog_min$X, xmax = cog_max$X,
+                                  ymin = cog_min$Y, ymax = cog_max$Y)
+    
+    # Plot on a map
+    world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
+    sf::sf_use_s2(FALSE)  # turn off spherical geometry
+    map <- ggplot(data = world) +
+      geom_sf() +
+      geom_point(data = cog_latlon,
+                 aes(x = X, y = Y, color = Year), size = 1) +
+      # geom_errorbar(data = cog_error,
+      #               aes(x = X, y = Y, ymin = ymin,ymax = ymax, color = Year), alpha = 0.8) +
+      # geom_errorbarh(data = cog_error,
+      #                aes(x = X, y = Y, xmin = xmin,xmax = xmax, color = Year), alpha = 0.8) +
+      coord_sf(xlim = c(-179, -157), ylim = c(54, 65), expand = FALSE) +
+      viridis::scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
+      scale_x_continuous(breaks = c(-178, -158)) +
+      scale_y_continuous(breaks = c(55, 64)) +
+      labs(x = NULL, y = NULL) +
+      ggsidekick::theme_sleek() +
+      theme(plot.background = element_rect(fill = "transparent"))
+    
+    cog_error2 <- cog_error[-1, c(1:2)]
+    cog_error2[nrow(cog_error2) + 1, ] <- NA
+    colnames(cog_error2) <- c("X2", "Y2")
+    cog_error2 <- cbind.data.frame(cog_error, cog_error2) 
+    
+    # Plot as scatter (sparkleplot)
+    sparkle <- ggplot(data = cog_error, aes(x = X, y = Y, color = Year)) +
+      geom_point() +
+      # With arrow
+      # geom_segment(data = cog_error2 %>% filter(Year >= this_year - 10), 
+      #              aes(x = X, y = Y, xend = X2, yend = Y2), 
+      #              alpha = 0.8, arrow = arrow(length = unit(0.03, "npc"))) +
+      # Without arrow
+      geom_segment(data = cog_error2 %>% filter(Year >= this_year - 10), 
+                   aes(x = X, y = Y, xend = X2, yend = Y2), 
+                   alpha = 0.8) +
+      geom_errorbar(aes(ymin = ymin, ymax = ymax, color = Year), alpha = 0.4) +
+      geom_errorbarh(aes(xmin = xmin, xmax = xmax, color = Year), alpha = 0.4) +
+      viridis::scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
+      xlab("Longitude (°W)") + ylab("Latitude (°N)") +
+      ggsidekick::theme_sleek() +
+      theme(plot.background = element_rect(fill = "transparent"))
+    
+    # Inset map into sparkleplot
+    inset <- cowplot::ggdraw() +
+      cowplot::draw_plot(plot = sparkle) +
+      cowplot::draw_plot(plot = map +
+                         theme(legend.position = "none") +
+                         guides(x = "none", y = "none"), 
+                         x = 0.81, y = 0.75, width = 0.21, height = 0.21) 
+    
+    # Combine sparkleplot and time-series plot
+    all <- cowplot::plot_grid(inset, ts)
+    
+    # Another inset for using independently
+    inset2 <- cowplot::ggdraw() +
+      cowplot::draw_plot(plot = sparkle) +
+      cowplot::draw_plot(plot = map +
+                         theme(legend.position = "none") +
+                         guides(x = "none", y = "none"), 
+                         x = 0.60, y = 0.76, width = 0.21, height = 0.21) 
+    
+    dir <- here("species_specific_code", "BS", species, phase, "results")
+    if(save_data == TRUE) {
+      # Save COG as lat/long (without error)
+      cog_latlon <- cog_latlon[, c(3, 2, 1)]
+      colnames(cog_latlon) <- c("Year", "Latitude", "Longitude")
+      write.csv(cog_latlon, file = here(dir, "COG_latlong.csv"), row.names = FALSE)
+    }
+    
+    if(save_plots == TRUE) {
+      ggsave(ts, filename = here(dir, "cog_utm.pdf"),
+             width = 150, height = 180, unit = "mm")
+      ggsave(map, filename = here(dir, "COG_map.pdf"),
+             width = 110, height = 90, unit = "mm")
+      ggsave(sparkle, filename = here(dir, "COG_scatter.pdf"),
+             width = 130, height = 100, unit = "mm")
+      ggsave(all, filename = here(dir, "COG_all.pdf"),
+             width = 250, height = 100, unit = "mm")
+      ggsave(inset2, filename = here(dir, "COG_inset.pdf"),
+             width = 130, height = 100, unit = "mm")
+    }
+    
+    return(list(table = cog_latlon, table_error = cog_error, 
+                ts = ts, map = map, sparkle = sparkle, all = all, inset = inset2))
+  }
+  
+  cog_out <- cog_plots()
+  
 f5 <- here("species_specific_code", "BS", species, phase, "results",
            "area_occupied.csv")
 if (!file.exists(f5)) {
@@ -481,23 +586,18 @@ if (!file.exists(f5)) {
     eao <- read.csv(file = f5)
   }
 
-  #plot effective area occupied
-  eao_plot <- ggplot(eao, aes(x = year, 
-                              y = est, 
-                              ymin = lwr, 
-                              ymax = upr)) +
-    geom_ribbon(alpha = 0.1) +
-    geom_line(alpha = 0.8) + 
-    geom_point() + 
-    xlim(min(eao$year) - 0.5, max(eao$year) + 0.5) +
-    facet_wrap(~region, ncol = 1) + 
-    ylab(bquote('Effective Area Occupied'~(km^2))) +
-    xlab("Year") +
-    theme_bw()
+  # plot effective area occupied
+  eao_plot <- ggplot(eao, aes(x = year, y = est)) +
+    geom_line(alpha = 0.8) +
+    geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.3) +
+    scale_y_continuous(labels = scales::comma, limits = c(0, NA)) +
+    ylab(expression(paste("Effective Area Occupied (", km^2, ")"))) +
+    theme_bw() +
+    facet_wrap(~ region, ncol = 1)
+  
   ggsave(file = here("species_specific_code", "BS", species, phase, "results",
                      "area_occupied.pdf"), 
          height = 6, width = 6, units = c("in"))
-
 
 # Joint variance-covariance matrix for pollock ----
 if (species == "pollock") {
