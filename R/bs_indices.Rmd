@@ -267,9 +267,9 @@ ggsave(file = here("species_specific_code", "BS", species, phase, "results",
 
 # predictions on map plot, by year
 if(species == "pacific_cod"){
-  title <- "Predicted densities (n / square km)"
+  title <- bquote('Predicted densities'~(n / km^2))
 } else {
-  title <- "Predicted densities (kg / square km)"
+  title <- bquote('Predicted densities'~(kg / km^2))
 }
 ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
   geom_tile(width = 10, height = 10) +
@@ -430,9 +430,36 @@ if (!file.exists(f4)) {
   #     
   # cog_all <- bind_rows(cog, cog_ebs, cog_nbs)
   # write.csv(cog_all, file = f4, row.names = FALSE)
-      
   write.csv(cog, file = f4, row.names = FALSE)
-}
+  } else {
+    cog <- read.csv(file = f4)
+  }
+
+  #plot COG
+  cog_x <- ggplot(cog, aes(x = year, y = est_x, ymin = lwr_x, ymax = upr_x)) +
+    geom_ribbon(alpha = 0.1) +
+    geom_line(alpha = 0.8) + 
+    geom_point() + 
+    xlim(min(cog$year) - 0.5, max(cog$year) + 0.5) +
+    ylim(0, max(cog$upr_x)) +
+    ylab("Center of Gravity (Eastings, km)") +
+    xlab("Year") +
+    theme_bw()
+  cog_y <- ggplot(cog, aes(x = year, y = est_y, ymin = lwr_y, ymax = upr_y)) +
+    geom_ribbon(alpha = 0.1) +
+    geom_line(alpha = 0.8) + 
+    geom_point() + 
+    xlim(min(cog$year) - 0.5, max(cog$year) + 0.5) +
+    ylim(min(cog$lwr_y), max(cog$upr_y)) +
+    ylab("Center of Gravity (Northings, km)") +
+    xlab("Year") +
+    theme_bw()
+  
+  pdf(file = here("species_specific_code", "BS", species, phase, "results",
+                  "cog.pdf"), width = 6, height = 6)
+  gridExtra::grid.arrange(cog_x, cog_y, ncol = 1)
+  dev.off()
+  
 
 f5 <- here("species_specific_code", "BS", species, phase, "results",
            "area_occupied.csv")
@@ -450,7 +477,27 @@ if (!file.exists(f5)) {
       
   eao_all <- bind_rows(eao, eao_ebs, eao_nbs)
   write.csv(eao_all, file = f5, row.names = FALSE)
-}
+  } else {
+    eao <- read.csv(file = f5)
+  }
+
+  #plot effective area occupied
+  eao_plot <- ggplot(eao, aes(x = year, 
+                              y = est, 
+                              ymin = lwr, 
+                              ymax = upr)) +
+    geom_ribbon(alpha = 0.1) +
+    geom_line(alpha = 0.8) + 
+    geom_point() + 
+    xlim(min(eao$year) - 0.5, max(eao$year) + 0.5) +
+    facet_wrap(~region, ncol = 1) + 
+    ylab(bquote('Effective Area Occupied'~(km^2))) +
+    xlab("Year") +
+    theme_bw()
+  ggsave(file = here("species_specific_code", "BS", species, phase, "results",
+                     "eao.pdf"), 
+         height = 6, width = 6, units = c("in"))
+
 
 # Joint variance-covariance matrix for pollock ----
 if (species == "pollock") {
