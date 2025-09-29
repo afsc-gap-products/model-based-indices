@@ -548,7 +548,7 @@ if (!file.exists(f4)) {
     }
     
     if(save_plots == TRUE) {
-      ggsave(ts, filename = here(dir, "cog_utm.pdf"),
+      ggsave(ts, filename = here(dir, "COG_utm.pdf"),
              width = 150, height = 180, unit = "mm")
       ggsave(map, filename = here(dir, "COG_map.pdf"),
              width = 110, height = 90, unit = "mm")
