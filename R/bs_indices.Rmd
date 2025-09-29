@@ -495,7 +495,7 @@ if (!file.exists(f5)) {
     xlab("Year") +
     theme_bw()
   ggsave(file = here("species_specific_code", "BS", species, phase, "results",
-                     "eao.pdf"), 
+                     "area_occupied.pdf"), 
          height = 6, width = 6, units = c("in"))
 
 

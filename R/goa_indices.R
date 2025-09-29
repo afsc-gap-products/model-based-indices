@@ -242,7 +242,7 @@ for (i in species_list){
       xlab("Year") +
       theme_bw()
     ggsave(file = here("species_specific_code", "GOA", species, phase, 
-                       "eao.pdf"), 
+                       "area_occupied.pdf"), 
            height = 4, width = 4, units = c("in"))
   }
 }
