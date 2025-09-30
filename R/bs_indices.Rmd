@@ -284,7 +284,7 @@ ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
   theme_bw()
 ggsave(file = here("species_specific_code", "BS", species, phase, "results",
                    "predictions_map.png"),
-       height = 9, width = 6.5, units = c("in"))
+       height = 7, width = 6.5, units = c("in"))
 ```
 
 Now, we can compare the index to the prior model.
