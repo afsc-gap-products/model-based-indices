@@ -31,7 +31,7 @@ if (!requireNamespace("coldpool", quietly = TRUE)) {
 }
 
 phase <- c("hindcast", "production")[2] # specify analysis phase
-sp <- 3 # specify species from species vector
+sp <- 1 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 
 # Set year
@@ -448,7 +448,7 @@ if (!file.exists(f4)) {
     ts <- ggplot(cog_new, aes(x = year, y = est)) +
       geom_line() +
       geom_ribbon(aes(ymin = (lwr), ymax = (upr)), alpha = 0.2) +
-      xlab("year") + ylab("") +
+      xlab("Year") + ylab("") +
       facet_wrap(~ unit, ncol = 1, scales = "free_y") +
       theme_bw()
     
