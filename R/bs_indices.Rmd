@@ -31,7 +31,7 @@ if (!requireNamespace("coldpool", quietly = TRUE)) {
 }
 
 phase <- c("hindcast", "production")[2] # specify analysis phase
-sp <- 1 # specify species from species vector
+sp <- 3 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 
 # Set year
@@ -272,7 +272,7 @@ if(species == "pacific_cod"){
   title <- bquote('Predicted densities'~(kg / km^2))
 }
 ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
-  geom_tile(width = 10, height = 10) +
+  geom_tile(width = 22.224, height = 22.224) +
   scale_fill_viridis_c(trans = "sqrt", name = "", option = "magma", direction = -1) +
   scale_x_continuous(breaks = c(250, 750)) +
   scale_y_continuous(breaks = c(6000, 6500, 7000)) +
@@ -283,7 +283,7 @@ ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
   ggtitle(title) +
   theme_bw()
 ggsave(file = here("species_specific_code", "BS", species, phase, "results",
-                   "predictions_map.pdf"),
+                   "predictions_map.png"),
        height = 9, width = 6.5, units = c("in"))
 ```
 
