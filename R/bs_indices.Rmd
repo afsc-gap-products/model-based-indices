@@ -448,7 +448,7 @@ if (!file.exists(f4)) {
     ts <- ggplot(cog_new, aes(x = year, y = est)) +
       geom_line() +
       geom_ribbon(aes(ymin = (lwr), ymax = (upr)), alpha = 0.2) +
-      xlab("") + ylab("") +
+      xlab("year") + ylab("") +
       facet_wrap(~ unit, ncol = 1, scales = "free_y") +
       theme_bw()
     
