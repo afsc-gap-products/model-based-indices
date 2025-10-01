@@ -163,8 +163,8 @@ dev.off()
 # Get polygon
 ebs <- st_read(here(dir, "shapefiles", "ebs"))
 nbs <- st_read(here(dir, "shapefiles", "nbs"))
-bs <- st_geometry(st_union(ebs))
-bs <- st_transform(bs, crs=st_crs("+proj=longlat +datum=WGS84"))
+bs <- st_geometry(st_union(ebs, nbs))
+bs <- st_transform(bs, crs = st_crs("+proj=longlat +datum=WGS84"))
 
 # Make extrapolation grid
 grid <- st_make_grid(bs, n = c(10, 10))
@@ -177,7 +177,7 @@ colnames(loc_gz) <- c("start_longitude", "start_latitude")
 areas <- set_units(st_area(grid), "hectares") #  / 100^2 # Hectares
 
 # Get abundance
-W_jz <- expand.grid(Age = sort(unique(Data$age_bin)), year = myfit$internal$times)  ########## NOT WORKING - I think it's the 'times' in myfit, which is numeric(0)
+W_jz <- expand.grid(Age = sort(unique(Data$age_bin)), year = 1982:2025)  ########## TODO: code in the year range
 W_jz <- cbind(W_jz, "Weight" = NA, "SE" = NA)
 for(j in seq_len(nrow(W_jz))) {
   gc()
