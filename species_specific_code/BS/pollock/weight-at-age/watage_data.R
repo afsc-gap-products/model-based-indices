@@ -14,11 +14,13 @@ library(here)
 ### CPUE ----------------------------------------------------------------------
 ## Load data files
 wd <- here("species_specific_code", "BS", "pollock", "weight-at-age")
-alk <- read.csv(here(wd, "data", "age_length_key_full_densdep_corrected2024.csv"))
-specimen <- read.csv(here(wd, "data", "raw_data_pollock_specimen_2024-10-15.csv"))
-haul <- read.csv(here(wd, "data", "raw_data_hauls_survey_2024-10-15.csv"))
-catch <- read.csv(here(wd, "data", "raw_data_pollock_catch_2024-10-15.csv"))
 cruise <- read.csv(here(wd, "data", "cruise_data.csv"))
+
+# These files need to be updated every year
+alk <- read.csv(here(wd, "data", "age_length_key_full_densdep_corrected_2025.csv"))
+specimen <- read.csv(here(wd, "data", "raw_data_pollock_specimen_2025-09-30.csv"))
+haul <- read.csv(here(wd, "data", "raw_data_hauls_survey_2025-09-30.csv"))
+catch <- read.csv(here(wd, "data", "raw_data_pollock_catch_2025-09-30.csv"))
 
 names(alk) <- tolower(names(alk))
 names(specimen) <- tolower(names(specimen))
