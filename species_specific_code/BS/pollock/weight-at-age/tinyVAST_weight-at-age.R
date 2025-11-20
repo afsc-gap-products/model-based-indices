@@ -96,8 +96,7 @@ dsem <- "
 #  W14 -> W15, 1, cohortW
 "
 
-spatial_graph <- fm_mesh_2d(loc = Data[,c('start_longitude','start_latitude')],
-                            cutoff = 1.5)
+mesh <- fm_mesh_2d(loc = Data[,c('start_longitude','start_latitude')], cutoff = 1.5)
 control <- tinyVASTcontrol(getsd = FALSE,
                            nlminb_loops = 1,
                            newton_loops = 0,
@@ -121,14 +120,14 @@ if(!("myfit.RDS" %in% list.files(date_dir))) {
     data = Data,
     #formula = Response ~ 0 + factor(var) + s(year, by=factor(var), bs="ts", k=9),   # bs="ts" is more robust
     formula = Response ~ 0 + var_year,
-    dsem = dsem,
+    spacetime_term = dsem,
     family = Family,
     space_columns = c("start_longitude", "start_latitude"),
     variable_column = "var", 
     variables = names(family),
     time_column = "year", 
     distribution_column = "var",
-    spatial_graph = spatial_graph,
+    spatial_domain = mesh,
     control = control
   )
   
