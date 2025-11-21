@@ -159,9 +159,12 @@ dev.off()
 # Calculate indices
 ###############
 
-# Get polygon
-ebs <- st_read(here(dir, "shapefiles", "ebs"))
-nbs <- st_read(here(dir, "shapefiles", "nbs"))
+# Get polygons from the akgfmaps package
+library(remotes)
+if (!requireNamespace("akgfmaps", quietly = TRUE)) install_github("afsc-gap-products/akgfmaps", build_vignettes = TRUE)
+
+ebs <- akgfmaps::get_base_layers(select.region = "sebs")$survey.area
+nbs <- akgfmaps::get_base_layers(select.region = "nbs")$survey.area
 bs <- st_geometry(st_union(ebs, nbs))
 bs <- st_transform(bs, crs = st_crs("+proj=longlat +datum=WGS84"))
 
