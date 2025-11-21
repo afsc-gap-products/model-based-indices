@@ -1,7 +1,5 @@
-
-# https://github.com/jindivero/bs-pollock-weight/blob/main/scripts/2_model.R#L38-L71
-# devtools::install_local( R'(C:\Users\James.Thorson\Desktop\Git\tinyVAST)', force=TRUE )
-# remotes::install_github( "vast-lib/tinyVAST@dev", force=TRUE )
+# tinyVAST model for weight-at-age for BS pollock, developed by Julia Indivero
+# https://github.com/jindivero/bs-pollock-weight/tree/main
 
 library(tinyVAST)
 library(fmesher)
@@ -9,17 +7,14 @@ library(here)
 library(sf)
 library(units)
 
+# Create a new directory for results
 Date <- Sys.Date()
 dir <- here("species_specific_code", "BS", "pollock", "weight-at-age")
 date_dir <- here(dir, paste0("results_", Date))
   dir.create(date_dir)
 
-#Data = readRDS( "data_combined.rds" )
-Data = readRDS(here(dir, "data", "processed", "data_combined.rds"))
-
-# Potentially subset to save time when exploring
-#Data = subset( Data, age_bin==8 )
-#Data = subset( Data, year>=2010 )
+# Read in data generated in the watage_data.R script
+Data <- readRDS(here(dir, "data", "processed", "data_combined.rds"))
 
 Data$data_type <- ifelse(!is.na(Data$age_cpue_sum), "D", "W")
 # table(Data$age_bin, Data$data_type)
@@ -31,6 +26,7 @@ Data$Response <- ifelse(Data$data_type == "D",
                         Data$weight_combined)
 Data$var_year <- interaction(Data$var, Data$year, drop = TRUE)
 
+# Set up and run model --------------------------------------------------------
 # Define SEM
 dsem <- "
   D1 -> D1, 1, lagD
@@ -142,7 +138,6 @@ if(!("myfit.RDS" %in% list.files(date_dir))) {
 # simulate new data conditional on fixed and random effects
 y_ir <- replicate(n = 100, expr = myfit$obj$simulate()$y_i)
 
-#
 res <- DHARMa::createDHARMa(simulatedResponse = y_ir,
                             observedResponse = Data$Response,
                             fittedPredictedResponse = fitted(myfit))
@@ -155,9 +150,7 @@ png(here(date_dir, "residuals=data_type+year.png"), width = 8, height = 4, res =
   plot(res, form = interaction(Data$data_type, Data$year))
 dev.off()
 
-################
-# Calculate indices
-###############
+# Calculate indices -----------------------------------------------------------
 
 # Get polygons from the akgfmaps package
 library(remotes)
