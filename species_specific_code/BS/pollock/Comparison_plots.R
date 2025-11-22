@@ -17,23 +17,17 @@ theme_set(theme_sleek())
 
 # Directories
 workDir <- here("species_specific_code", "BS", "pollock")
-this_year <- 2024
+this_year <- 2025
+phases <- c("production", "hindcast")
 
-# save_dir <- paste0(this_year, " Production")
-save_dir <- here(workDir, "hindcast", "results_age")
-
+save_dir <- here(workDir, phases[1], "comparison")
 
 # Compare Indices of Abundance ------------------------------------------------
 # Read in indices & make sure columns for year = Time, Estimate, Error are named correctly
-index1 <- read.csv(here(workDir, "results", "VAST Index", "Index.csv"))
-colnames(index1)[6] <- "error"
-index1$Estimate <- index1$Estimate / 1000000000
-index1$error <- index1$error / 1000000000
+index1 <- readRDS(here(workDir, phases[1], "results", "indices.RDS"))
 
-index2 <- read.csv(here(workDir, "results", "2023 Production", "VAST Index", "Index.csv"))
-colnames(index2)[6] <- "error"
-index2$Estimate <- index2$Estimate / 1000000000
-index2$error <- index2$error / 1000000000
+load(here(workDir, phases[2], "results", "indices_250_knots.RData"))
+index2 <- rbind.data.frame(ind, ind_ebs, ind_nbs)
  
 # index3 <- read.csv(here(workDir, "results", "2023 Production", "VAST Index", "Index.csv"))
 # colnames(index3)[6] <- "error"
@@ -57,57 +51,60 @@ index2$error <- index2$error / 1000000000
   
 # Combine and plot indices ----------------------------------------------------
 # Set names for old and new index
-names_index <- c("DDC DB 2024", "MB 2024")
+index_set <- list(index1, index2)
+names_index <- c("2025 Production", "2024 Hindcast")
 
-compare_index <- function(indices, names, ebs_only = FALSE) {
+compare_index <- function(indices = index_set, 
+                          names = c(names_index[1], names_index[2]), 
+                          ebs_only = FALSE) {
   df <- data.frame()
   for(i in 1:length(indices)) {
     index <- indices[[i]]
-    index <- index[c("Time", "Stratum", "Estimate", "error")]
-    # index$Estimate <- index$Estimate / 1000000000  # convert to million tons
-    # index$error <- index$error / 1000000000  # convert to million tons
+    index <- index[c("year", "stratum", "est", "lwr", "upr")]
+    index$est <- index$est / 1000000000  # convert to million tons
+    index$lwr <- index$lwr / 1000000000  # convert to million tons
+    index$upr <- index$upr / 1000000000  # convert to million tons
     index$version <- names[i]
     df <- rbind.data.frame(df, index)
   }
   
-  df <- df %>% filter(Time !=2020)
+  df <- df %>% filter(year !=2020)
   
   if(ebs_only == TRUE) {
-    df <- df %>% filter(Time !=2020 & Stratum == "EBS") 
+    df <- df %>% filter(year !=2020 & stratum == "EBS") 
   }
   
   plot <- ggplot(df, 
-                 aes(x = Time, y = Estimate, 
+                 aes(x = year, y = est, 
                      color = version, shape = version)) +
     geom_line(alpha = 0.3) +
-    geom_pointrange(aes(ymin = Estimate - error, ymax = Estimate + error), 
+    geom_pointrange(aes(ymin = lwr, ymax = upr), 
                     alpha = 0.8) +
     ylim(0, NA) +
-    xlab("Year") + ylab("Index of Abundance (Mt)") +
+    xlab("") + ylab("Index of Abundance (Mt)") +
+    theme(legend.title = element_blank()) +
     scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) 
   
   if(ebs_only == FALSE) {
-    plot <- plot + facet_wrap(~ Stratum, scales = "free_y", ncol = 1)
+    plot <- plot + facet_wrap(~ stratum, scales = "free_y", ncol = 1)
   }
   
   return(plot)
 }
 
-index_comp <- compare_index(indices = list(ddc_index, index1), 
-                            names = c(names_index[1], names_index[2]),
-                            ebs_only = TRUE)
+index_comp <- compare_index()
 index_comp
 
 # Difference between two indices
 index_difference <- function(new, old, names, save_results = FALSE) {
   # Only run for EBS estimate (and no 2020)
-  new <- new %>% filter(Stratum == "EBS" & Time != 2020)
-  old <- old %>% filter(Stratum == "EBS" & Time != 2020)
+  new <- new %>% filter(stratum == "EBS" & year != 2020)
+  old <- old %>% filter(stratum == "EBS" & year != 2020)
   # make sure new dataset is the same length as the old
-  new <- new %>% filter(Time %in% min(old$Time):max(old$Time)) 
-  df <- cbind.data.frame(Year = new$Time,
-                         Stratum = new$Stratum,
-                         Difference = ((new$Estimate - old$Estimate) / old$Estimate) * 100)
+  new <- new %>% filter(year %in% min(old$year):max(old$year)) 
+  df <- cbind.data.frame(Year = new$year,
+                         Stratum = new$stratum,
+                         Difference = ((new$est - old$est) / old$est) * 100)
 
   if(save_results == TRUE) {  # save to drive, if you want. Check file paths.
     write.csv(df, here(results_dir, save_dir, "index_difference.csv"))
