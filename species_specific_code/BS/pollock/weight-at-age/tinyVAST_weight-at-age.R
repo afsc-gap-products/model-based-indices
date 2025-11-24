@@ -6,6 +6,16 @@ library(fmesher)
 library(here)
 library(sf)
 library(units)
+library(ggplot2)
+library(viridis)
+library(dplyr)
+
+# Set ggplot theme
+if (!requireNamespace("ggsidekick", quietly = TRUE)) {
+  devtools::install_github("seananderson/ggsidekick")
+}
+library(ggsidekick)
+theme_set(theme_sleek())
 
 # Create a new directory for results
 Date <- Sys.Date()
@@ -223,9 +233,40 @@ Wmean_jz <- data.frame(expand.grid(dimnames(Wmean_ct)),
                        "Weight" = as.vector(Wmean_ct))
 write.csv(Wmean_jz, file = "Wmean_jz.csv")
 
-# Need to remake this plot ----------------------------------------------------
+# Plot mean weight-at-age by year ---------------------------------------------
+mean_wtatage <- Wmean_jz %>%
+  mutate(Weight = Weight / 1000) %>%  # Convert to kg
+  # Set up empty 2020 year for plotting
+  mutate(Year = as.integer(as.character((Year)))) %>%
+  bind_rows(data.frame(Age = factor(1:15), Year = 2020, Weight = NA)) 
+
+# Plot w/ size and color representing weight
+wtatage_bubble <- mean_wtatage %>% 
+  mutate(Year = factor(Year)) %>%
+  ggplot(., aes(x = Year, y = Age)) +
+  geom_point(aes(size = Weight, color = Weight)) +
+  scale_color_viridis(begin = 0.1, end = 0.9, option = "turbo") +
+  scale_x_discrete(breaks = scales::pretty_breaks()) +
+  xlab("") + ylab("Age") +
+  labs(size = "Weight (kg)", color = "Weight (kg)") 
+wtatage_bubble
+
+wtatage_line <- ggplot(mean_wtatage, aes(x = Year, y = Weight)) +
+  geom_line(aes(color = Age)) +
+  scale_color_viridis(discrete = TRUE, begin = 0.1, end = 0.9, option = "turbo") +
+  scale_x_continuous(breaks = scales::pretty_breaks()) +
+  xlab("") + ylab("Weight (kg)") +
+  labs(color = "Age") 
+wtatage_line
+  
+ggsave(filename = here(date_dir, "wtatage_bubble.png"), wtatage_bubble, 
+       width=250, height=120, units="mm", dpi=300)
+ggsave(filename = here(date_dir, "wtatage_line.png"), wtatage_line, 
+       width=200, height=120, units="mm", dpi=300)
+
+# Remake this plot?
 # # Plot densities
-# library(viridisLite)
+# # library(viridisLite)
 # source( R'(C:\Users\James.Thorson\Desktop\Git\Spatio-temporal-models-for-ecologists\Shared_functions\add_legend.R)' )
 # for(data_type in c("D","W") ){
 #   var_set = paste0(data_type,1:15)
