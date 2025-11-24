@@ -134,7 +134,7 @@ ggsave(index_diff, filename = here(save_dir, "index_difference.png"),
 # Read in age comp model results (and remove rownames column)
 # old_props <- read.csv(here(workDir, "results", "2023 Production", "Comps", "proportions.csv"))
 new_props <- read.csv(here(workDir, "production", "results_age", "tinyVAST_props.csv"))
-old_props <- read.csv(here(workDir, "hindcast", "results_age", "tinyVAST_props.csv"))
+old_props <- read.csv(here(workDir, "archive", "2023-2024", "production", "proportions.csv"))
 # sdm_props <- dcast(cbind(read.csv(here(workDir, "results", "sdmTMB_age_prop.csv"))[, 2:4]), formula = year ~ Age)
 # gapindex_comps_raw <- read.csv(here(workDir, "results", "Comps", "gapindex_comps_2024.csv"))
 
@@ -152,16 +152,17 @@ old_props <- read.csv(here(workDir, "hindcast", "results_age", "tinyVAST_props.c
 # gapindex_comps <- gapindex_comps[, c(2:16, 1)]
 # gapindex_comps$distribution <- "gapindex"
 
-# # Reshape VAST props to match tinyVAST props
-# tiny_years <- c(1980:2019, 2021:this_year)
-# new_props <- new_props %>% filter(year %in% tiny_years & region == "Both")
-# new_props <- new_props[, c(16, 1:15, 17)]
-# colnames(new_props)[c(1, 16, 17)] <- c("year", "age_15", "region")
+# Reshape VAST props to match tinyVAST props
+tiny_years <- c(1980:2019, 2021:this_year)
+old_props <- old_props %>% filter(Year %in% tiny_years & Region == "Both")
+old_props <- old_props[, c(16, 1:15, 17)]
+colnames(old_props)[c(1, 16, 17)] <- c("year", "age_15", "region")
 
 # Set names for old and new comps
 # names_comps <- c("original", "original", "original", "VAST mesh", "VAST mesh", "original", "bias correction", "bias correction")
 
 ## Combine age comp models into one plot --------------------------------------
+names <- c("2025 Production", "2024 Production")
 compare_props <- function(props, names, last_year) {
   df <- data.frame()
   for(i in 1:length(props)) {
@@ -195,7 +196,7 @@ compare_props <- function(props, names, last_year) {
 
 
 sum_props <- compare_props(props = list(new_props, old_props),
-                           names = c("2025 Production", "2024 Hindcast"))
+                           names = names)
 sum_props$barplot
 sum_props$boxplot
 
@@ -207,7 +208,7 @@ ggsave(sum_props$boxplot, filename = here(save_dir, "comps_summary.png"),
 # Plot difference between two models ------------------------------------------
 # TODO: Fix the issue here now that both the old & new comps are from tinyVAST
 comp_difference <- function(new, old, names, save_results = FALSE) {
-  # new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
+  new <- subset(new, new$year < this_year)  # make sure new dataset is the same length as the old
   # Get difference between new and old props
   check_props <- round(new[, 2:16] - old[, 2:16], 4)
   check_props_tab <- cbind(check_props, year = new[, 1])
@@ -240,15 +241,15 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
   return(plot)
 }
 
-comp_diff <- comp_difference(new = tiny_props, old = new_props,
-                             names = c("tinyVAST", "VAST"),
+comp_diff <- comp_difference(new = new_props, old = old_props,
+                             names = names,
                              save_results = FALSE)
 comp_diff
 
 # Percent difference
 comp_percent_diff <- function(new, old, names, save_results = FALSE) {
-  # new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
-# Get difference between new and old props
+  new <- subset(new, new$year < this_year)  # make sure new dataset is the same length as the old
+  # Get difference between new and old props
   check_props <- round((((new[, 2:16] - old[, 2:16]) / old[, 2:16]) *100), 4)
   check_props_tab <- cbind(check_props, year = new[, 1])
   check_props_abs <- abs(check_props)
@@ -279,15 +280,14 @@ comp_percent_diff <- function(new, old, names, save_results = FALSE) {
   return(plot)
 }
 
-per_diff <- comp_percent_diff(new = tiny_props, old = new_props,
-                              names = c("tinyVAST", "VAST"),
+per_diff <- comp_percent_diff(new = new_props, old = old_props,
+                              names = names,
                               save_results = FALSE)
 per_diff
 
 ## Check trends in difference between models by age & year
 comp_trends <- function(new, old, names) {
-  # new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
-  
+  new <- subset(new, new$year < this_year)  # make sure new dataset is the same length as the old
   # Get difference between new and old props
   check_props <- round(new[, 2:16] - old[, 2:16], 4)
   check_props_tab <- cbind(check_props, year = new[, 1])
@@ -321,11 +321,11 @@ comp_trends <- function(new, old, names) {
   return(plot_both)
 }
 
-comp_trends <- comp_trends(new = tiny_props, old = new_props,
-                           names = c("tinyVAST", "VAST"))
+comp_trends <- comp_trends(new = new_props, old = old_props,
+                           names = names)
 comp_trends
 
-# Save plots ------------------------------------------------------------------
+# Save plots 
 ggsave(comp_diff, filename = here(save_dir, "comp_diff.png"),
        width=200, height=200, units="mm", dpi=300)
 ggsave(per_diff, filename = here(save_dir, "comp_per_diff.png"),
