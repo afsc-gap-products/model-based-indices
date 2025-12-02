@@ -102,8 +102,15 @@ if (file.exists(f1)) {
 # Check fit
 sanity(fit)
 summary(fit)
+saveRDS(fit, file = here(results_wd, "fit.RDS"))
 
 # Make predictions and index --------------------------------------------------
+# Read in fit if object is not already in environment
+if(!exists("fit")) {
+  fit <- readRDS(here(results_dir, "fit.RDS"))
+}
+
+# Read in polygons
 load(here("species_specific_code", "BS", "pollock", "research", "Pribilof_polygons.RData"))
 # Projected crs = 3338, unprojected crs = 4326
 
