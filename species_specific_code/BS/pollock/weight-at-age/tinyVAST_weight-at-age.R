@@ -1,5 +1,8 @@
-# tinyVAST model for weight-at-age for BS pollock, developed by Julia Indivero
-# https://github.com/jindivero/bs-pollock-weight/tree/main
+#' tinyVAST model for weight-at-age for BS pollock, developed by Julia Indivero
+#' https://github.com/jindivero/bs-pollock-weight/tree/main, 
+#' updated and maintained by Sophia Wassermann.
+#' Contact: sophia.wassermann@noaa.gov
+#' Date created: 2024.10.17
 
 library(tinyVAST)
 library(fmesher)

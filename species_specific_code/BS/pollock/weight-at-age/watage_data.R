@@ -1,10 +1,10 @@
 ##### ORGANIZE AND FORMAT OBSERVATION DATA
-# This script organizes and formats the observation data for the spatiotemporal
-# weight-at-age model.
-# By: Sophia N. Wassermann; modified from Indivero et al. (2023) 
-#     https://github.com/jindivero/bs-pollock-weight
-# Contact: sophia.wassermann@noaa.gov
-# Date created: 2024.10.17
+#' This script organizes and formats the observation data for the spatiotemporal 
+#' weight-at-age model.
+#' By: Sophia N. Wassermann; modified from Indivero et al. (2023) 
+#' https://github.com/jindivero/bs-pollock-weight
+#' Contact: sophia.wassermann@noaa.gov
+#' Date created: 2024.10.17
 
 library(dplyr)
 library(tidyr)
@@ -16,11 +16,16 @@ library(here)
 wd <- here("species_specific_code", "BS", "pollock", "weight-at-age")
 cruise <- read.csv(here(wd, "data", "cruise_data.csv"))
 
-# These files need to be updated every year
-alk <- read.csv(here(wd, "data", "age_length_key_full_densdep_corrected_2025.csv"))
-specimen <- read.csv(here(wd, "data", "raw_data_pollock_specimen_2025-09-30.csv"))
-haul <- read.csv(here(wd, "data", "raw_data_hauls_survey_2025-09-30.csv"))
-catch <- read.csv(here(wd, "data", "raw_data_pollock_catch_2025-09-30.csv"))
+#' Before running the following, move data and output from most recent design-
+#' based run of the density-dependent correction code (in pollock-ddc repo) into
+#' a single folder in weight-at-age/data.
+date_dir <- "2025-11-25_db"  # Update to correct data folder
+data_year <- "2025"  # Update to correct year (of the data)
+alk <- read.csv(here(wd, "data", date_dir, 
+                     paste0("age_length_key_full_densdep_corrected_", data_year, ".csv")))
+specimen <- read.csv(here(wd, "data", date_dir, "raw_pollock_specimen.csv"))
+haul <- read.csv(here(wd, "data", date_dir, "raw_hauls_survey.csv"))
+catch <- read.csv(here(wd, "data", date_dir, "raw_pollock_catch.csv"))
 
 names(alk) <- tolower(names(alk))
 names(specimen) <- tolower(names(specimen))
@@ -98,7 +103,7 @@ cpue_final_edit2 <- cpue_final_edit %>%
 ## Add zeroes for hauls missing some age classes
 # Sanity check
 # Check that there's some zeros
-Data=cpue_final_edit2
+Data <- cpue_final_edit2
 Data <- as.data.frame(Data)
 out <- tapply(Data[,'age_cpue_sum'], INDEX = list(Data[,'year'], Data[,'age_bin']), 
               FUN = function(x){sum(x == 0)})
