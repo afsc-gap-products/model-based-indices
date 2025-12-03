@@ -107,7 +107,7 @@ saveRDS(fit, file = here(results_wd, "fit.RDS"))
 # Make predictions and index --------------------------------------------------
 # Read in fit if object is not already in environment
 if(!exists("fit")) {
-  fit <- readRDS(here(results_dir, "fit.RDS"))
+  fit <- readRDS(here(results_wd, "fit.RDS"))
 }
 
 # Read in polygons
@@ -146,15 +146,15 @@ grids$stratum  <- factor(grids$stratum,
   labels = c("25km", "50km", "75km", "100km", "125km", "150km", "175km", "200km", "225km", "250km", "Pribilofs")
 )
 
-ggplot(grids, aes(X, Y, colour = area_km2)) +
-  geom_tile(width = 2, height = 2, fill = NA) +
-  scale_colour_viridis_c(direction = -1) +
-  geom_point(size = 0.5) +
-  coord_fixed() +
-  xlab("") + ylab("") +
-  facet_wrap(~stratum)
-ggsave(file = here(results_wd, "pred_grids.png"),
-       height = 6, width = 7.5, units = c("in"))
+# ggplot(grids, aes(X, Y, colour = area_km2)) +
+#   geom_tile(width = 2, height = 2, fill = NA) +
+#   scale_colour_viridis_c(direction = -1) +
+#   geom_point(size = 0.5) +
+#   coord_fixed() +
+#   xlab("") + ylab("") +
+#   facet_wrap(~stratum)
+# ggsave(file = here(results_wd, "pred_grids.png"),
+#        height = 6, width = 7.5, units = c("in"))
 
 # Calculate index for each area
 index_by_area <- function(area) {
@@ -194,7 +194,7 @@ ggplot(indices, aes(x = year, y = (est / 1e9))) +
   ylim(0, NA) +
   geom_ribbon(aes(ymin = (lwr / 1e9), ymax = (upr / 1e9)), alpha = 0.4) +
   xlab("") + ylab("Biomass (Mt)") +
-  facet_wrap(~stratum)
+  facet_wrap(~stratum, scales = "free")
 ggsave(file = here(results_wd, "index.png"), 
        height = 6, width = 10, units = "in")
 
@@ -222,13 +222,19 @@ ggsave(file = here(results_wd, "residuals_map.pdf"),
        height = 9, width = 6.5, units = "in")
 
 # predictions on map plot, by year
-ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
-  geom_tile(width = 10, height = 10) +
-  scale_fill_viridis_c(trans = "sqrt", name = "") +
-  scale_x_continuous(breaks = c(250, 750)) +
-  scale_y_continuous(breaks = c(6000, 6500, 7000)) +
-  facet_wrap(~year) +
-  coord_fixed() +
-  ggtitle("Predicted densitites (kg / square km)") 
-ggsave(file = here(results_wd, "predictions_map.pdf"),
-       height = 9, width = 6.5, units = "in")
+for(i in 1:nrow(final_combined_hr_polygons_projected_sf)) {
+  dir_name <- paste0("radius", final_combined_hr_polygons_projected_sf$associated_circle_radius_meters[i])
+  load(here(results_wd, dir_name, "pred.Rdata"))
+  p <- p$data
+  p$radius <- final_combined_hr_polygons_projected_sf$associated_circle_radius_meters[i]
+  pred_map <- ggplot(p, aes(X, Y, fill = exp(est1 + est2))) +
+    geom_tile(width = 10, height = 10) +
+    scale_fill_viridis_c(trans = "sqrt", name = "") +
+    scale_x_continuous(breaks = c(250, 750)) +
+    scale_y_continuous(breaks = c(6000, 6500, 7000)) +
+    facet_wrap(~year) +
+    coord_fixed() +
+    ggtitle("Predicted densitites (kg / square km)") 
+  ggsave(pred_map, file = here(results_wd, dir_name, "predictions_map.pdf"),
+         height = 7, width = 7, units = "in")
+}
