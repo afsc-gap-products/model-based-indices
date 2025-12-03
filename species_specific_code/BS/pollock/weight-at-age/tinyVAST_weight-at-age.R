@@ -248,7 +248,7 @@ wtatage_bubble <- mean_wtatage %>%
   mutate(Year = factor(Year)) %>%
   ggplot(., aes(x = Year, y = Age)) +
   geom_point(aes(size = Weight, color = Weight)) +
-  scale_color_viridis(begin = 0.1, end = 0.9, option = "turbo") +
+  scale_color_viridis(option = "turbo") +
   scale_x_discrete(breaks = scales::pretty_breaks()) +
   xlab("") + ylab("Age") +
   labs(size = "Weight (kg)", color = "Weight (kg)") 
@@ -256,7 +256,7 @@ wtatage_bubble
 
 wtatage_line <- ggplot(mean_wtatage, aes(x = Year, y = Weight)) +
   geom_line(aes(color = Age)) +
-  scale_color_viridis(discrete = TRUE, begin = 0.1, end = 0.9, option = "turbo") +
+  scale_color_viridis(discrete = TRUE, option = "turbo") +
   scale_x_continuous(breaks = scales::pretty_breaks()) +
   xlab("") + ylab("Weight (kg)") +
   labs(color = "Age") 
