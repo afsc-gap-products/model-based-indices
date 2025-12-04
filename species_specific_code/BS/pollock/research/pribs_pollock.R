@@ -23,7 +23,7 @@ phase <- "hindcast" # determines (combined w/ the year) which cycle the data are
 this_year <- as.numeric(format(Sys.Date(), "%Y"))
 if(phase == "hindcast") {this_year <- this_year - 1}  
 
-kts <- 500  # Number of knots for the index model mesh
+kts <- 250  # Number of knots for the index model mesh
 
 # Make a new directory for the model output
 results_wd <- here("species_specific_code", "BS", "pollock", "research", paste0(kts, "kts"))
@@ -223,6 +223,7 @@ ggsave(file = here(results_wd, "residuals_map.pdf"),
 
 # predictions on map plot, by year
 for(i in 1:nrow(final_combined_hr_polygons_projected_sf)) {
+  i <- 2
   dir_name <- paste0("radius", final_combined_hr_polygons_projected_sf$associated_circle_radius_meters[i])
   load(here(results_wd, dir_name, "pred.Rdata"))
   p <- p$data
