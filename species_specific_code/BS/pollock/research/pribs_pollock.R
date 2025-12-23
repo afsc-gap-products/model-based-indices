@@ -26,17 +26,19 @@ if(phase == "hindcast") {this_year <- this_year - 1}
 kts <- 250  # Number of knots for the index model mesh
 
 # Make a new directory for the model output
-results_wd <- here("species_specific_code", "BS", "pollock", "research", paste0(kts, "kts"))
+results_wd <- here("species_specific_code", "BS", "pollock", "research", "numbers", paste0(kts, "kts"))
 dir.create(here(results_wd), recursive = TRUE, showWarnings = FALSE)
 
 # Read in data
-dat <- read.csv(here("species_specific_code", "BS", "pollock", phase,
-                     "data", paste0("VAST_ddc_all_", this_year, ".csv")))  
-dat <- transmute(dat,
-                 cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
-                 year = as.integer(year),
-                 lat = start_latitude,
-                 lon = start_longitude)
+dat <- read.csv(here("species_specific_code", "BS", "pollock", "research", "pollock_num.csv"))
+
+# dat <- read.csv(here("species_specific_code", "BS", "pollock", phase,
+#                      "data", paste0("VAST_ddc_all_", this_year, ".csv")))  
+# dat <- transmute(dat,
+#                  cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
+#                  year = as.integer(year),
+#                  lat = start_latitude,
+#                  lon = start_longitude)
 
 
 # detect if any years have occurrences at every haul and fix params as needed
@@ -177,6 +179,7 @@ index_by_area <- function(area) {
   ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
   ind$stratum <- final_combined_hr_polygons_projected_sf$associated_circle_radius_meters[area]
   write.csv(ind, file = here(results_wd, dir_name, "index.csv"), row.names = FALSE)
+  print(paste0("Completed index for ", area))
   
   return(ind)
 }
@@ -193,7 +196,7 @@ ggplot(indices, aes(x = year, y = (est / 1e9))) +
   geom_line() +
   ylim(0, NA) +
   geom_ribbon(aes(ymin = (lwr / 1e9), ymax = (upr / 1e9)), alpha = 0.4) +
-  xlab("") + ylab("Biomass (Mt)") +
+  xlab("") + ylab("Biomass") +
   facet_wrap(~stratum, scales = "free")
 ggsave(file = here(results_wd, "index.png"), 
        height = 6, width = 10, units = "in")
