@@ -57,11 +57,8 @@ dat$age_f <- factor(paste0("age_", dat$age))
 dat$year_age <- interaction(dat$year, dat$age_f)
 
 # Project data to UTM
-dat <- st_as_sf(dat,
-                 coords = c('lon','lat'),
-                 crs = st_crs(4326))
-dat <- st_transform(dat,
-                     crs = st_crs("+proj=utm +zone=2 +units=km"))
+dat <- st_as_sf(dat, coords = c('lon','lat'), crs = st_crs(4326))
+dat <- st_transform(dat, crs = st_crs("+proj=utm +zone=2 +units=km"))
 # Add UTM coordinates as columns X & Y
 dat <- cbind(st_drop_geometry(dat), st_coordinates(dat))
 
@@ -78,6 +75,10 @@ if(species %in% c("yellowfin_sole", "pacific_cod")) {
   tapply(dat$cpue,
          INDEX = list(dat$age, dat$year), 
          FUN = \(x) sum(x > 0))
+}
+
+if(species == "pollock") {
+  year_age_to_drop <- NULL
 }
 
 # Inputs to tinyVAST ----------------------------------------------------------
