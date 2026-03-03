@@ -20,7 +20,7 @@ workDir <- here("species_specific_code", "BS", "pollock")
 this_year <- 2025
 phases <- c("production", "hindcast")
 
-save_dir <- here(workDir, phases[1], "comparison")
+save_dir <- here(workDir, phases[2], "comparison")
 
 # Compare Indices of Abundance ------------------------------------------------
 # Read in indices & make sure columns for year = Time, Estimate, Error are named correctly
@@ -133,7 +133,7 @@ ggsave(index_diff, filename = here(save_dir, "index_difference.png"),
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
 # old_props <- read.csv(here(workDir, "results", "2023 Production", "Comps", "proportions.csv"))
-new_props <- read.csv(here(workDir, "production", "results_age", "tinyVAST_props.csv"))
+new_props <- read.csv(here(workDir, "hindcast", "results_age", "tinyVAST_props.csv"))
 old_props <- read.csv(here(workDir, "archive", "2023-2024", "production", "proportions.csv"))
 # sdm_props <- dcast(cbind(read.csv(here(workDir, "results", "sdmTMB_age_prop.csv"))[, 2:4]), formula = year ~ Age)
 # gapindex_comps_raw <- read.csv(here(workDir, "results", "Comps", "gapindex_comps_2024.csv"))
@@ -162,7 +162,7 @@ colnames(old_props)[c(1, 16, 17)] <- c("year", "age_15", "region")
 # names_comps <- c("original", "original", "original", "VAST mesh", "VAST mesh", "original", "bias correction", "bias correction")
 
 ## Combine age comp models into one plot --------------------------------------
-names <- c("2025 Production", "2024 Production")
+names <- c("2026 Hindcast", "2024 Production")
 compare_props <- function(props, names, last_year) {
   df <- data.frame()
   for(i in 1:length(props)) {
@@ -332,3 +332,4 @@ ggsave(per_diff, filename = here(save_dir, "comp_per_diff.png"),
        width=200, height=200, units="mm", dpi=300)
 ggsave(comp_trends, filename = here(save_dir, "comp_trends.png"),
        width=260, height=120, units="mm", dpi=300)
+
