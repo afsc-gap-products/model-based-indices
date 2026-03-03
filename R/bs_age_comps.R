@@ -17,10 +17,10 @@ library(ggsidekick)
 theme_set(theme_sleek())
 
 # Set up ----------------------------------------------------------------------
-phase <- c("hindcast", "production")[2] # specify analysis phase
+phase <- c("hindcast", "production")[1] # specify analysis phase
 
-sp <- 1 # specify species from species vector
-species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
+# specify species from species vector
+species <- c("yellowfin_sole", "pollock", "pacific_cod")[2]  # specify species
 
 # Set year
 this_year <- as.numeric(format(Sys.Date(), "%Y"))
@@ -34,7 +34,7 @@ workDir <- here("species_specific_code", "BS", species, phase)
 
 # Read in and format data -----------------------------------------------------
 if(species == "pollock"){
-  dat <- read.csv(here(workDir, "data", paste0("VAST_ddc_alk_", this_year, ".csv")))  
+  dat <- read.csv(here(workDir, "data", paste0("VAST_ddc_alk_", 2026, ".csv")))  
   dat <- transmute(dat,
                    cpue = CPUE_num * 100, # converts cpue from kg/ha to kg/km^2
                    year = as.integer(Year),
@@ -137,10 +137,10 @@ get_abundance <- function(region) {
   if(region == "both") {grid <-  read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))}
   
   N_jz <- expand.grid(age_f = fit$internal$variables, year = sort(unique(dat$year)))
-  N_jz$year_age <- interaction(N_jz$year, N_jz$age)
-  N_jz <- cbind(N_jz, "abundance" = NA, "SE" = NA)
   
-  for(j in which(!(N_jz$year_age %in% year_age_to_drop))){
+  N_jz <- cbind(N_jz, "abundance" = NA, "SE" = NA)
+  for(j in seq_len(nrow(N_jz))) {
+    
     if (N_jz[j, "age_f"] == 1) {
       message("Integrating ", N_jz[j, "year"], " ", N_jz[j, "age_f"], ": ", Sys.time())
     }
@@ -159,13 +159,50 @@ get_abundance <- function(region) {
       N_jz[j, "abundance"] <- index1[3] / 1e9
     }
   }
-  N_jz[is.na(N_jz)] <- 0 # replace NAs for combinations with 0 encounters
+  
   
   N_ct <- array(N_jz$abundance, 
                 dim = c(length(fit$internal$variables), length(unique(dat$year))),
                 dimnames = list(fit$internal$variables,sort(unique(dat$year))))
   return(N_ct)
 }
+
+# get_abundance <- function(region) {
+#   # Read in coarsened extrapolation grid
+#   if(region == "EBS") {grid <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))}
+#   if(region == "NBS") {grid <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))}
+#   if(region == "both") {grid <-  read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))}
+#   
+#   N_jz <- expand.grid(age_f = fit$internal$variables, year = sort(unique(dat$year)))
+#   N_jz$year_age <- interaction(N_jz$year, N_jz$age)
+#   N_jz <- cbind(N_jz, "abundance" = NA, "SE" = NA)
+#   
+#   for(j in which(!(N_jz$year_age %in% year_age_to_drop))){
+#     if (N_jz[j, "age_f"] == 1) {
+#       message("Integrating ", N_jz[j, "year"], " ", N_jz[j, "age_f"], ": ", Sys.time())
+#     }
+#     if(is.na(N_jz[j, "abundance"])) {
+#       newdata <- data.frame(grid, 
+#                             year = N_jz[j, "year"], 
+#                             age_f = N_jz[j, "age_f"])
+#       newdata$year_age <- paste(newdata$year, newdata$age_f, sep = ".")
+#       # Area-expansion
+#       index1 <- integrate_output(fit,
+#                                  area = grid$area_km2,
+#                                  newdata = newdata,
+#                                  apply.epsilon = TRUE,
+#                                  bias.correct = TRUE,
+#                                  intern = TRUE)
+#       N_jz[j, "abundance"] <- index1[3] / 1e9
+#     }
+#   }
+#   N_jz[is.na(N_jz)] <- 0 # replace NAs for combinations with 0 encounters
+#   
+#   N_ct <- array(N_jz$abundance, 
+#                 dim = c(length(fit$internal$variables), length(unique(dat$year))),
+#                 dimnames = list(fit$internal$variables,sort(unique(dat$year))))
+#   return(N_ct)
+# }
 
 abundance <- get_abundance(region = region)
 
