@@ -188,18 +188,15 @@ if (start_year != start_year_age) {
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Save output
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# dir_out <- paste0("species_specific_code/BS/", species_name, "/", phase, "/data/")
-# if (!dir.exists(paths = dir_out)) dir.create(path = dir_out, recursive = T)
-# for (ifile in c("data_geostat_index", 
-#                 "data_geostat_agecomps", 
-#                 "sizecomp", "alk", "ebs_data", "nbs_data")) 
-#   saveRDS(object = get(x = ifile), 
-#           file = paste0(dir_out, ifile, ".RDS"))
+dir_out <- paste0("species_specific_code/GOA/Gadus_macrocephalus/age_comp/")
+if (!dir.exists(paths = dir_out)) dir.create(path = dir_out, recursive = T)
+for (ifile in c("data_geostat_agecomps", "sizecomp", "alk", "goa_data"))
+  saveRDS(object = get(x = ifile), file = paste0(dir_out, ifile, ".RDS"))
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Plot Age-Length Key
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# pdf(file = paste0(dir_out, "/goa_alk.pdf"), width = 8, height = 11, onefile = TRUE)
+pdf(file = paste0(dir_out, "/goa_alk.pdf"), width = 8, height = 11, onefile = TRUE)
 par(mfrow = c(3, 2), mar = c(4, 3, 3, 2), oma = c(1, 1, 0, 0))
 for (iyear in sort(unique(goa_alk$YEAR)) ){
   for (isex in 1:2) {
@@ -239,4 +236,4 @@ for (iyear in sort(unique(goa_alk$YEAR)) ){
                           "black")), bty = "n")
   }
 }
-# dev.off()
+dev.off()
