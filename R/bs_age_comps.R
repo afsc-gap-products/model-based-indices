@@ -89,13 +89,13 @@ for(i in min(ages):max(ages)) {
 }
 
 # # TinyVAST mesh
-# mesh <- fm_mesh_2d(loc = Data[,c("X","Y")],
+# mesh <- fm_mesh_2d(loc = dat[,c("X","Y")],
 #                    cutoff = 50)
-# 
+
 # Format mesh for tinyVAST (using a function from sdmTMB; same method as sdmTMB index bridging)
 old_mesh <- sdmTMB::make_mesh(dat, 
                               xy_cols = c("X", "Y"), 
-                              mesh = readRDS(file = here("meshes/bs_vast_mesh_50_knots.RDS")),
+                              mesh = fmesher::fm_as_fm(readRDS(file = here("meshes/bs_vast_mesh_50_knots.RDS"))),
                               fmesher_func = fm_mesh_2d()) 
 
 # Fit model -------------------------------------------------------------------

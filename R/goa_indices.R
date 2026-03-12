@@ -40,7 +40,7 @@ for (i in species_list){
     if(species == "Gadus_macrocephalus"){
       dat <- subset(dat, !is.na(cpue_n_km2))
       mesh <-  make_mesh(dat, xy_cols = c("X", "Y"),
-                         mesh = readRDS(file = here("meshes", "goa_vast_mesh.RDS")))
+                         mesh = fmesher::fm_as_fm(readRDS(file = here("meshes", "goa_vast_mesh.RDS"))))
       fit <- sdmTMB(
         cpue_n_km2 ~ 0 + year_f,
         data = dat,
@@ -70,7 +70,7 @@ for (i in species_list){
 
     if(!(species %in% c("Gadus_chalcogrammus", "Gadus_macrocephalus"))){
       mesh <-  make_mesh(dat, xy_cols = c("X", "Y"),
-                         mesh = readRDS(file = here("meshes", "goa_vast_mesh.RDS")))
+                         mesh = fmesher::fm_as_fm(readRDS(file = here("meshes", "goa_vast_mesh.RDS"))))
       fit <- sdmTMB(
         cpue_kg_km2 ~ 0 + year_f,
         data = dat,
@@ -110,6 +110,7 @@ for (i in species_list){
 
   ## Plot predicted density maps and fit diagnostics ----
   # q-q plot
+  set.seed(30)
   pdf(file = here("species_specific_code", "GOA", species, phase, "qq.pdf"),
       width = 5, height = 5)
     sims <- simulate(fit, nsim = 500, type = "mle-mvn")
