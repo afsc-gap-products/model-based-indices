@@ -263,29 +263,32 @@ ggplot(subset(fit$data, !is.na(resids) & is.finite(resids)), aes(X, Y, col = res
   facet_wrap(~year) +
   coord_fixed() +
   theme_bw()
+
 ggsave(file = here("species_specific_code", "BS", species, phase, "results",
                    "residuals_map.pdf"),
        height = 9, width = 6.5, units = c("in"))
 
 # predictions on map plot, by year
 if(species == "pacific_cod"){
-  title <- bquote('Predicted densities'~(n / km^2))
+  title <- bquote('Predicted log densities'~(n / km^2))
 } else {
-  title <- bquote('Predicted densities'~(kg / km^2))
+  title <- bquote('Predicted log densities'~(kg / km^2))
 }
-ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
+
+ggplot(p$data, aes(X, Y, fill = est1 + est2)) +
   geom_tile(width = 22.224, height = 22.224) +
-  scale_fill_viridis_c(trans = "sqrt", name = "", option = "magma", direction = -1) +
+  scale_fill_viridis_c(option = "plasma") +
   scale_x_continuous(breaks = c(250, 750)) +
   scale_y_continuous(breaks = c(6000, 6500, 7000)) +
   facet_wrap(~year) +
   coord_fixed() +
   ylab("Northings (km)") +
   xlab("Eastings (km)") +
+  labs(fill = "") +
   ggtitle(title) +
   theme_bw()
 ggsave(file = here("species_specific_code", "BS", species, phase, "results",
-                   "predictions_map.png"),
+                   "predictions_map_log.png"),
        height = 7, width = 6.5, units = c("in"))
 ```
 
