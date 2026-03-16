@@ -270,25 +270,37 @@ ggsave(file = here("species_specific_code", "BS", species, phase, "results",
 
 # predictions on map plot, by year
 if(species == "pacific_cod"){
-  title <- bquote('Predicted log densities'~(n / km^2))
+  title <- bquote('Predicted densities'~(log(n / km^2)))
 } else {
-  title <- bquote('Predicted log densities'~(kg / km^2))
+  title <- bquote('Predicted densities'~(log(kg / km^2)))
 }
+
+world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
+sf::sf_use_s2(FALSE)  # turn off spherical geometry
+
+# Convert land data to UTM, then from meters to kilometers
+bs_area <- sf::st_crop(world, xmin = -179, xmax = -150, ymin = 50, ymax = 70)
+bs_area <- sf::st_transform(bs_area, crs = 32602)
+bs_area$geometry <- bs_area$geometry / 1000
 
 ggplot(p$data, aes(X, Y, fill = est1 + est2)) +
   geom_tile(width = 22.224, height = 22.224) +
+  geom_sf(data = bs_area, inherit.aes = FALSE) +
   scale_fill_viridis_c(option = "plasma") +
+  facet_wrap(~year) +
+  # set limits for the plot extent, +/- a buffer
+  coord_sf(xlim = c(min(p$data$X) - 100, max(p$data$X) + 100), 
+           ylim = c(min(p$data$Y) - 100, max(p$data$Y) + 100), 
+           expand = FALSE) +
   scale_x_continuous(breaks = c(250, 750)) +
   scale_y_continuous(breaks = c(6000, 6500, 7000)) +
-  facet_wrap(~year) +
-  coord_fixed() +
   ylab("Northings (km)") +
   xlab("Eastings (km)") +
   labs(fill = "") +
   ggtitle(title) +
-  theme_bw()
+  theme_sleek()
 ggsave(file = here("species_specific_code", "BS", species, phase, "results",
-                   "predictions_map_log.png"),
+                   "predictions_map.png"),
        height = 7, width = 6.5, units = c("in"))
 ```
 
@@ -484,8 +496,6 @@ if (!file.exists(f4)) {
                                   ymin = cog_min$Y, ymax = cog_max$Y)
     
     # Plot on a map
-    world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
-    sf::sf_use_s2(FALSE)  # turn off spherical geometry
     map <- ggplot(data = world) +
       geom_sf() +
       geom_point(data = cog_latlon,
