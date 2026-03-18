@@ -82,6 +82,7 @@ if(species == "pollock") {
 }
 
 # Inputs to tinyVAST ----------------------------------------------------------
+sem <- ""
 # Constant AR1 spatio-temporal term across ages & different variances for each age
 dsem <- "\n  "
 for(i in min(ages):max(ages)) {
@@ -104,7 +105,9 @@ fit <- tinyVAST(
   data = dat,
   space_term = sem,
   spacetime_term = dsem,
-  family = setNames(lapply(ages, function(x) delta_gamma(type = "poisson-link")), paste0("age_", ages)),
+  family = setNames(
+    lapply(ages, function(x) delta_gamma(type = "poisson-link")), 
+    paste0("age_", ages)),
   space_columns = c("X", "Y"),
   spatial_domain = old_mesh$mesh,
   time_column = "year",
