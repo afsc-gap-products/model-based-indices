@@ -6,7 +6,7 @@
 ##   Import gapindex v3.0.2 and connect to Oracle. Make sure you are connected
 ##   to the internal network or VPN. 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-devtools::install_github(repo = "afsc-gap-products/gapindex@v3.0.2", 
+devtools::install_github(repo = "afsc-gap-products/gapindex@v3.0.3", 
                          dependencies = TRUE)
 library(gapindex)
 
@@ -16,7 +16,7 @@ channel <- gapindex::get_connected(check_access = F)
 ##   Species-Specific Constants. Toggle species row
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## specify whether hindcast or production phase
-phase <- c("hindcast", "production")[2]
+phase <- c("hindcast", "production")[1]
 
 species_info <- data.frame(species_name = c("yellowfin_sole", "Pacific_cod"),
                            species_code = c(10210, 21720),
