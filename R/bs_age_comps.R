@@ -82,7 +82,23 @@ if(species == "pollock") {
 }
 
 # Inputs to tinyVAST ----------------------------------------------------------
-sem <- ""
+sem = "
+  age_1 <-> age_1, sd1
+  age_2 <-> age_2, sd2
+  age_3 <-> age_3, sd3
+  age_4 <-> age_4, sd4
+  age_5 <-> age_5, sd5
+  age_6 <-> age_6, sd6
+  age_7 <-> age_7, sd7
+  age_8 <-> age_8, sd8
+  age_9 <-> age_9,sd9
+  age_10 <-> age_10, sd10
+  age_11 <-> age_11, sd11
+  age_12 <-> age_12, sd12
+  age_13 <-> age_13, sd13
+  age_14 <-> age_14, sd14
+  age_15 <-> age_15,sd15
+"
 # Constant AR1 spatio-temporal term across ages & different variances for each age
 dsem <- "\n  "
 for(i in min(ages):max(ages)) {
@@ -107,7 +123,8 @@ fit <- tinyVAST(
   spacetime_term = dsem,
   family = setNames(
     lapply(ages, function(x) delta_gamma(type = "poisson-link")), 
-    paste0("age_", ages)),
+    paste0("age_", ages)
+    ),
   space_columns = c("X", "Y"),
   spatial_domain = old_mesh$mesh,
   time_column = "year",
@@ -117,14 +134,13 @@ fit <- tinyVAST(
     formula = ~ 0 + year_age,
     space_term = sem,
     spacetime_term = dsem
-  ),
+    ),
   control = tinyVASTcontrol(
     getsd = FALSE,
     profile = c("alpha_j"),
-    trace = 0,
-    run_model = FALSE
+    trace = 0
+    )
   )
-)
 
 # Save fit object (create directory for results first, if it doesn't exist)
 if (!dir.exists(here(workDir, "results_age"))) {
