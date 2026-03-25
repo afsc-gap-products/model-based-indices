@@ -17,9 +17,9 @@ library(ggsidekick)
 theme_set(theme_sleek())
 
 # Set up ----------------------------------------------------------------------
-phase <- c("hindcast", "production")[2] # specify analysis phase
+phase <- c("hindcast", "production")[1] # specify analysis phase
 
-sp <- 1 # specify species from species vector
+sp <- 2 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 
 # Set year
@@ -82,6 +82,11 @@ if(species == "pollock") {
 }
 
 # Inputs to tinyVAST ----------------------------------------------------------
+sem <- "\n  "
+for(i in min(ages):max(ages)) {
+  sem <- paste0(sem, "age_",i, " <-> age_", i, ", sd", i, "\n  ")
+}
+
 # Constant AR1 spatio-temporal term across ages & different variances for each age
 dsem <- "\n  "
 for(i in min(ages):max(ages)) {
@@ -100,22 +105,30 @@ old_mesh <- sdmTMB::make_mesh(dat,
 
 # Fit model -------------------------------------------------------------------
 fit <- tinyVAST(
+  formula = cpue ~ 0 + year_age,
   data = dat,
-  formula = cpue ~ 0 + year_age,  
-  sem = "",
-  dsem = dsem,
-  family = setNames(lapply(ages, function(x) delta_gamma(type = "poisson-link")), 
-                    paste0("age_", ages)),
-  delta_options = list(delta_formula = ~ 0 + year_age), # 2nd linear predictor
-  space_column = c("X", "Y"), 
-  variable_column = "age_f",
+  space_term = sem,
+  spacetime_term = dsem,
+  family = setNames(
+    lapply(ages, function(x) delta_gamma(type = "poisson-link")), 
+    paste0("age_", ages)
+    ),
+  space_columns = c("X", "Y"),
+  spatial_domain = old_mesh$mesh,
   time_column = "year",
+  variable_column = "age_f",
   distribution_column = "age_f",
-  spatial_graph = old_mesh,
-  control = tinyVASTcontrol(getsd = FALSE,
-                            profile = c("alpha_j"),
-                            trace = 0)
-)
+  delta_options = list(
+    formula = ~ 0 + year_age,
+    space_term = sem,
+    spacetime_term = dsem
+    ),
+  control = tinyVASTcontrol(
+    getsd = FALSE,
+    profile = c("alpha_j"),
+    trace = 0
+    )
+  )
 
 # Save fit object (create directory for results first, if it doesn't exist)
 if (!dir.exists(here(workDir, "results_age"))) {
