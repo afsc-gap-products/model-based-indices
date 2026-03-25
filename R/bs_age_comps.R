@@ -104,6 +104,7 @@ old_mesh <- sdmTMB::make_mesh(dat,
                               fmesher_func = fm_mesh_2d()) 
 
 # Fit model -------------------------------------------------------------------
+start <- Sys.time()
 fit <- tinyVAST(
   formula = cpue ~ 0 + year_age,
   data = dat,
@@ -129,6 +130,8 @@ fit <- tinyVAST(
     trace = 0
     )
   )
+end <- Sys.time()
+fit_time <- difftime(end, start, units = "hours")
 
 # Save fit object (create directory for results first, if it doesn't exist)
 if (!dir.exists(here(workDir, "results_age"))) {
@@ -143,6 +146,7 @@ if(!exists("fit")) {
   fit <- readRDS(here(workDir, "results_age", "tinyVAST_fit.RDS"))
 }
 
+start <- Sys.time()
 get_abundance <- function(region) {
   # Read in coarsened extrapolation grid
   if(region == "EBS") {grid <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))}
@@ -181,6 +185,8 @@ get_abundance <- function(region) {
 }
 
 abundance <- get_abundance(region = region)
+end <- Sys.time()
+expand_time <- difftime(end, start, units = "hours")
 
 # Save abundance
 write.csv(abundance, here(workDir, "results_age", "tinyVAST_abundance.csv"), row.names = FALSE)
