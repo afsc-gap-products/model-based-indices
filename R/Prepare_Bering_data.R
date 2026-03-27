@@ -6,17 +6,25 @@
 ##   Import gapindex v3.0.2 and connect to Oracle. Make sure you are connected
 ##   to the internal network or VPN. 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-devtools::install_github(repo = "afsc-gap-products/gapindex@v3.0.2", 
-                         dependencies = TRUE)
+# Install gapindex if not already installed
+if (!requireNamespace("gapindex", quietly = TRUE)) {
+  devtools::install_github("afsc-gap-products/gapindex@v3.0.3", 
+                           dependencies = TRUE)
+}
 library(gapindex)
 
-channel <- gapindex::get_connected(check_access = F)
+# Read existing Oracle credentials file, or connect using gapindex
+if (file.exists("Z:/Projects/ConnectToOracle.R")) {
+  source("Z:/Projects/ConnectToOracle.R")
+} else {
+  channel <- gapindex::get_connected(check_access = FALSE)
+}
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Species-Specific Constants. Toggle species row
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## specify whether hindcast or production phase
-phase <- c("hindcast", "production")[2]
+phase <- c("hindcast", "production")[1]
 
 species_info <- data.frame(species_name = c("yellowfin_sole", "Pacific_cod"),
                            species_code = c(10210, 21720),
@@ -61,7 +69,6 @@ ebs_other_data <- gapindex::get_data(year_set = c(1994, 2001, 2005, 2006),
 
 ## Combine the EBS standard and EBS other data into one list. 
 ebs_data <- list(
-  
   survey = ebs_standard_data$survey,
   survey_design = ebs_standard_data$survey_design,
   ## Some cruises are shared between the standard and other EBS cruises, 
@@ -77,7 +84,8 @@ ebs_data <- list(
   species = ebs_standard_data$species,
   specimen = rbind(ebs_standard_data$specimen,
                    ebs_other_data$specimen),
-  strata = ebs_standard_data$strata)
+  strata = ebs_standard_data$strata
+  )
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Pull NBS catch and effort data

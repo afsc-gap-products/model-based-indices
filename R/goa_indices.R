@@ -40,7 +40,7 @@ for (i in species_list){
     if(species == "Gadus_macrocephalus"){
       dat <- subset(dat, !is.na(cpue_n_km2))
       mesh <-  make_mesh(dat, xy_cols = c("X", "Y"),
-                         mesh = readRDS(file = here("meshes", "goa_vast_mesh.RDS")))
+                         mesh = fmesher::fm_as_fm(readRDS(file = here("meshes", "goa_vast_mesh.RDS"))))
       fit <- sdmTMB(
         cpue_n_km2 ~ 0 + year_f,
         data = dat,
@@ -70,7 +70,7 @@ for (i in species_list){
 
     if(!(species %in% c("Gadus_chalcogrammus", "Gadus_macrocephalus"))){
       mesh <-  make_mesh(dat, xy_cols = c("X", "Y"),
-                         mesh = readRDS(file = here("meshes", "goa_vast_mesh.RDS")))
+                         mesh = fmesher::fm_as_fm(readRDS(file = here("meshes", "goa_vast_mesh.RDS"))))
       fit <- sdmTMB(
         cpue_kg_km2 ~ 0 + year_f,
         data = dat,
@@ -110,6 +110,7 @@ for (i in species_list){
 
   ## Plot predicted density maps and fit diagnostics ----
   # q-q plot
+  set.seed(30)
   pdf(file = here("species_specific_code", "GOA", species, phase, "qq.pdf"),
       width = 5, height = 5)
     sims <- simulate(fit, nsim = 500, type = "mle-mvn")
@@ -204,7 +205,8 @@ for (i in species_list){
       xlim(min(cog$year) - 0.5, max(cog$year) + 0.5) +
       ylim(0, max(cog$upr_x)) +
       ylab("Center of Gravity (Eastings, km)") +
-      xlab("Year")
+      xlab("Year") +
+      theme_bw()
     
     cog_y <- ggplot(cog, aes(x = year, y = est_y, ymin = lwr_y, ymax = upr_y)) +
       geom_ribbon(alpha = 0.1) +
@@ -213,7 +215,8 @@ for (i in species_list){
       xlim(min(cog$year) - 0.5, max(cog$year) + 0.5) +
       ylim(min(cog$lwr_y), max(cog$upr_y)) +
       ylab("Center of Gravity (Northings, km)") +
-      xlab("Year")
+      xlab("Year") +
+      theme_bw()
     
     pdf(file = here("species_specific_code", "GOA", species, phase, 
                     "cog.pdf"), width = 6, height = 6)
@@ -237,9 +240,10 @@ for (i in species_list){
       geom_point() + 
       xlim(min(eao$year) - 0.5, max(eao$year) + 0.5) +
       ylab("Effective Area Occupied (km2)") +
-      xlab("Year")
+      xlab("Year") +
+      theme_bw()
     ggsave(file = here("species_specific_code", "GOA", species, phase, 
-                       "eao.pdf"), 
+                       "area_occupied.pdf"), 
            height = 4, width = 4, units = c("in"))
   }
 }

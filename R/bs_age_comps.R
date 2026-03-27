@@ -17,9 +17,9 @@ library(ggsidekick)
 theme_set(theme_sleek())
 
 # Set up ----------------------------------------------------------------------
-phase <- c("hindcast", "production")[2] # specify analysis phase
+phase <- c("hindcast", "production")[1] # specify analysis phase
 
-sp <- 1 # specify species from species vector
+sp <- 2 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 
 # Set year
@@ -57,11 +57,8 @@ dat$age_f <- factor(paste0("age_", dat$age))
 dat$year_age <- interaction(dat$year, dat$age_f)
 
 # Project data to UTM
-dat <- st_as_sf(dat,
-                 coords = c('lon','lat'),
-                 crs = st_crs(4326))
-dat <- st_transform(dat,
-                     crs = st_crs("+proj=utm +zone=2 +units=km"))
+dat <- st_as_sf(dat, coords = c('lon','lat'), crs = st_crs(4326))
+dat <- st_transform(dat, crs = st_crs("+proj=utm +zone=2 +units=km"))
 # Add UTM coordinates as columns X & Y
 dat <- cbind(st_drop_geometry(dat), st_coordinates(dat))
 
@@ -80,7 +77,16 @@ if(species %in% c("yellowfin_sole", "pacific_cod")) {
          FUN = \(x) sum(x > 0))
 }
 
+if(species == "pollock") {
+  year_age_to_drop <- NULL
+}
+
 # Inputs to tinyVAST ----------------------------------------------------------
+sem <- "\n  "
+for(i in min(ages):max(ages)) {
+  sem <- paste0(sem, "age_",i, " <-> age_", i, ", sd", i, "\n  ")
+}
+
 # Constant AR1 spatio-temporal term across ages & different variances for each age
 dsem <- "\n  "
 for(i in min(ages):max(ages)) {
@@ -88,33 +94,44 @@ for(i in min(ages):max(ages)) {
 }
 
 # # TinyVAST mesh
-# mesh <- fm_mesh_2d(loc = Data[,c("X","Y")],
+# mesh <- fm_mesh_2d(loc = dat[,c("X","Y")],
 #                    cutoff = 50)
-# 
+
 # Format mesh for tinyVAST (using a function from sdmTMB; same method as sdmTMB index bridging)
 old_mesh <- sdmTMB::make_mesh(dat, 
                               xy_cols = c("X", "Y"), 
-                              mesh = readRDS(file = here("meshes/bs_vast_mesh_50_knots.RDS")),
+                              mesh = fmesher::fm_as_fm(readRDS(file = here("meshes/bs_vast_mesh_50_knots.RDS"))),
                               fmesher_func = fm_mesh_2d()) 
 
 # Fit model -------------------------------------------------------------------
+start <- Sys.time()
 fit <- tinyVAST(
+  formula = cpue ~ 0 + year_age,
   data = dat,
-  formula = cpue ~ 0 + year_age,  
-  sem = "",
-  dsem = dsem,
-  family = setNames(lapply(ages, function(x) delta_gamma(type = "poisson-link")), 
-                    paste0("age_", ages)),
-  delta_options = list(delta_formula = ~ 0 + year_age), # 2nd linear predictor
-  space_column = c("X", "Y"), 
-  variable_column = "age_f",
+  space_term = sem,
+  spacetime_term = dsem,
+  family = setNames(
+    lapply(ages, function(x) delta_gamma(type = "poisson-link")), 
+    paste0("age_", ages)
+    ),
+  space_columns = c("X", "Y"),
+  spatial_domain = old_mesh$mesh,
   time_column = "year",
+  variable_column = "age_f",
   distribution_column = "age_f",
-  spatial_graph = old_mesh,
-  control = tinyVASTcontrol(getsd = FALSE,
-                            profile = c("alpha_j"),
-                            trace = 0)
-)
+  delta_options = list(
+    formula = ~ 0 + year_age,
+    space_term = sem,
+    spacetime_term = dsem
+    ),
+  control = tinyVASTcontrol(
+    getsd = FALSE,
+    profile = c("alpha_j"),
+    trace = 0
+    )
+  )
+end <- Sys.time()
+fit_time <- difftime(end, start, units = "hours")
 
 # Save fit object (create directory for results first, if it doesn't exist)
 if (!dir.exists(here(workDir, "results_age"))) {
@@ -129,6 +146,7 @@ if(!exists("fit")) {
   fit <- readRDS(here(workDir, "results_age", "tinyVAST_fit.RDS"))
 }
 
+start <- Sys.time()
 get_abundance <- function(region) {
   # Read in coarsened extrapolation grid
   if(region == "EBS") {grid <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))}
@@ -167,6 +185,8 @@ get_abundance <- function(region) {
 }
 
 abundance <- get_abundance(region = region)
+end <- Sys.time()
+expand_time <- difftime(end, start, units = "hours")
 
 # Save abundance
 write.csv(abundance, here(workDir, "results_age", "tinyVAST_abundance.csv"), row.names = FALSE)
