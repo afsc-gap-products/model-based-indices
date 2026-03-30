@@ -39,16 +39,18 @@ We will fit geostatistical spatiotemporal models with VAST and sdmTMB for the pu
 ```{r data, echo = TRUE}
 # TODO: standardize names better
 if(species == "pacific_cod"){
-  dat_ll <- readRDS(here("species_specific_code", "BS", species, "production", 
-                        "data", "data_geostat_numerical_index.RDS"))
+  dat_ll <- readRDS(here("species_specific_code", "BS", species, 
+                         "archive","2024", "production", 
+                         "data", "data_geostat_numerical_index.RDS"))  
   dat_ll <-  dplyr::transmute(dat_ll,
-                         cpue = Catch_N / AreaSwept_km2, #note last cod model used catch ~ effort
+                         cpue = Catch_KG / AreaSwept_km2, #here Catch_KG was actually nCPUE and swept area = 1
                          year = as.integer(Year),
                          vessel = "missing",
                          effort = 1, # area swept is 1 when using CPUE instead of observed weight
                          lat = Lat,
                          lon = Lon,
                          pass = 0) %>% 
+                na.omit() %>%
                 as.data.frame() # ensure not a tibble
 }
 if(species == "pollock"){
@@ -64,8 +66,9 @@ if(species == "pollock"){
                 as.data.frame() # ensure not a tibble
 }
 if(species == "yellowfin_sole"){
-  dat_ll <- readRDS(here("species_specific_code", "BS", species, "production", 
-                       "data", "data_geostat_biomass_index.RDS"))  
+  dat_ll <- readRDS(here("species_specific_code", "BS", species, 
+                         "archive","2024", "production", 
+                         "data", "data_geostat_biomass_index.RDS"))  
   dat_ll <-  dplyr::transmute(dat_ll,
                          cpue = Catch_KG / AreaSwept_km2,
                          year = as.integer(Year),
@@ -82,15 +85,16 @@ We also need to pull in the appropriate environmental covariate as this is used 
 
 ```{r covariate, echo = TRUE}
 if(species == "yellowfin_sole"){
-  env <- scale(coldpool:::cold_pool_index$MEAN_BT_LT100M)
+  env <- scale(coldpool::cold_pool_index$MEAN_BT_LT100M[1:length(unique(dat_ll$year))])
 } else {
-  env <- scale(coldpool:::cold_pool_index$AREA_LTE2_KM2)
+  env <- scale(coldpool::cold_pool_index$AREA_LTE2_KM2[1:length(unique(dat_ll$year))])
 }
 
-covariate_data <- data.frame(Year = as.integer(c(coldpool:::cold_pool_index$YEAR, 2020)), 
-                             Lat = mean(dat_ll$lat),
-                             Lon = mean(dat_ll$lon), 
-                             env = c(env, 0))
+covariate_data <- data.frame(Year = as.integer(
+  c(coldpool::cold_pool_index$YEAR[1:length(unique(dat_ll$year))], 2020)), 
+  Lat = mean(dat_ll$lat),
+  Lon = mean(dat_ll$lon), 
+  env = c(env, 0))
 
 # TODO: replace "select(covariate_data, year, env)" with just "env" for sdmTMB
 env_join <- covariate_data %>% select(year = Year, env)
@@ -164,7 +168,7 @@ if (!file.exists(f)) {
   saveRDS(fit, file = f)
 } else {
   fit <- readRDS(f)
-  fit <- reload_model(fit)
+  #fit <- reload_model(fit)
 }
 ```
 
@@ -212,8 +216,7 @@ dat$Y <- dat$coords.x2 / 1000
 f1 <- here("species_specific_code", "BS", species, "index_comparison", "fit_sdmTMB.RDS")
 if (!file.exists(f1)) {
   # make mesh and fit model
-  mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$anisotropic_mesh) #pass same mesh as VAST model...TODO: save this object for each species so it can be loaded without the full model object
-  #mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), n_knots = 50, type = "kmeans") #coarser mesh for experimentation
+  mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), mesh = fit$spatial_list$MeshList$anisotropic_mesh) #pass same mesh as VAST model
   
   fit_sdmTMB <- sdmTMB( 
     cpue ~ 0 + year_f,
