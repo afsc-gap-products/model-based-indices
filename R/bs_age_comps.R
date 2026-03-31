@@ -132,6 +132,7 @@ fit <- tinyVAST(
   )
 end <- Sys.time()
 fit_time <- difftime(end, start, units = "hours")
+fit_time
 
 # Save fit object (create directory for results first, if it doesn't exist)
 if (!dir.exists(here(workDir, "results_age"))) {
@@ -187,6 +188,7 @@ get_abundance <- function(region) {
 abundance <- get_abundance(region = region)
 end <- Sys.time()
 expand_time <- difftime(end, start, units = "hours")
+expand_time
 
 # Save abundance
 write.csv(abundance, here(workDir, "results_age", "tinyVAST_abundance.csv"), row.names = FALSE)
