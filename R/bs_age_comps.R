@@ -358,13 +358,13 @@ compare_props <- function(dfs, names) {
                             proportion < 0 ~ "negative"))
   
   # Plot both regions together and without 2020
-  label <- paste0("percent difference between ", names[1], " and ", names[2])
+  label <- paste0("Percent difference between ", names[1], " and ", names[2])
   diff_plot <- ggplot(props_plot, aes(x = age, y = proportion, fill = sign)) +
     geom_bar(stat = "identity", show.legend = FALSE) +
     scale_fill_manual(values = c("cornflowerblue", "darkred")) +
     scale_x_discrete(breaks = ages[seq(1, length(ages), by = 2)]) +  # labeled with every other age
-    ylab(label) +
-    facet_wrap(~ year, ncol = 6) 
+    xlab("Age") + ylab(label) +
+    facet_wrap(~ year, ncol = 6, dir = "v") 
   
   return(list(barplot = barplot, boxplot = boxplot, diff_plot = diff_plot))
 }
@@ -377,7 +377,7 @@ prop_diff$diff_plot
 
 # Save comparison
 ggsave(prop_diff$barplot, filename = here(workDir, "results_age", "comps_by_year.png"),
-       width=200, height=180, units="mm", dpi=300)
+       width=220, height=200, units="mm", dpi=300)
 ggsave(prop_diff$boxplot, filename = here(workDir, "results_age", "comps_summary.png"),
        width=200, height=120, units="mm", dpi=300)
 ggsave(prop_diff$diff_plot, filename = here(workDir, "results_age", "comp_per_diff.png"),
