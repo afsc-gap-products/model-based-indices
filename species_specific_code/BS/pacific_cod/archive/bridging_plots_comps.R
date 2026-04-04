@@ -23,8 +23,8 @@ this_year <- 2024
 save_dir <- paste0("hindcast/results_age")
 
 # Compare Age Compositions ----------------------------------------------------
-new_props <- cbind(read.csv("species_specific_code/BS/pacific_cod/hindcast/results_age/tinyVAST_props_2024.csv"), distribution = "tinyVAST")
-old_props <- read.csv(here(workDir, "production", "results_age", "proportions", "clean_proportions.csv"))[c(1:26,28:31),-1]
+new_props <- cbind(read.csv(here(workDir, "archive", "2024", "production", "results_age", "tinyVAST_props.csv")), distribution = "tinyVAST")
+old_props <- read.csv(here(workDir, "archive", "2024", "production", "results_age", "proportions", "clean_proportions.csv"))[c(1:26,28:31),-1]
 
 old_props$year <- new_props$year
 old_props$distribution <- "VAST"

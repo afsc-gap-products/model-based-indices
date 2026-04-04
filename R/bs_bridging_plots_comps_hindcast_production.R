@@ -18,9 +18,9 @@ library(ggsidekick)
 theme_set(theme_sleek())
 
 # Set up ----------------------------------------------------------------------
-phase <- c("hindcast", "production")[2] # specify analysis phase
+phase <- c("hindcast", "production")[1] # specify analysis phase
 
-sp <- 1 # specify species from species vector
+sp <- 3 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 age_classes <- c(20, 15, 13)[sp]
 start_age <- c(1 , 1, 0)[sp]
@@ -34,9 +34,10 @@ if(phase == "hindcast") {this_year <- this_year - 1}
 workDir <- here("species_specific_code", "BS", species, phase)
 
 # Compare Age Compositions ----------------------------------------------------
-new <- cbind(read.csv(here(workDir, "results_age/tinyVAST_props.csv")), version = "production")
-old <- cbind(read.csv(here("species_specific_code", "BS", species, "hindcast", 
-                      "results_age", "tinyVAST_props_2024.csv")), version = "hindcast")
+new <- cbind(read.csv(here("species_specific_code", "BS", species, "archive", "2025", "hindcast", 
+                           "results_age/tinyVAST_props.csv")), version = "tinyVAST")
+old <- cbind(read.csv(here("species_specific_code", "BS", species, "archive", "2024", "production", 
+                      "results_age", "proportions", "tinyVAST_props_2024.csv")), version = "VAST")
 
 new <- dplyr::bind_rows(new) |>
         filter(year < this_year) |> # drop current year from production output
