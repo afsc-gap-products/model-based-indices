@@ -308,6 +308,12 @@ previous_props <- read.csv(here("species_specific_code", "BS", species,
                                 "tinyVAST_props.csv"))
 previous_name <- "2025 Production"  # TODO: name the previous run
 
+# # Reshape VAST output to match tinyVAST output
+# tiny_years <- c(1980:2019, 2021:this_year)
+# old_props <- old_props %>% filter(Year %in% tiny_years & Region == "Both")
+# old_props <- old_props[, c(16, 1:15, 17)]
+# colnames(old_props)[c(1, 16, 17)] <- c("year", "age_15", "region")
+
 compare_props <- function(dfs, names) {
   # Reshape dataframes for plotting summaries of the two models
   df <- data.frame()
@@ -325,7 +331,7 @@ compare_props <- function(dfs, names) {
   barplot <- ggplot(df, aes(x = age, y = proportion, fill = version)) +
     geom_bar(stat = "identity", position = "dodge") +
     scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
-    scale_x_discrete(breaks = ages[seq(1, length(ages), by = 2)]) +  # labeled with every other age
+    scale_x_discrete(breaks = ages[seq(min(ages), length(ages), by = 2)]) +  # labeled with every other age
     xlab("Age") + ylab("Proportion-at-Age") +
     theme(legend.title = element_blank()) +
     facet_wrap(~ year, ncol = 6, dir = "v")
@@ -336,7 +342,7 @@ compare_props <- function(dfs, names) {
     geom_boxplot(alpha = 0.5) +
     scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
     scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
-    scale_x_discrete(breaks = ages[seq(1, length(ages), by = 2)]) +  # labeled with every other age
+    scale_x_discrete(breaks = ages[seq(min(ages), length(ages), by = 2)]) +  # labeled with every other age
     xlab("Age") + ylab("Proportion-at-Age") +
     theme(legend.title = element_blank()) 
 
@@ -350,7 +356,7 @@ compare_props <- function(dfs, names) {
   per_tab <- cbind(per, year = new[, 1])
   
   # Plot the percent difference between the models
-  colnames(per_tab)[1:max(ages)] <- 1:max(ages)
+  colnames(per_tab)[min(ages):max(ages)] <- min(ages):max(ages)
   diff <- melt(per_tab, id.vars = "year", 
                variable.name = "age", value.name = "proportion") %>%
     # add column for coloring the bars in the plot based on positive/negative
@@ -362,7 +368,7 @@ compare_props <- function(dfs, names) {
   diff_plot <- ggplot(props_plot, aes(x = age, y = proportion, fill = sign)) +
     geom_bar(stat = "identity", show.legend = FALSE) +
     scale_fill_manual(values = c("cornflowerblue", "darkred")) +
-    scale_x_discrete(breaks = ages[seq(1, length(ages), by = 2)]) +  # labeled with every other age
+    scale_x_discrete(breaks = ages[seq(min(ages), length(ages), by = 2)]) +  # labeled with every other age
     xlab("Age") + ylab(label) +
     facet_wrap(~ year, ncol = 6, dir = "v") 
   
