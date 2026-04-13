@@ -31,7 +31,7 @@ if (!requireNamespace("coldpool", quietly = TRUE)) {
 }
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
-sp <- 3 # specify species from species vector
+sp <- 1 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 
 # Set year
@@ -382,14 +382,15 @@ if(species == "kamchatka_flounder"){
       select(index, region, year, est, lwr, upr)
     
     load(here("species_specific_code", "BS", species, "hindcast", "results", "indices_250_knots.RData"))
-    old_i <-  bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_old") %>% 
-      select(index, region, year, est, lwr, upr)
+    old_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_old") %>% select(index, region, year, est, lwr, upr)
+    new_i <- readRDS(here("species_specific_code", "BS", species, "archive", this_year, "production", "results", "indices.RDS")) |>
+     mutate(index = "mb_old") |> select(index, region, year, est, lwr, upr)
+      
     both_i <- bind_rows(new_i, old_i)
     
-    ggplot(filter(both_i, region == "Both"), aes(x = year, y = est, ymin = lwr, 
-                                                  ymax = upr, colour = index)) + 
-      geom_ribbon(alpha = 0.1) +
-      geom_line(alpha = 0.8) + 
+    ggplot(filter(both_i, region == "Both"), aes(x = year, y = est)) + 
+      geom_ribbon(aes(ymin = lwr, ymax = upr, fill = index), alpha = 0.3) +
+      geom_line(aes(color = index), alpha = 0.8) + 
       ylim(0, max(both_i$upr)) +
       ggtitle("EBS + NBS") +
       coord_cartesian(expand = FALSE) + 
@@ -399,10 +400,9 @@ if(species == "kamchatka_flounder"){
                        "index_bridge_both.pdf"), 
            height = 4, width = 6, units = c("in"))
     
-    ggplot(filter(both_i, region == "EBS"), aes(x = year, y = est, ymin = lwr, 
-                                                  ymax = upr, colour = index)) + 
-      geom_ribbon(alpha = 0.1) +
-      geom_line(alpha = 0.8) + 
+    ggplot(filter(both_i, region == "EBS"), aes(x = year, y = est)) + 
+      geom_ribbon(aes(ymin = lwr, ymax = upr, fill = index), alpha = 0.3) +
+      geom_line(aes(color = index), alpha = 0.8) + 
       ylim(0, max(both_i$upr)) +
       ggtitle("EBS") +
       coord_cartesian(expand = FALSE) + 
@@ -412,10 +412,9 @@ if(species == "kamchatka_flounder"){
                        "index_bridge_ebs.pdf"), 
            height = 4, width = 6, units = c("in"))
     
-    ggplot(filter(both_i, region == "NBS"), aes(x = year, y = est, ymin = lwr, 
-                                                  ymax = upr, colour = index)) + 
-      geom_ribbon(alpha = 0.1) +
-      geom_line(alpha = 0.8) + 
+    ggplot(filter(both_i, region == "NBS"), aes(x = year, y = est)) + 
+      geom_ribbon(aes(ymin = lwr, ymax = upr, fill = index), alpha = 0.3) +
+      geom_line(aes(color = index), alpha = 0.8) + 
       ylim(0, max(both_i$upr)) +
       ggtitle("NBS") +
       coord_cartesian(expand = FALSE) + 
@@ -426,9 +425,9 @@ if(species == "kamchatka_flounder"){
            height = 4, width = 6, units = c("in"))
     
     # plot new index only for all regions
-    ggplot(new_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = region)) + 
-      geom_ribbon(alpha = 0.1) +
-      geom_line(alpha = 0.8) + 
+    ggplot(new_i, aes(x = year, y = est)) + 
+      geom_ribbon(aes(ymin = lwr, ymax = upr, fill = region), alpha = 0.3) +
+      geom_line(aes(color = region), alpha = 0.8) + 
       ylim(0, max(new_i$upr)) +
       #ggtitle(species) +
       coord_cartesian(expand = FALSE) + 
@@ -472,7 +471,7 @@ if (!file.exists(f4)) {
   
     ts <- ggplot(cog_new, aes(x = year, y = est)) +
       geom_line() +
-      geom_ribbon(aes(ymin = (lwr), ymax = (upr)), alpha = 0.2) +
+      geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2) +
       xlab("Year") + ylab("") +
       facet_wrap(~ unit, ncol = 1, scales = "free_y") +
       theme_bw()
