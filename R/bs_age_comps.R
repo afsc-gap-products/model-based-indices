@@ -19,7 +19,7 @@ theme_set(theme_sleek())
 # Set up ----------------------------------------------------------------------
 phase <- c("hindcast", "production")[1] # specify analysis phase
 
-sp <- 2 # specify species from species vector
+sp <- 3 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 
 # Set year
@@ -126,10 +126,10 @@ fit <- tinyVAST(
     ),
   control = tinyVASTcontrol(
     getsd = FALSE,
-    profile = c("alpha_j"),
+    profile = c("alpha_j", "alpha2_j"),
     trace = 0
-    )
   )
+)
 end <- Sys.time()
 fit_time <- difftime(end, start, units = "hours")
 fit_time
@@ -150,9 +150,9 @@ if(!exists("fit")) {
 start <- Sys.time()
 get_abundance <- function(region) {
   # Read in coarsened extrapolation grid
-  if(region == "EBS") {grid <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))}
-  if(region == "NBS") {grid <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))}
-  if(region == "both") {grid <-  read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))}
+  if(region == "EBS") {grid <- read.csv(here("extrapolation_grids", "ebs_coarse_grid_5nm.csv"))}
+  if(region == "NBS") {grid <- read.csv(here("extrapolation_grids", "nbs_coarse_grid_5nm.csv"))}
+  if(region == "both") {grid <-  read.csv(here("extrapolation_grids", "bering_coarse_grid_5nm.csv"))}
   
   N_jz <- expand.grid(age_f = fit$internal$variables, year = sort(unique(dat$year)))
   N_jz$year_age <- interaction(N_jz$year, N_jz$age)
@@ -303,10 +303,12 @@ if(species == "pacific_cod"){
 # Compare proportions to previous model ---------------------------------------
 # TODO: change this path to the previous run
 previous_props <- read.csv(here("species_specific_code", "BS", species, 
-                                "production", 
+                                "archive",
+                                "2025",
+                                "hindcast", 
                                 "results_age", 
                                 "tinyVAST_props.csv"))
-previous_name <- "2025 Production"  # TODO: name the previous run
+previous_name <- "2024 production tinyVAST"  # TODO: name the previous run
 
 compare_props <- function(dfs, names) {
   # Reshape dataframes for plotting summaries of the two models
