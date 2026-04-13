@@ -381,9 +381,9 @@ if(species == "kamchatka_flounder"){
     new_i <- ind_all %>% mutate(index = "mb_new") %>% 
       select(index, region, year, est, lwr, upr)
     
-    load(here("species_specific_code", "BS", species, "hindcast", "results", "indices_250_knots.RData"))
-    old_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_old") %>% select(index, region, year, est, lwr, upr)
-    new_i <- readRDS(here("species_specific_code", "BS", species, "archive", this_year, "production", "results", "indices.RDS")) |>
+    #load(here("species_specific_code", "BS", species, "hindcast", "results", "indices_250_knots.RData"))
+    #old_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_old") %>% select(index, region, year, est, lwr, upr)
+    old_i <- readRDS(here("species_specific_code", "BS", species, "archive", this_year, "production", "results", "indices.RDS")) |>
      mutate(index = "mb_old") |> select(index, region, year, est, lwr, upr)
       
     both_i <- bind_rows(new_i, old_i)
