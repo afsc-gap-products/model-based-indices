@@ -425,7 +425,7 @@ if(species == "kamchatka_flounder"){
     
     # plot new index only for all regions
     ggplot(new_i, aes(x = year, y = est)) + 
-      geom_ribbon(aes(ymin = lwr, ymax = upr, fill = region), alpha = 0.2) +
+      geom_ribbon(aes(ymin = lwr, ymax = upr, fill = region), alpha = 0.3) +
       geom_line(aes(color = region), alpha = 0.8) + 
       ylim(0, max(new_i$upr)) +
       #ggtitle(species) +
