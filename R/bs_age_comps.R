@@ -126,10 +126,10 @@ fit <- tinyVAST(
     ),
   control = tinyVASTcontrol(
     getsd = FALSE,
-    profile = c("alpha_j", c("alpha2_j")),
+    profile = c("alpha_j", "alpha2_j"),
     trace = 0
-    )
   )
+)
 end <- Sys.time()
 fit_time <- difftime(end, start, units = "hours")
 fit_time
@@ -297,5 +297,96 @@ if(species == "pacific_cod"){
       map_list[[i]] <- map
       ggsave(map, filename = here(workDir, "results_age", "spatial_residuals", paste0("age_", i, ".png")),
              width = 300, height = 300, units = "mm", dpi = 300)
+    }
+    }
+
+# Compare proportions to previous model ---------------------------------------
+# TODO: change this path to the previous run
+previous_props <- read.csv(here("species_specific_code", "BS", species, 
+                                "archive",
+                                "2025",
+                                "hindcast", 
+                                "results_age", 
+                                "tinyVAST_props.csv"))
+previous_name <- "2024 production tinyVAST"  # TODO: name the previous run
+
+# # Reshape VAST output to match tinyVAST output
+# tiny_years <- c(1980:2019, 2021:this_year)
+# old_props <- old_props %>% filter(Year %in% tiny_years & Region == "Both")
+# old_props <- old_props[, c(16, 1:15, 17)]
+# colnames(old_props)[c(1, 16, 17)] <- c("year", "age_15", "region")
+
+compare_props <- function(dfs, names) {
+  # Reshape dataframes for plotting summaries of the two models
+  df <- data.frame()
+  for(i in 1:length(dfs)) {
+    prop <- dfs[[i]]
+    colnames(prop) <- c("year", ages, "region")
+    prop <- prop %>% select(-region)  # Be careful if the regions are different.
+    prop <- melt(prop, id.vars = "year",
+                 variable.name = "age", value.name = "proportion")
+    prop$version <- names[i]
+    df <- bind_rows(df, prop)
   }
+  
+  # side-by-side barplot of proportion-at-age for each year for each model
+  barplot <- ggplot(df, aes(x = age, y = proportion, fill = version)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
+    scale_x_discrete(breaks = ages[seq(min(ages), length(ages), by = 2)]) +  # labeled with every other age
+    xlab("Age") + ylab("Proportion-at-Age") +
+    theme(legend.title = element_blank()) +
+    facet_wrap(~ year, ncol = 6, dir = "v")
+  barplot
+  
+  # Boxplot summarizing proportion-at-age across years for each model
+  boxplot <- ggplot(df, aes(x = age, y = proportion, color = version, fill = version)) +
+    geom_boxplot(alpha = 0.5) +
+    scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
+    scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
+    scale_x_discrete(breaks = ages[seq(min(ages), length(ages), by = 2)]) +  # labeled with every other age
+    xlab("Age") + ylab("Proportion-at-Age") +
+    theme(legend.title = element_blank()) 
+
+  # Reshape data for percent difference between the models
+  new <- dfs[[1]] %>% select(-region)
+  old <- dfs[[2]] %>% select(-region)
+  new <- new %>% filter(year <= max(old$year))  # make sure new dataset is the same length as the old
+  
+  # Get percent difference
+  per <- round((((new[, -1] - old[, -1]) / old[, -1]) *100), 4)
+  per_tab <- cbind(per, year = new[, 1])
+  
+  # Plot the percent difference between the models
+  colnames(per_tab)[min(ages):max(ages)] <- min(ages):max(ages)
+  diff <- melt(per_tab, id.vars = "year", 
+               variable.name = "age", value.name = "proportion") %>%
+    # add column for coloring the bars in the plot based on positive/negative
+    mutate(sign = case_when(proportion >= 0 ~ "positive",
+                            proportion < 0 ~ "negative"))
+  
+  # Plot both regions together and without 2020
+  label <- paste0("Percent difference between ", names[1], " and ", names[2])
+  diff_plot <- ggplot(props_plot, aes(x = age, y = proportion, fill = sign)) +
+    geom_bar(stat = "identity", show.legend = FALSE) +
+    scale_fill_manual(values = c("cornflowerblue", "darkred")) +
+    scale_x_discrete(breaks = ages[seq(min(ages), length(ages), by = 2)]) +  # labeled with every other age
+    xlab("Age") + ylab(label) +
+    facet_wrap(~ year, ncol = 6, dir = "v") 
+  
+  return(list(barplot = barplot, boxplot = boxplot, diff_plot = diff_plot))
 }
+
+prop_diff <- compare_props(dfs = list(props, previous_props),
+                           names = c(phase, previous_name))
+prop_diff$barplot
+prop_diff$boxplot
+prop_diff$diff_plot
+
+# Save comparison
+ggsave(prop_diff$barplot, filename = here(workDir, "results_age", "comps_by_year.png"),
+       width=220, height=200, units="mm", dpi=300)
+ggsave(prop_diff$boxplot, filename = here(workDir, "results_age", "comps_summary.png"),
+       width=200, height=120, units="mm", dpi=300)
+ggsave(prop_diff$diff_plot, filename = here(workDir, "results_age", "comp_per_diff.png"),
+       width=200, height=200, units="mm", dpi=300)
