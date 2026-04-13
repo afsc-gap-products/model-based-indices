@@ -73,24 +73,19 @@ library(tinyVAST)
 library(fmesher)
 library(sf)
 
-format_data <- function() {
-  # Pull & format data
-  data(bering_sea_pollock_ages)
-  Data <- subset(bering_sea_pollock_ages, Year >= 2021)
-  Data$Age <- factor(paste0("Age_",Data$Age))
-  Data$Year_Age <- interaction(Data$Year, Data$Age)
-  
-  # Project to UTM
-  Data <- st_as_sf(Data, 
-                   coords = c('Lon','Lat'),
-                   crs = st_crs(4326))
-  Data <- st_transform(Data, crs = st_crs("+proj=utm +zone=2 +units=km"))
-  Data <- cbind(st_drop_geometry(Data), st_coordinates(Data))
-  
-  return(Data)
-}
 
-Data <- format_data()
+# Pull & format data
+data(bering_sea_pollock_ages)
+Data <- subset(bering_sea_pollock_ages, Year >= 2022)
+Data$Age <- factor(paste0("Age_",Data$Age))
+Data$Year_Age <- interaction(Data$Year, Data$Age)
+
+# Project to UTM
+Data <- st_as_sf(Data, 
+                  coords = c('Lon','Lat'),
+                  crs = st_crs(4326))
+Data <- st_transform(Data, crs = st_crs("+proj=utm +zone=2 +units=km"))
+Data <- cbind(st_drop_geometry(Data), st_coordinates(Data))
 
 # Set up tinyVAST settings
 sem <- ""
@@ -118,7 +113,7 @@ mesh <- fm_mesh_2d(loc = Data[,c("X","Y")],
 control <- tinyVASTcontrol(getsd = FALSE,
                            profile = c("alpha_j"),  
                            trace = 0)
-family <- list(
+fam <- list(
   Age_1 = tweedie(),
   Age_2 = tweedie(),
   Age_3 = tweedie(),
@@ -140,15 +135,15 @@ family <- list(
 myfit <- tinyVAST(
   data = Data,
   formula = Abundance_per_hectare ~ 0 + Year_Age,
-  sem = sem,
-  dsem = dsem,
-  family = family,
+  space_term = sem,
+  spacetime_term = dsem,
+  family = fam,
   space_column = c("X", "Y"), 
   variable_column = "Age",
   time_column = "Year",
   distribution_column = "Age",
-  spatial_graph = mesh,
+  spatial_domain = mesh,
   control = control
 )
 
-myfit  # Print fit - if this works everything is groovy!
+sanity(myfit)  # Print fit - if this works everything is groovy!
