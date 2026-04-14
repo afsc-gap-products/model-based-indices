@@ -73,7 +73,6 @@ library(tinyVAST)
 library(fmesher)
 library(sf)
 
-
 # Pull & format data
 data(bering_sea_pollock_ages)
 Data <- subset(bering_sea_pollock_ages, Year >= 2022)
