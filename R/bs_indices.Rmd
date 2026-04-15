@@ -390,6 +390,7 @@ if(species == "kamchatka_flounder"){
     
     ggplot(filter(both_i, region == "Both"), aes(x = year, y = est)) + 
       geom_ribbon(aes(ymin = lwr, ymax = upr, fill = index), alpha = 0.3) +
+      geom_point(aes(color = index), alpha = 0.8) + 
       geom_line(aes(color = index), alpha = 0.8) + 
       ylim(0, max(both_i$upr)) +
       ggtitle("EBS + NBS") +
@@ -402,6 +403,7 @@ if(species == "kamchatka_flounder"){
     
     ggplot(filter(both_i, region == "EBS"), aes(x = year, y = est)) + 
       geom_ribbon(aes(ymin = lwr, ymax = upr, fill = index), alpha = 0.3) +
+      geom_point(aes(color = index), alpha = 0.8) + 
       geom_line(aes(color = index), alpha = 0.8) + 
       ylim(0, max(both_i$upr)) +
       ggtitle("EBS") +
@@ -414,6 +416,7 @@ if(species == "kamchatka_flounder"){
     
     ggplot(filter(both_i, region == "NBS"), aes(x = year, y = est)) + 
       geom_ribbon(aes(ymin = lwr, ymax = upr, fill = index), alpha = 0.3) +
+      geom_point(aes(color = index), alpha = 0.8) + 
       geom_line(aes(color = index), alpha = 0.8) + 
       ylim(0, max(both_i$upr)) +
       ggtitle("NBS") +
@@ -427,6 +430,7 @@ if(species == "kamchatka_flounder"){
     # plot new index only for all regions
     ggplot(new_i, aes(x = year, y = est)) + 
       geom_ribbon(aes(ymin = lwr, ymax = upr, fill = region), alpha = 0.3) +
+      geom_point(aes(color = region), alpha = 0.8) +
       geom_line(aes(color = region), alpha = 0.8) + 
       ylim(0, max(new_i$upr)) +
       #ggtitle(species) +
@@ -470,6 +474,7 @@ if (!file.exists(f4)) {
   
   
     ts <- ggplot(cog_new, aes(x = year, y = est)) +
+      geom_point() +
       geom_line() +
       geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2) +
       xlab("Year") + ylab("") +
@@ -609,7 +614,8 @@ if (!file.exists(f5)) {
   }
 
   # plot effective area occupied
-  eao_plot <- ggplot(eao, aes(x = year, y = est)) +
+  eao_plot <- ggplot(eao_all, aes(x = year, y = est)) +
+    geom_point() +
     geom_line(alpha = 0.8) +
     geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.3) +
     scale_y_continuous(labels = scales::comma, limits = c(0, NA)) +
