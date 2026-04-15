@@ -432,8 +432,8 @@ if(species == "kamchatka_flounder"){
       arrange(desc(region)) |>
         ggplot(aes(x = year, y = est)) + 
           geom_ribbon(aes(ymin = lwr, ymax = upr, fill = region), alpha = 0.5) +
-          geom_point(aes(color = region), size = 1, alpha = 0.8) +
-          geom_line(aes(color = region), alpha = 0.8) + 
+          geom_point(aes(color = region), size = 1, alpha = 0.7) +
+          geom_line(aes(color = region), alpha = 0.7) + 
           ylim(0, max(new_i$upr)) +
           #ggtitle(species) +
           coord_cartesian(expand = FALSE) + 
