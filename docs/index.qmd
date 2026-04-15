@@ -57,7 +57,7 @@ Resources:
 
 Because usage of GCP is metered, you will need to start and, importantly **stop**, your node every time you want to use it.
 
-1.  Navigate to the [AFSC dev server on GCP](https://console.cloud.google.com/compute/instances?project=ggn-nmfs-afscdsm-dev-1&cloudshell=true&authuser=0).
+1.  Navigate to the [AFSC dev server on GCP](https://console.cloud.google.com/compute/instances?project=ggn-nmfs-afscuservm-infra-1&cloudshell=true).
 
 ![](`r here::here("docs/img/gcp_node_page.png")`)
 
@@ -71,9 +71,9 @@ Because usage of GCP is metered, you will need to start and, importantly **stop*
 
 ![](`r here::here("docs/img/gcp_instances_page_4.png")`)
 
-5.  In a text editor, copy in the following connection code, substituting `[SERVER NAME]` with the one that has been configured for you. Do not include the brackets around your name (it should be the same as the name of your node in GCP). `gcloud compute ssh --ssh-flag="-4 -L 8787:localhost:8787" [YOUR-NAME]-sdm-node --project=ggn-nmfs-afscdsm-dev-1 --zone=us-east4-c --tunnel-through-iap`
+5.  In a text editor, copy in the following connection code, substituting `[SERVER NAME]` with the one that has been configured for you. Do not include the brackets around your name (it should be the same as the name of your node in GCP). `gcloud compute ssh --ssh-flag="-4 -L 8787:localhost:8787" [YOUR-NAME]-sdm-node --project=ggn-nmfs-afscuservm-infra-1 --zone=us-east4-c --tunnel-through-iap`
 
-    e.g., `gcloud compute ssh --ssh-flag="-4 -L 8787:localhost:8787" sophia-wassermann-sdm-node --project=ggn-nmfs-afscdsm-dev-1 --zone=us-east4-c --tunnel-through-iap`
+    e.g., `gcloud compute ssh --ssh-flag="-4 -L 8787:localhost:8787" sophia-wassermann-sdm-node --project=ggn-nmfs-afscuservm-infra-1 --zone=us-east4-c --tunnel-through-iap`
 
     We recommend saving this connection string to a text file on your local computer. You will need to use it every time you connect to your instance.
 
@@ -119,7 +119,7 @@ You should now be able to use Rstudio as you would on your local machine.
 
 Configuring an SSH key for your instance is required to push to github. It is possible to clone repositories using https, but you will not be able to push any changes. You will need to do the following in the Terminal within Rstudio Server.
 
-1.  Switch to the Terminal tab at the bottom of the Rstudio Server window. Generate a new SSH key and add it to the ssh-agent, following the [instructions for *Linux* on github](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent). You do not need to specify a ‘file in which to save the key’ or a passphrase. Paste in the following text, replacing the email address with your Github email address: 
+1.  Switch to the Terminal tab (instead of Console) of the Rstudio Server window. Generate a new SSH key and add it to the ssh-agent, following the [instructions for *Linux* on github](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent). You do not need to specify a ‘file in which to save the key’ or a passphrase. Paste or type in the following text, replacing the email address with your Github email address: 
 
 ` ssh-keygen -t ed25519 -C "your_email@example.com"`
 
@@ -141,7 +141,7 @@ Configuring an SSH key for your instance is required to push to github. It is po
 
 [Enter]
 
-4.  In the RStudio Terminal, copy the SSH public key to your clipboard with the following. Select and copy what is printed.
+4.  In the RStudio Terminal, copy the SSH public key to your clipboard with the following. Select and copy what is printed. You may need to select and then right-click the text to copy, if ctrl + C does not work.
 
 ` cat ~/.ssh/id_ed25519.pub`
 
@@ -165,7 +165,9 @@ e.g., ` git clone git@github.com:afsc-gap-products/model-based-indices.git`
 
 ![](`r here::here("docs/img/gcp_github_ssh_5.png")`)
 
-9.  To connect the git integration in Rstudio with your cloned repository, you need to create an Rstudio Project associated with it. Click on the File menu in Rstudio Server -\> 'New Project' -\> 'Existing Directory' -\> browse to the cloned repo.
+9. The first time you clone a repository from github, you will see the warning that "The authenticity of host 'github.com' can't be established", followed by a prompt asking: "Are you suer you want to continue connecting (yes/no/[fingerprint])?" Type `yes` and enter.
+
+10.  To connect the git integration in Rstudio with your cloned repository, you need to create an Rstudio Project associated with it. Click on the File menu in Rstudio Server -\> 'New Project' -\> 'Existing Directory' -\> browse to the cloned repo.
 
 ![](`r here::here("docs/img/gcp_github_ssh_6.png")`)
 
