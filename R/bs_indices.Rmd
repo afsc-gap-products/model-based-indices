@@ -390,7 +390,7 @@ if(species == "kamchatka_flounder"){
     
     ggplot(filter(both_i, region == "Both"), aes(x = year, y = est)) + 
       geom_ribbon(aes(ymin = lwr, ymax = upr, fill = index), alpha = 0.3) +
-      geom_point(aes(color = index), alpha = 0.8) + 
+      geom_point(aes(color = index), size = 1, alpha = 0.8) + 
       geom_line(aes(color = index), alpha = 0.8) + 
       ylim(0, max(both_i$upr)) +
       ggtitle("EBS + NBS") +
@@ -403,7 +403,7 @@ if(species == "kamchatka_flounder"){
     
     ggplot(filter(both_i, region == "EBS"), aes(x = year, y = est)) + 
       geom_ribbon(aes(ymin = lwr, ymax = upr, fill = index), alpha = 0.3) +
-      geom_point(aes(color = index), alpha = 0.8) + 
+      geom_point(aes(color = index), size = 1, alpha = 0.8) + 
       geom_line(aes(color = index), alpha = 0.8) + 
       ylim(0, max(both_i$upr)) +
       ggtitle("EBS") +
@@ -416,7 +416,7 @@ if(species == "kamchatka_flounder"){
     
     ggplot(filter(both_i, region == "NBS"), aes(x = year, y = est)) + 
       geom_ribbon(aes(ymin = lwr, ymax = upr, fill = index), alpha = 0.3) +
-      geom_point(aes(color = index), alpha = 0.8) + 
+      geom_point(aes(color = index), size = 1, alpha = 0.8) + 
       geom_line(aes(color = index), alpha = 0.8) + 
       ylim(0, max(both_i$upr)) +
       ggtitle("NBS") +
@@ -428,17 +428,21 @@ if(species == "kamchatka_flounder"){
            height = 4, width = 6, units = c("in"))
     
     # plot new index only for all regions
-    ggplot(new_i, aes(x = year, y = est)) + 
-      geom_ribbon(aes(ymin = lwr, ymax = upr, fill = region), alpha = 0.3) +
-      geom_point(aes(color = region), alpha = 0.8) +
-      geom_line(aes(color = region), alpha = 0.8) + 
-      ylim(0, max(new_i$upr)) +
-      #ggtitle(species) +
-      coord_cartesian(expand = FALSE) + 
-      ylab(ylab) +
-      theme_bw()
-    ggsave(file = here("species_specific_code", "BS", species, phase, "results", "index.pdf"), 
-           height = 4, width = 6, units = c("in"))
+    new_i |>
+      arrange(desc(region)) |>
+        ggplot(aes(x = year, y = est)) + 
+          geom_ribbon(aes(ymin = lwr, ymax = upr, fill = region), alpha = 0.5) +
+          geom_point(aes(color = region), size = 1, alpha = 0.8) +
+          geom_line(aes(color = region), alpha = 0.8) + 
+          ylim(0, max(new_i$upr)) +
+          #ggtitle(species) +
+          coord_cartesian(expand = FALSE) + 
+          ylab(ylab) +
+          scale_color_brewer(palette = "Dark2") +
+          scale_fill_brewer(palette = "Dark2") +
+          theme_bw()
+        ggsave(file = here("species_specific_code", "BS", species, phase, "results", "index.pdf"), 
+               height = 4, width = 6, units = c("in"))
 }
 
 # create ESP products ----
