@@ -104,7 +104,6 @@ old_mesh <- sdmTMB::make_mesh(dat,
                               fmesher_func = fm_mesh_2d()) 
 
 # Fit model -------------------------------------------------------------------
-start <- Sys.time()
 fit <- tinyVAST(
   formula = cpue ~ 0 + year_age,
   data = dat,
@@ -130,9 +129,7 @@ fit <- tinyVAST(
     trace = 0
   )
 )
-end <- Sys.time()
-fit_time <- difftime(end, start, units = "hours")
-fit_time
+fit$run_time
 
 # Save fit object (create directory for results first, if it doesn't exist)
 if (!dir.exists(here(workDir, "results_age"))) {
