@@ -34,6 +34,35 @@ workDir <- here("species_specific_code", "BS", species, phase)
 
 # Read in and format data -----------------------------------------------------
 if(species == "pollock"){
+  path <- here(workDir, "data")
+  
+  # Get data file from google drive, if on GCP and file doesn't already exist locally
+  if (isTRUE(GCP) && !file.exists(here(path, paste0("VAST_ddc_alk_", this_year, ".csv")))) {
+    if (!file.exists(here(path, paste0("VAST_ddc_alk_", this_year, ".csv")))) {
+      library(googledrive)
+
+      # Update stale Google Drive authorization if needed
+      gdrive_email <- rstudioapi::showPrompt(title = "Email",
+                                             message = "Email for Google Drive",
+                                             default = "")
+      drive_auth(token = gargle::credentials_user_oauth2(
+        scopes = "https://www.googleapis.com/auth/drive",
+        email = gdrive_email))
+      drive_user()  # check user account
+      
+      # Download from google drive
+      file_id <- "1xu0sMGgOnmhVXH67ZXZCbAfrHya9qv7D"
+      
+      # Create the directory if needed
+      if (!dir.exists(path)) {dir.create(path, recursive = TRUE)}
+      
+      drive_download(file = as_id(file_id),
+                     path = here(path, paste0("VAST_ddc_alk_", this_year, ".csv")),
+                     overwrite = TRUE)
+    }
+  }
+  
+  # Read in .csv (saved locally) and rename columns
   dat <- read.csv(here(workDir, "data", paste0("VAST_ddc_alk_", this_year, ".csv")))  
   dat <- transmute(dat,
                    cpue = CPUE_num * 100, # converts cpue from kg/ha to kg/km^2
