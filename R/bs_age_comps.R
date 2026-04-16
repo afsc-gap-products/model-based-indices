@@ -32,6 +32,9 @@ region <- "both"
 # Set working directory specific to species & phase
 workDir <- here("species_specific_code", "BS", species, phase)
 
+# Are you working on GCP?
+GCP <- FALSE
+
 # Read in and format data -----------------------------------------------------
 if(species == "pollock"){
   path <- here(workDir, "data")
