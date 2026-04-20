@@ -23,8 +23,10 @@ this_year <- 2024
 save_dir <- paste0("hindcast/results_age")
 
 # Compare Age Compositions ----------------------------------------------------
-new_props <- cbind(read.csv("species_specific_code/BS/yellowfin_sole/hindcast/results_age/tinyVAST_props_2024.csv"), distribution = "tinyVAST")
-old_props <- read.csv(here(workDir, "production", "results_age", "proportions", "clean_proportions.csv"))[c(1:38,40:43),-1]
+new_props <- read.csv(here(workDir, "archive", "2025", "hindcast", "results_age", "tinyVAST_props.csv"))
+new_props <- cbind(new_props, year = new_props$year, version = "tinyVAST")[,-1]
+new_props <- select(new_props, -region)
+old_props <- cbind(read.csv(here(workDir, "production", "results_age", "proportions", "clean_proportions.csv"))[c(1:38,40:43),-1], year = new_props$year, version = "VAST")
 
 old_props$year <- new_props$year
 old_props$distribution <- "VAST"
@@ -187,13 +189,13 @@ comp_trends <- comp_trends(new = new_props, old = old_props,
 comp_trends
 
 # tinyVAST plots save ---------------------------------------------------------
-ggsave(comp_diff, filename = here(workDir, save_dir, "comp_diff.png"),
+ggsave(comp_diff, filename = here(save_dir, "comp_diff.png"),
        width=200, height=200, units="mm", dpi=300)
-ggsave(per_diff, filename = here(workDir, save_dir, "comp_per_diff.png"),
+ggsave(per_diff, filename = here(save_dir, "comp_per_diff.png"),
        width=200, height=200, units="mm", dpi=300)
-ggsave(comp_trends, filename = here(workDir, save_dir, "comp_trends.png"),
+ggsave(comp_trends, filename = here(save_dir, "comp_trends.png"),
        width=260, height=120, units="mm", dpi=300)
-ggsave(sum_props_sub$boxplot, filename = here(workDir, save_dir, "tinyVAST_summary.png"),
+ggsave(sum_props_sub$boxplot, filename = here(save_dir, "tinyVAST_summary.png"),
        width=200, height=120, units="mm", dpi=300)
-ggsave(sum_props_sub$barplot, filename = here(workDir, save_dir, "tinyVAST_by_year.png"),
+ggsave(sum_props_sub$barplot, filename = here(save_dir, "tinyVAST_by_year.png"),
        width=200, height=120, units="mm", dpi=300)
