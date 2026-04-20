@@ -320,7 +320,7 @@ compare_props <- function(dfs, names) {
     prop <- dfs[[i]]
     colnames(prop) <- c("year", ages, "region")
     prop <- prop %>% select(-region)  # Be careful if the regions are different.
-    prop <- melt(prop, id.vars = "year",
+    prop <-  reshape2::melt(prop, id.vars = "year",
                  variable.name = "age", value.name = "proportion")
     prop$version <- names[i]
     df <- bind_rows(df, prop)
@@ -356,7 +356,7 @@ compare_props <- function(dfs, names) {
   
   # Plot the percent difference between the models
   colnames(per_tab)[min(ages):max(ages)] <- min(ages):max(ages)
-  diff <- melt(per_tab, id.vars = "year", 
+  diff <-  reshape2::melt(per_tab, id.vars = "year", 
                variable.name = "age", value.name = "proportion") %>%
     # add column for coloring the bars in the plot based on positive/negative
     mutate(sign = case_when(proportion >= 0 ~ "positive",
