@@ -202,6 +202,7 @@ calc_props <- function(df, area = region) {
   prop <- df / outer(rep(1, nrow(df)), colSums(df))
   prop <- tibble::rownames_to_column(data.frame(t(prop)), "year")
   prop$region <- area
+  prop$year <- as.integer(prop$year)
   return(prop)
 }
 
@@ -305,7 +306,7 @@ previous_props <- read.csv(here("species_specific_code", "BS", species,
                                 "hindcast", 
                                 "results_age", 
                                 "tinyVAST_props.csv"))
-previous_name <- "2024 production tinyVAST"  # TODO: name the previous run
+previous_name <- "2025 hindcast tinyVAST"  # TODO: name the previous run
 
 # # Reshape VAST output to match tinyVAST output
 # tiny_years <- c(1980:2019, 2021:this_year)
@@ -329,8 +330,8 @@ compare_props <- function(dfs, names) {
   # side-by-side barplot of proportion-at-age for each year for each model
   barplot <- ggplot(df, aes(x = age, y = proportion, fill = version)) +
     geom_bar(stat = "identity", position = "dodge") +
-    scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
-    scale_x_discrete(breaks = ages[seq(min(ages), length(ages), by = 2)]) +  # labeled with every other age
+    viridis::scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
+    scale_x_discrete(breaks = pretty(ages)) + 
     xlab("Age") + ylab("Proportion-at-Age") +
     theme(legend.title = element_blank()) +
     facet_wrap(~ year, ncol = 6, dir = "v")
@@ -339,9 +340,9 @@ compare_props <- function(dfs, names) {
   # Boxplot summarizing proportion-at-age across years for each model
   boxplot <- ggplot(df, aes(x = age, y = proportion, color = version, fill = version)) +
     geom_boxplot(alpha = 0.5) +
-    scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
-    scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
-    scale_x_discrete(breaks = ages[seq(min(ages), length(ages), by = 2)]) +  # labeled with every other age
+    viridis::scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
+    viridis::scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
+    scale_x_discrete(breaks = pretty(ages)) +  
     xlab("Age") + ylab("Proportion-at-Age") +
     theme(legend.title = element_blank()) 
 
@@ -355,7 +356,7 @@ compare_props <- function(dfs, names) {
   per_tab <- cbind(per, year = new[, 1])
   
   # Plot the percent difference between the models
-  colnames(per_tab)[min(ages):max(ages)] <- min(ages):max(ages)
+  colnames(per_tab)[min(ages):length(ages)] <- min(ages):max(ages)
   diff <-  reshape2::melt(per_tab, id.vars = "year", 
                variable.name = "age", value.name = "proportion") %>%
     # add column for coloring the bars in the plot based on positive/negative
@@ -364,10 +365,10 @@ compare_props <- function(dfs, names) {
   
   # Plot both regions together and without 2020
   label <- paste0("Percent difference between ", names[1], " and ", names[2])
-  diff_plot <- ggplot(props_plot, aes(x = age, y = proportion, fill = sign)) +
+  diff_plot <- ggplot(diff, aes(x = age, y = proportion, fill = sign)) +
     geom_bar(stat = "identity", show.legend = FALSE) +
     scale_fill_manual(values = c("cornflowerblue", "darkred")) +
-    scale_x_discrete(breaks = ages[seq(min(ages), length(ages), by = 2)]) +  # labeled with every other age
+    scale_x_discrete(breaks = pretty(ages)) + 
     xlab("Age") + ylab(label) +
     facet_wrap(~ year, ncol = 6, dir = "v") 
   
