@@ -19,7 +19,7 @@ theme_set(theme_sleek())
 # Set up ----------------------------------------------------------------------
 phase <- c("hindcast", "production")[1] # specify analysis phase
 
-sp <- 3 # specify species from species vector
+sp <- 1 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 
 # Set year
@@ -80,6 +80,12 @@ if(species %in% c("yellowfin_sole", "pacific_cod")) {
 if(species == "pollock") {
   year_age_to_drop <- NULL
 }
+
+# Check for ages with < 100 positive hauls ever (VAST would pool for hyperparams)
+N_a = tapply(dat$cpue,
+             INDEX = dat$age,
+             FUN=\(x) sum(x>0) )
+which(N_a < 100)
 
 # Inputs to tinyVAST ----------------------------------------------------------
 sem <- "\n  "
