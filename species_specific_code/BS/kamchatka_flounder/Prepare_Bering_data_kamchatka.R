@@ -1,5 +1,5 @@
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## Project:       Prepare EBS catch weight data for VAST
+## Project:       Prepare EBS catch weight data for index model
 ## Authors:       Lewis Barnett (lewis.barnett@noaa.gov) 
 ##                Zack Oyafuso (zack.oyafuso@noaa.gov)
 ## Description:   Prepare haul-level CPUE for  
@@ -20,10 +20,10 @@ channel <- gapindex::get_connected(check_access = F)
 ##   Species-Specific Constants. Toggle species row
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## specify whether hindcast or production phase
-phase <- c("hindcast", "production")[1]
+phase <- c("hindcast", "production")[2]
 
 start_year <- 1991
-current_year <- 2024
+current_year <- 2025
 species_code <- 10112
 species_name <- "kamchatka_flounder"
 start_year_age <- 1991

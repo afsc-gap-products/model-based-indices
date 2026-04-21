@@ -16,24 +16,17 @@ library(ggsidekick)
 theme_set(theme_sleek())
 
 # Directories
-workDir <- here("species_specific_code", "BS", "pollock")
-this_year <- 2024
+wd <- here("species_specific_code", "BS", "pollock")
+this_year <- 2025
+phases <- c("production", "hindcast")
 
-# save_dir <- paste0(this_year, " Production")
-save_dir <- here(workDir, "hindcast", "results_age")
-
+save_dir <- here(wd, phases[2])
 
 # Compare Indices of Abundance ------------------------------------------------
 # Read in indices & make sure columns for year = Time, Estimate, Error are named correctly
-index1 <- read.csv(here(workDir, "results", "VAST Index", "Index.csv"))
-colnames(index1)[6] <- "error"
-index1$Estimate <- index1$Estimate / 1000000000
-index1$error <- index1$error / 1000000000
-
-index2 <- read.csv(here(workDir, "results", "2023 Production", "VAST Index", "Index.csv"))
-colnames(index2)[6] <- "error"
-index2$Estimate <- index2$Estimate / 1000000000
-index2$error <- index2$error / 1000000000
+index1 <- readRDS(here(wd, phases[2], "results", "indices.RDS"))
+index2 <- readRDS(here(wd, phases[1], "results", "indices.RDS"))
+colnames(index2)[8] <- "region"
  
 # index3 <- read.csv(here(workDir, "results", "2023 Production", "VAST Index", "Index.csv"))
 # colnames(index3)[6] <- "error"
@@ -57,57 +50,62 @@ index2$error <- index2$error / 1000000000
   
 # Combine and plot indices ----------------------------------------------------
 # Set names for old and new index
-names_index <- c("DDC DB 2024", "MB 2024")
+index_set <- list(index1, index2)
+names_index <- c("2025 Hindcast", "2025 Production")
 
-compare_index <- function(indices, names, ebs_only = FALSE) {
+compare_index <- function(indices = index_set, 
+                          names = c(names_index[1], names_index[2]), 
+                          ebs_only = FALSE) {
   df <- data.frame()
   for(i in 1:length(indices)) {
     index <- indices[[i]]
-    index <- index[c("Time", "Stratum", "Estimate", "error")]
-    # index$Estimate <- index$Estimate / 1000000000  # convert to million tons
-    # index$error <- index$error / 1000000000  # convert to million tons
+    index <- index %>% select(year, region, est, lwr, upr)
+    index$est <- index$est / 1000000000  # convert to million tons
+    index$lwr <- index$lwr / 1000000000  # convert to million tons
+    index$upr <- index$upr / 1000000000  # convert to million tons
     index$version <- names[i]
     df <- rbind.data.frame(df, index)
   }
   
-  df <- df %>% filter(Time !=2020)
+  df <- df %>% filter(year !=2020)
   
   if(ebs_only == TRUE) {
-    df <- df %>% filter(Time !=2020 & Stratum == "EBS") 
+    df <- df %>% filter(year !=2020 & region == "EBS") 
   }
   
   plot <- ggplot(df, 
-                 aes(x = Time, y = Estimate, 
+                 aes(x = year, y = est, 
                      color = version, shape = version)) +
     geom_line(alpha = 0.3) +
-    geom_pointrange(aes(ymin = Estimate - error, ymax = Estimate + error), 
+    geom_pointrange(aes(ymin = lwr, ymax = upr), 
                     alpha = 0.8) +
     ylim(0, NA) +
-    xlab("Year") + ylab("Index of Abundance (Mt)") +
+    xlab("") + ylab("Index of Abundance (Mt)") +
+    theme(legend.title = element_blank()) +
     scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) 
   
   if(ebs_only == FALSE) {
-    plot <- plot + facet_wrap(~ Stratum, scales = "free_y", ncol = 1)
+    plot <- plot + facet_wrap(~ region, scales = "free_y", ncol = 1)
   }
   
   return(plot)
 }
 
-index_comp <- compare_index(indices = list(ddc_index, index1), 
-                            names = c(names_index[1], names_index[2]),
-                            ebs_only = TRUE)
+index_comp <- compare_index()
 index_comp
+ggsave(index_comp, filename = here(save_dir, "index_comparison.png"),
+       width=170, height=120, units="mm", dpi=300)
 
 # Difference between two indices
 index_difference <- function(new, old, names, save_results = FALSE) {
   # Only run for EBS estimate (and no 2020)
-  new <- new %>% filter(Stratum == "EBS" & Time != 2020)
-  old <- old %>% filter(Stratum == "EBS" & Time != 2020)
+  new <- new %>% filter(region == "EBS" & year != 2020)
+  old <- old %>% filter(region == "EBS" & year != 2020)
   # make sure new dataset is the same length as the old
-  new <- new %>% filter(Time %in% min(old$Time):max(old$Time)) 
-  df <- cbind.data.frame(Year = new$Time,
-                         Stratum = new$Stratum,
-                         Difference = ((new$Estimate - old$Estimate) / old$Estimate) * 100)
+  new <- new %>% filter(year %in% min(old$year):max(old$year)) 
+  df <- cbind.data.frame(Year = new$year,
+                         Region = new$region,
+                         Difference = ((new$est - old$est) / old$est) * 100)
 
   if(save_results == TRUE) {  # save to drive, if you want. Check file paths.
     write.csv(df, here(results_dir, save_dir, "index_difference.csv"))
@@ -120,7 +118,7 @@ index_difference <- function(new, old, names, save_results = FALSE) {
   plot <- ggplot(df, aes(x = Year, y = Difference, fill = sign)) +
     geom_bar(stat = "identity", show.legend = FALSE) +
     scale_fill_manual(values = c("cornflowerblue", "darkred")) +
-    ylab(label) + labs(color = "Difference")
+    ylab(label)
   
   return(plot)
 }
@@ -128,14 +126,16 @@ index_difference <- function(new, old, names, save_results = FALSE) {
 index_diff <- index_difference(new = index1, old = index2,
                                names = c(names_index[1], names_index[2]))
 index_diff
+ggsave(index_diff, filename = here(save_dir, "index_difference.png"),
+       width=170, height=120, units="mm", dpi=300)
 
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
-# old_props <- read.csv(here(workDir, "results", "2023 Production", "Comps", "proportions.csv"))
-new_props <- read.csv(here(workDir, "results", "Comps", "proportions.csv"))
-tiny_props <- read.csv(here(workDir, "hindcast", "results_age", "tinyVAST_props.csv"))
-# sdm_props <- dcast(cbind(read.csv(here(workDir, "results", "sdmTMB_age_prop.csv"))[, 2:4]), formula = year ~ Age)
-# gapindex_comps_raw <- read.csv(here(workDir, "results", "Comps", "gapindex_comps_2024.csv"))
+# old_props <- read.csv(here(wd, "results", "2023 Production", "Comps", "proportions.csv"))
+new_props <- read.csv(here(wd,  "hindcast", "results_age", "updated tinyVAST", "tinyVAST_props_new.csv"))
+old_props <- read.csv(here(wd, "archive", "2023-2024", "production", "proportions.csv"))
+# sdm_props <- dcast(cbind(read.csv(here(wd, "results", "sdmTMB_age_prop.csv"))[, 2:4]), formula = year ~ Age)
+# gapindex_comps_raw <- read.csv(here(wd, "results", "Comps", "gapindex_comps_2024.csv"))
 
 # # Reshape sdmTMB comps 
 # colnames(sdm_props)[1] <- "Year"
@@ -153,16 +153,15 @@ tiny_props <- read.csv(here(workDir, "hindcast", "results_age", "tinyVAST_props.
 
 # Reshape VAST props to match tinyVAST props
 tiny_years <- c(1980:2019, 2021:this_year)
-new_props <- new_props %>% filter(Year %in% tiny_years & Region == "Both")
-new_props <- new_props[, c(16, 1:15, 17)]
-colnames(new_props)[c(1, 16, 17)] <- c("year", "age_15", "region")
-
-# Reshape VAST
+old_props <- old_props %>% filter(Year %in% tiny_years & Region == "Both")
+old_props <- old_props[, c(16, 1:15, 17)]
+colnames(old_props)[c(1, 16, 17)] <- c("year", "age_15", "region")
 
 # Set names for old and new comps
 # names_comps <- c("original", "original", "original", "VAST mesh", "VAST mesh", "original", "bias correction", "bias correction")
 
 ## Combine age comp models into one plot --------------------------------------
+names <- c("tinyVAST", "2024 VAST")
 compare_props <- function(props, names, last_year) {
   df <- data.frame()
   for(i in 1:length(props)) {
@@ -179,7 +178,8 @@ compare_props <- function(props, names, last_year) {
     geom_bar(stat = "identity", position = "dodge") +
     scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
     scale_x_discrete(breaks = c(1, 5, 10, 15)) +
-    ylab("proportion-at-age") +
+    xlab("Age") + ylab("Proportion-at-Age") +
+    theme(legend.title = element_blank()) +
     facet_wrap(~ year, ncol = 6, dir = "v")
   
   boxplot <- ggplot(df, aes(x = age, y = proportion, color = version, fill = version)) +
@@ -187,20 +187,22 @@ compare_props <- function(props, names, last_year) {
     scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
     scale_fill_viridis(discrete = TRUE, option = "plasma", end = 0.9) +
     scale_x_discrete(breaks = c(1, 5, 10, 15)) +
-    ylab("proportion-at-age") 
+    xlab("Age") + ylab("Proportion-at-Age") +
+    theme(legend.title = element_blank()) 
 
   return(list(barplot = barplot, boxplot = boxplot))
 }
 
 
-sum_props <- compare_props(props = list(tiny_props, new_props),
-                           names = c("tinyVAST", "VAST"))
+sum_props <- compare_props(props = list(new_props, old_props),
+                           names = names)
 sum_props$barplot
 sum_props$boxplot
 
 # Plot difference between two models ------------------------------------------
+# TODO: Fix the issue here now that both the old & new comps are from tinyVAST
 comp_difference <- function(new, old, names, save_results = FALSE) {
-  # new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
+  new <- subset(new, new$year < this_year)  # make sure new dataset is the same length as the old
   # Get difference between new and old props
   check_props <- round(new[, 2:16] - old[, 2:16], 4)
   check_props_tab <- cbind(check_props, year = new[, 1])
@@ -227,20 +229,21 @@ comp_difference <- function(new, old, names, save_results = FALSE) {
     scale_fill_manual(values = c("cornflowerblue", "darkred")) +
     scale_x_discrete(breaks = c(1, 5, 10, 15)) +
     ylab(label) +
+    theme(legend.title = element_blank()) +
     facet_wrap(~ year, ncol = 6, dir = "v") 
   
   return(plot)
 }
 
-comp_diff <- comp_difference(new = tiny_props, old = new_props,
-                             names = c("tinyVAST", "VAST"),
+comp_diff <- comp_difference(new = new_props, old = old_props,
+                             names = names,
                              save_results = FALSE)
 comp_diff
 
 # Percent difference
 comp_percent_diff <- function(new, old, names, save_results = FALSE) {
-  # new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
-# Get difference between new and old props
+  new <- subset(new, new$year < this_year)  # make sure new dataset is the same length as the old
+  # Get difference between new and old props
   check_props <- round((((new[, 2:16] - old[, 2:16]) / old[, 2:16]) *100), 4)
   check_props_tab <- cbind(check_props, year = new[, 1])
   check_props_abs <- abs(check_props)
@@ -271,15 +274,14 @@ comp_percent_diff <- function(new, old, names, save_results = FALSE) {
   return(plot)
 }
 
-per_diff <- comp_percent_diff(new = tiny_props, old = new_props,
-                              names = c("tinyVAST", "VAST"),
+per_diff <- comp_percent_diff(new = new_props, old = old_props,
+                              names = names,
                               save_results = FALSE)
 per_diff
 
 ## Check trends in difference between models by age & year
 comp_trends <- function(new, old, names) {
-  # new <- subset(new, new$Year < this_year)  # make sure new dataset is the same length as the old
-  
+  new <- subset(new, new$year < this_year)  # make sure new dataset is the same length as the old
   # Get difference between new and old props
   check_props <- round(new[, 2:16] - old[, 2:16], 4)
   check_props_tab <- cbind(check_props, year = new[, 1])
@@ -313,22 +315,18 @@ comp_trends <- function(new, old, names) {
   return(plot_both)
 }
 
-comp_trends <- comp_trends(new = tiny_props, old = new_props,
-                           names = c("tinyVAST", "VAST"))
+comp_trends <- comp_trends(new = new_props, old = old_props,
+                           names = names)
 comp_trends
 
-# Save plots ------------------------------------------------------------------
-# ggsave(index_comp, filename = here(workDir, "results", save_dir, "index_comparison.png"),
-#        width=170, height=120, units="mm", dpi=300)
-# ggsave(index_diff, filename = here(workDir, "results", save_dir, "index_difference.png"),
-#        width=170, height=120, units="mm", dpi=300)
-ggsave(sum_props$barplot, filename = here(save_dir, "tinyVAST_by_year.png"),
+# Save comp plots 
+ggsave(sum_props$barplot, filename = here(save_dir, "results_age", "comps_by_year.png"),
        width=200, height=180, units="mm", dpi=300)
-ggsave(sum_props$boxplot, filename = here(save_dir, "tinyVAST_summary.png"),
+ggsave(sum_props$boxplot, filename = here(save_dir, "results_age", "comps_summary.png"),
        width=200, height=120, units="mm", dpi=300)
-ggsave(comp_diff, filename = here(save_dir, "comp_diff.png"),
+ggsave(comp_diff, filename = here(save_dir, "results_age", "comp_diff.png"),
        width=200, height=200, units="mm", dpi=300)
-ggsave(per_diff, filename = here(save_dir, "comp_per_diff.png"),
+ggsave(per_diff, filename = here(save_dir, "resuults_age", "comp_per_diff.png"),
        width=200, height=200, units="mm", dpi=300)
-ggsave(comp_trends, filename = here(save_dir, "comp_trends.png"),
+ggsave(comp_trends, filename = here(save_dir, "results_age", "comp_trends.png"),
        width=260, height=120, units="mm", dpi=300)

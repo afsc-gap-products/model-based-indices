@@ -1,5 +1,5 @@
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-## EBS/NBS data pull for ModSquad VAST input via gapindex R package
+## EBS/NBS data pull for ModSquad index input via gapindex R package
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -16,12 +16,12 @@ channel <- gapindex::get_connected(check_access = F)
 ##   Species-Specific Constants. Toggle species row
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## specify whether hindcast or production phase
-phase <- c("hindcast", "production")[1]
+phase <- c("hindcast", "production")[2]
 
 species_info <- data.frame(species_name = "arrowtooth_flounder",
                            species_code = 10110,
                            start_year = 1982,
-                           current_year = 2024)
+                           current_year = 2025)
 
 ## Set constants
 start_year <- species_info$start_year

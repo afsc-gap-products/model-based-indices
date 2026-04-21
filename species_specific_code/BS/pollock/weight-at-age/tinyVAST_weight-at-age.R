@@ -1,35 +1,47 @@
-
-# https://github.com/jindivero/bs-pollock-weight/blob/main/scripts/2_model.R#L38-L71
-# devtools::install_local( R'(C:\Users\James.Thorson\Desktop\Git\tinyVAST)', force=TRUE )
-# remotes::install_github( "vast-lib/tinyVAST@dev", force=TRUE )
+#' tinyVAST model for weight-at-age for BS pollock, developed by Julia Indivero
+#' https://github.com/jindivero/bs-pollock-weight/tree/main, 
+#' updated and maintained by Sophia Wassermann.
+#' Contact: sophia.wassermann@noaa.gov
+#' Date created: 2024.10.17
 
 library(tinyVAST)
 library(fmesher)
+library(here)
+library(sf)
+library(units)
+library(ggplot2)
+library(viridis)
+library(dplyr)
 
-root_dir = R'(C:\Users\James.Thorson\Desktop\Work files\Collaborations\2024 -- pollock weight-at-age)'
+# Set ggplot theme
+if (!requireNamespace("ggsidekick", quietly = TRUE)) {
+  devtools::install_github("seananderson/ggsidekick")
+}
+library(ggsidekick)
+theme_set(theme_sleek())
 
-#Date = Sys.Date()
-Date = "2024-10-16"
-date_dir = file.path(root_dir, paste0(Date,"") )
+# Create a new directory for results
+Date <- Sys.Date()
+dir <- here("species_specific_code", "BS", "pollock", "weight-at-age")
+date_dir <- here(dir, paste0("results_", Date))
   dir.create(date_dir)
 
-#Data = readRDS( "data_combined.rds" )
-Data = readRDS( file.path(root_dir, "Data_2024", "data_combined.rds") )
+# Read in data generated in the watage_data.R script
+Data <- readRDS(here(dir, "data", "processed", "data_combined.rds"))
 
-# Potentially subset to save time when exploring
-#Data = subset( Data, age_bin==8 )
-#Data = subset( Data, year>=2010 )
-
-Data$data_type = ifelse( !is.na(Data$age_cpue_sum), "D", "W")
+Data$data_type <- ifelse(!is.na(Data$age_cpue_sum), "D", "W")
 # table(Data$age_bin, Data$data_type)
 
 # Add columns to define variables
-Data$var = paste0( Data$data_type, Data$age_bin )
-Data$Response = ifelse( Data$data_type=="D", Data$age_cpue_sum, Data$weight_combined )
-Data$var_year = interaction( Data$var, Data$year, drop=TRUE )
+Data$var <- paste0(Data$data_type, Data$age_bin)
+Data$Response <- ifelse(Data$data_type == "D", 
+                        Data$age_cpue_sum, 
+                        Data$weight_combined)
+Data$var_year <- interaction(Data$var, Data$year, drop = TRUE)
 
+# Set up and run model --------------------------------------------------------
 # Define SEM
-dsem = "
+dsem <- "
   D1 -> D1, 1, lagD
   D2 -> D2, 1, lagD
   D3 -> D3, 1, lagD
@@ -93,166 +105,203 @@ dsem = "
 #  W14 -> W15, 1, cohortW
 "
 
-spatial_graph = fm_mesh_2d( loc = Data[,c('start_longitude','start_latitude')],
-                            cutoff = 1.5 )
-control = tinyVASTcontrol( getsd = FALSE,
+mesh <- fm_mesh_2d(loc = Data[,c('start_longitude','start_latitude')], cutoff = 1.5)
+control <- tinyVASTcontrol(getsd = FALSE,
                            nlminb_loops = 1,
                            newton_loops = 0,
                            profile = c("alpha_j"),
-                           trace = 1 )
+                           trace = 1)
 #family_link = cbind( rep(c(1,2),each=length(unique(Data$age_bin))), 1 )
 #  rownames(family_link) = paste0( rep(c("D","W"),each=length(unique(Data$age_bin))),
 #                                  rep(sort(unique(Data$age_bin)),2) )
-family = NULL
-for( i in seq_along(unique(Data$age_bin)) ){
-  family[[i]] = tweedie()
+Family <- NULL
+for(i in seq_along(unique(Data$age_bin))) {
+  Family[[i]] = tweedie()
 }
-for( i in (length(unique(Data$age_bin))+seq_along(unique(Data$age_bin))) ){
-  family[[i]] = lognormal()
+for(i in (length(unique(Data$age_bin)) + seq_along(unique(Data$age_bin)))) {
+  Family[[i]] = lognormal()
 }
-names(family) = paste0( rep(c("D","W"),each=length(unique(Data$age_bin))),
-                                  rep(sort(unique(Data$age_bin)),2) )
+names(Family) <- paste0(rep(c("D", "W"), each = length(unique(Data$age_bin))),
+                        rep(sort(unique(Data$age_bin)), 2))
 
-if( !("myfit.RDS" %in% list.files(date_dir)) ){
-  myfit = tinyVAST(
+if(!("myfit.RDS" %in% list.files(date_dir))) {
+  myfit <- tinyVAST(
     data = Data,
     #formula = Response ~ 0 + factor(var) + s(year, by=factor(var), bs="ts", k=9),   # bs="ts" is more robust
     formula = Response ~ 0 + var_year,
-    dsem = dsem,
-    family = family,
+    spacetime_term = dsem,
+    family = Family,
     space_columns = c("start_longitude", "start_latitude"),
     variable_column = "var", 
     variables = names(family),
     time_column = "year", 
     distribution_column = "var",
-    spatial_graph = spatial_graph,
+    spatial_domain = mesh,
     control = control
   )
   
-  saveRDS( myfit, 
-        file = file.path(date_dir,"myfit.RDS") )
-  capture.output( myfit, 
-                  file = file.path(date_dir,"myfit.txt") )
+  saveRDS(myfit, file = here(date_dir, "myfit.RDS"))
+  capture.output(myfit, file = here(date_dir, "myfit.txt"))
 }else{
-  myfit = readRDS( file = file.path(date_dir,"myfit.RDS") )
-  myfit = reload_model(myfit)
+  myfit <- readRDS(file = here(date_dir, "myfit.RDS"))
+  myfit <- reload_model(myfit)
 }
 
 # DHARMa residuals
 # simulate new data conditional on fixed and random effects
-y_ir = replicate( n = 100,
-           expr = myfit$obj$simulate()$y_i )
+y_ir <- replicate(n = 100, expr = myfit$obj$simulate()$y_i)
 
-#
-res = DHARMa::createDHARMa( simulatedResponse = y_ir,
+res <- DHARMa::createDHARMa(simulatedResponse = y_ir,
                             observedResponse = Data$Response,
-                            fittedPredictedResponse = fitted(myfit) )
-png( file.path(date_dir,"residuals=data_type.png"), width=8, height=4, res=200, units="in")
-  par( mar=c(3,3,2,2), mgp=c(2,0.5,0), tck=-0.02 )
-  plot( res, form = Data$data_type )
+                            fittedPredictedResponse = fitted(myfit))
+png(here(date_dir, "residuals=data_type.png"), width = 8, height = 4, res = 200, units = "in")
+  par(mar = c(3,3,2,2), mgp = c(2,0.5,0), tck = -0.02)
+  plot(res, form = Data$data_type)
 dev.off()
-png( file.path(date_dir,"residuals=data_type+year.png"), width=8, height=4, res=200, units="in")
-  par( mar=c(3,3,2,2), mgp=c(2,0.5,0), tck=-0.02 )
-  plot( res, form = interaction(Data$data_type,Data$year) )
+png(here(date_dir, "residuals=data_type+year.png"), width = 8, height = 4, res = 200, units = "in")
+  par(mar = c(3,3,2,2), mgp = c(2,0.5,0), tck = -0.02)
+  plot(res, form = interaction(Data$data_type, Data$year))
 dev.off()
 
-################
-# Calculate indices
-###############
+# Calculate indices -----------------------------------------------------------
 
-# Get polygon
-library(sf)
-ebs = st_read( R'(C:\Users\James.Thorson\Desktop\Git\FishStatsUtils\inst\region_shapefiles\EBSshelf)' )
-nbs = st_read( R'(C:\Users\James.Thorson\Desktop\Git\FishStatsUtils\inst\region_shapefiles\NBS)' )
-bs = st_geometry(st_union( ebs, nbs ))
-bs = st_transform( bs, crs=st_crs("+proj=longlat +datum=WGS84") )
+# Get polygons from the akgfmaps package
+library(remotes)
+if (!requireNamespace("akgfmaps", quietly = TRUE)) install_github("afsc-gap-products/akgfmaps", build_vignettes = TRUE)
+
+ebs <- akgfmaps::get_base_layers(select.region = "sebs")$survey.area
+nbs <- akgfmaps::get_base_layers(select.region = "nbs")$survey.area
+bs <- st_geometry(st_union(ebs, nbs))
+bs <- st_transform(bs, crs = st_crs("+proj=longlat +datum=WGS84"))
 
 # Make extrapolation grid
-grid = st_make_grid( bs, n=c(10,10) )
-grid = st_intersection( grid, bs )
-grid = st_make_valid( grid )
-loc_gz = st_coordinates(st_centroid( grid ))
-colnames(loc_gz) = c("start_longitude", "start_latitude")
+grid <- st_make_grid(bs, n = c(10, 10))
+grid <- st_intersection(grid, bs)
+grid <- st_make_valid(grid)
+loc_gz <- st_coordinates(st_centroid(grid))
+colnames(loc_gz) <- c("start_longitude", "start_latitude")
 
 # Get area for extrapolation grid
-library(units)
-areas = set_units(st_area(grid), "hectares") #  / 100^2 # Hectares
+areas <- set_units(st_area(grid), "hectares") #  / 100^2 # Hectares
 
 # Get abundance
-W_jz = expand.grid( Age=sort(unique(Data$age_bin)), year=myfit$internal$times )
-W_jz = cbind( W_jz, "Weight"=NA, "SE"=NA )
-for( j in seq_len(nrow(W_jz)) ){
+W_jz <- expand.grid(Age = sort(unique(Data$age_bin)), year = 1982:2025)  ########## TODO: code in the year range
+W_jz <- cbind(W_jz, "Weight" = NA, "SE" = NA)
+for(j in seq_len(nrow(W_jz))) {
   gc()
-  if( is.na(W_jz[j,'Weight']) ){
-    message( "Integrating ", W_jz[j,'year'], " ", W_jz[j,'Age'], ": ", Sys.time() )
+  if(is.na(W_jz[j, "Weight"])) {
+    message("Integrating ", W_jz[j, "year"], " ", W_jz[j, "Age"], ": ", Sys.time())
     # Manual epsilon
-    newdata = rbind(
-      data.frame( loc_gz, year=W_jz[j,'year'], var=paste0("D",W_jz[j,'Age']), var_year=paste0("D",W_jz[j,'Age'],".",W_jz[j,'year']) ),
-      data.frame( loc_gz, year=W_jz[j,'year'], var=paste0("W",W_jz[j,'Age']), var_year=paste0("W",W_jz[j,'Age'],".",W_jz[j,'year']) )
+    newdata <- rbind(
+      data.frame(loc_gz, 
+                 year = W_jz[j, "year"], 
+                 var = paste0("D", W_jz[j, "Age"]), 
+                 var_year=paste0("D", W_jz[j, "Age"], ".", W_jz[j, "year"])),
+      data.frame(loc_gz, 
+                 year = W_jz[j, "year"], 
+                 var = paste0("W", W_jz[j, "Age"]), 
+                 var_year = paste0("W", W_jz[j, "Age"], ".", W_jz[j, "year"]))
     )
     # predict( myfit, newdata = newdata )
-    if( paste0("W",W_jz[j,'Age'],".",W_jz[j,'year']) %in% Data$var_year ){
-      area = c(as.numeric(areas), 0*as.numeric(areas))
-      type = rep(c(0,3), each=length(areas))
-      weighting_index = c( rep(0,length(areas)), seq_along(areas)-1 )
+    if(paste0("W", W_jz[j, "Age"], ".", W_jz[j, "year"]) %in% Data$var_year) {
+      area <- c(as.numeric(areas), 0 * as.numeric(areas))
+      type <- rep(c(0, 3), each = length(areas))
+      weighting_index <- c(rep(0,length(areas)), seq_along(areas) - 1)
       #source( R'(C:\Users\James.Thorson\Desktop\Git\tinyVAST\R\internal.R)' )
-      index1 = integrate_output( myfit,
+      index1 <- integrate_output(myfit,
                       area = area,
                       newdata = newdata,
                       type = type,
                       weighting_index = weighting_index,
                       apply.epsilon = TRUE,
                       bias.correct = FALSE,
-                      intern = TRUE )
-      W_jz[j,'Weight'] = ifelse( is.na(index1[3]), index1[1], index1[3] ) # Depends on bias-correction settings above
+                      intern = TRUE)
+      W_jz[j, "Weight"] <- ifelse(is.na(index1[3]), index1[1], index1[3]) # Depends on bias-correction settings above
     }
   }
 }
-W_ct = array( W_jz$Weight, dim=c("Age"=length(unique(Data$age_bin)),"year"=length(myfit$internal$times)),
-              dimnames=list(sort(unique(Data$age_bin)),myfit$internal$times) )
+W_ct <- array(W_jz$Weight, dim = c("Age" = length(unique(Data$age_bin)),
+                                   "year" = length(myfit$internal$times)),
+              dimnames = list(sort(unique(Data$age_bin)), 
+                              myfit$internal$times))
 #image( z=t(W_ct), x=myfit$internal$times, y=seq_along(myfit$internal$variables) )
-write.csv( W_ct, file=file.path(date_dir,"W_ct.csv") )
-write.csv( W_jz, file=file.path(date_dir,"W_jz.csv") )
+write.csv(W_ct, file = here(date_dir, "W_ct.csv"))
+write.csv(W_jz, file = here(date_dir, "W_jz.csv"))
 
 #
-Wmean_ct = tapply( Data$weight_combined, INDEX=list("Age"=Data$age_bin,"Year"=Data$year), FUN=mean, na.rm=TRUE )
-Wmean_jz = data.frame( expand.grid(dimnames(Wmean_ct)), "Weight"=as.vector(Wmean_ct) )
-write.csv( Wmean_jz, file="Wmean_jz.csv" )
+Wmean_ct <- tapply(Data$weight_combined, 
+                   INDEX = list("Age" = Data$age_bin, "Year" = Data$year), 
+                   FUN = mean, na.rm = TRUE)
+Wmean_jz <- data.frame(expand.grid(dimnames(Wmean_ct)), 
+                       "Weight" = as.vector(Wmean_ct))
+write.csv(Wmean_jz, file = "Wmean_jz.csv")
 
-# Plot densities
-library(viridisLite)
-source( R'(C:\Users\James.Thorson\Desktop\Git\Spatio-temporal-models-for-ecologists\Shared_functions\add_legend.R)' )
-for(data_type in c("D","W") ){
-  var_set = paste0(data_type,1:15)
-  year_set = sort(unique(Data$year))
-  #
-  X_jz =  expand.grid( "cell"=1:nrow(loc_gz), var=var_set, year=myfit$internal$times )
-  X_jz$var_year = paste0( X_jz$var, ".", X_jz$year )
-  X_jz = subset( X_jz, var_year %in% unique(subset(Data,data_type==data_type)$var_year) )
-  X_jz = cbind( X_jz, loc_gz[X_jz$cell,] )
-  X_jz$density = predict( myfit, newdata = X_jz, remove_origdata = FALSE )
-  gc()
-  # Plot
-  mfrow = ceiling(sqrt(length(year_set)))
-    mfrow = c( mfrow, ceiling(length(year_set)/mfrow) )
-  for( var in var_set ){
-    png( file=file.path(date_dir,paste0(var,".png")), width=mfrow[2]*3, height=mfrow[1]*3, res=200, units="in" )
-      par( mfrow=mfrow, mar=c(0,0,2,0) )
-      #d_vec = X_jz[which(X_jz$var==var),'density']
-      #dims = c( nrow(loc_gz), length(year_set) )
-      #if(length(d_vec) != prod(dims)) stop("Check dimensions")
-      #d_gt = array( d_vec, dim=dims )
-      tmp_jz = X_jz[which(X_jz$var==var),]
-      d_gt = tapply( tmp_jz$density, INDEX=list(tmp_jz$cell,factor(tmp_jz$year,year_set)), FUN=mean )
-      d_gt = ifelse( d_gt < max(d_gt,na.rm=TRUE)/1000, NA, d_gt )
-      breaks = seq( min(log(d_gt),na.rm=TRUE), max(log(d_gt),na.rm=TRUE), length=11 )
-      for( tI in seq_along(year_set) ){
-        plotgrid = st_sf(grid, log(d_gt[,tI]), crs=st_crs(grid) )
-        plot(plotgrid, max.plot=20, border=NA, key.pos=NULL, reset=FALSE,
-             pal=viridis, main=year_set[tI], breaks=breaks )
-        plot( bs, add=TRUE )
-      }
-      add_legend( round(range(breaks),2), legend_y=c(0.6,1), legend_x=c(1,1.05), col=viridis(10) )
-    dev.off()
-  }
-}
+# Plot mean weight-at-age by year ---------------------------------------------
+mean_wtatage <- Wmean_jz %>%
+  mutate(Weight = Weight / 1000) %>%  # Convert to kg
+  # Set up empty 2020 year for plotting
+  mutate(Year = as.integer(as.character((Year)))) %>%
+  bind_rows(data.frame(Age = factor(1:15), Year = 2020, Weight = NA)) 
+
+# Plot w/ size and color representing weight
+wtatage_bubble <- mean_wtatage %>% 
+  mutate(Year = factor(Year)) %>%
+  ggplot(., aes(x = Year, y = Age)) +
+  geom_point(aes(size = Weight, color = Weight)) +
+  scale_color_viridis(option = "turbo") +
+  scale_x_discrete(breaks = scales::pretty_breaks()) +
+  xlab("") + ylab("Age") +
+  labs(size = "Weight (kg)", color = "Weight (kg)") 
+wtatage_bubble
+
+wtatage_line <- ggplot(mean_wtatage, aes(x = Year, y = Weight)) +
+  geom_line(aes(color = Age)) +
+  scale_color_viridis(discrete = TRUE, option = "turbo") +
+  scale_x_continuous(breaks = scales::pretty_breaks()) +
+  xlab("") + ylab("Weight (kg)") +
+  labs(color = "Age") 
+wtatage_line
+  
+ggsave(filename = here(date_dir, "wtatage_bubble.png"), wtatage_bubble, 
+       width=250, height=120, units="mm", dpi=300)
+ggsave(filename = here(date_dir, "wtatage_line.png"), wtatage_line, 
+       width=200, height=120, units="mm", dpi=300)
+
+# Remake this plot?
+# # Plot densities
+# # library(viridisLite)
+# source( R'(C:\Users\James.Thorson\Desktop\Git\Spatio-temporal-models-for-ecologists\Shared_functions\add_legend.R)' )
+# for(data_type in c("D","W") ){
+#   var_set = paste0(data_type,1:15)
+#   year_set = sort(unique(Data$year))
+#   #
+#   X_jz =  expand.grid( "cell"=1:nrow(loc_gz), var=var_set, year=myfit$internal$times )
+#   X_jz$var_year = paste0( X_jz$var, ".", X_jz$year )
+#   X_jz = subset( X_jz, var_year %in% unique(subset(Data,data_type==data_type)$var_year) )
+#   X_jz = cbind( X_jz, loc_gz[X_jz$cell,] )
+#   X_jz$density = predict( myfit, newdata = X_jz, remove_origdata = FALSE )
+#   gc()
+#   # Plot
+#   mfrow = ceiling(sqrt(length(year_set)))
+#     mfrow = c( mfrow, ceiling(length(year_set)/mfrow) )
+#   for( var in var_set ){
+#     png( file=file.path(date_dir,paste0(var,".png")), width=mfrow[2]*3, height=mfrow[1]*3, res=200, units="in" )
+#       par( mfrow=mfrow, mar=c(0,0,2,0) )
+#       #d_vec = X_jz[which(X_jz$var==var),'density']
+#       #dims = c( nrow(loc_gz), length(year_set) )
+#       #if(length(d_vec) != prod(dims)) stop("Check dimensions")
+#       #d_gt = array( d_vec, dim=dims )
+#       tmp_jz = X_jz[which(X_jz$var==var),]
+#       d_gt = tapply( tmp_jz$density, INDEX=list(tmp_jz$cell,factor(tmp_jz$year,year_set)), FUN=mean )
+#       d_gt = ifelse( d_gt < max(d_gt,na.rm=TRUE)/1000, NA, d_gt )
+#       breaks = seq( min(log(d_gt),na.rm=TRUE), max(log(d_gt),na.rm=TRUE), length=11 )
+#       for( tI in seq_along(year_set) ){
+#         plotgrid = st_sf(grid, log(d_gt[,tI]), crs=st_crs(grid) )
+#         plot(plotgrid, max.plot=20, border=NA, key.pos=NULL, reset=FALSE,
+#              pal=viridis, main=year_set[tI], breaks=breaks )
+#         plot( bs, add=TRUE )
+#       }
+#       add_legend( round(range(breaks),2), legend_y=c(0.6,1), legend_x=c(1,1.05), col=viridis(10) )
+#     dev.off()
+#   }
+# }

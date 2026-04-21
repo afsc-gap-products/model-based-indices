@@ -21,20 +21,17 @@ knitr::opts_chunk$set(
 
 ```{r packages, message=FALSE, warning=FALSE, cache=FALSE}
 #remotes::install_github("pbs-assess/sdmTMB")
-
 library(sdmTMB)
 library(dplyr)
 library(ggplot2)
 library(here)
-library(devtools)
-
-# Install coldpool package, if not already installed.
+# Install coldpool package, if not already installed. Must update each year.
 if (!requireNamespace("coldpool", quietly = TRUE)) {
-  devtools::install_github("afsc-gap-products/coldpool")
+  remotes::install_github("afsc-gap-products/coldpool")
 }
 
 phase <- c("hindcast", "production")[1] # specify analysis phase
-sp <- 2 # specify species from species vector
+sp <- 1 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 
 # Set year
@@ -52,7 +49,7 @@ if(species == "pacific_cod"){
   dat <- rename(dat, cpue = cpue_n_km2)
 }
 if(species == "pollock"){
-  dat <- read.csv(here("species_specific_code", "BS", species, phase,
+  dat <- read.csv(here("species_specific_code", "BS", species, 
                        "data", paste0("VAST_ddc_all_", this_year, ".csv")))  
   dat <- dplyr::transmute(dat,
                           cpue = ddc_cpue_kg_ha * 100, # converts cpue from kg/ha to kg/km^2
@@ -100,7 +97,7 @@ Now we fit the model in sdmTMB:
 # detect if any years have occurrences at every haul and fix params as needed
 mins <- dat %>% group_by(year) %>% summarize(min = min(cpue))
 if(sum(mins$min) == 0){
-  control = sdmTMBcontrol()
+  control = sdmTMBcontrol(profile = TRUE)
 } else {
   no_zero_yr <- as.integer(mins %>% filter(min > 0) %>% select(year))
 			# set up map and fix value of p(occurrence) to slightly less than 1:
@@ -113,17 +110,22 @@ if(sum(mins$min) == 0){
 
 			control =  sdmTMBcontrol(
             map = list(b_j = .map),
-            start = list(b_j = .start)
+            start = list(b_j = .start),
+            profile = TRUE
 			    )
 }
 
-f1 <- here("species_specific_code", "BS", species, phase, "results", "fit_250_knots.RDS")
+dir <- here("species_specific_code", "BS", species, phase, "results", "/")
+  if (!dir.exists(paths = dir)) dir.create(path = dir, recursive = TRUE)
+
+f1 <- here("species_specific_code", "BS", species, phase, "results", "fit.RDS")
 if (!file.exists(f1)) {
   
     if(species == "kamchatka_flounder"){
       #make mesh just for EBS only, need to try out different numbers of knots
         mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
-                     mesh = readRDS(file = here("meshes/ebs_vast_mesh_250_knots.RDS")))
+                     mesh = fmesher::fm_as_fm(readRDS(file = here("meshes/ebs_vast_mesh_250_knots.RDS"))),
+                     fmesher_func = fm_mesh_2d())
       #fit to EBS only, using IID spatiotemporal fields instead of "ar1"
       fit <- sdmTMB( 
         cpue ~ 0 + year_f,
@@ -141,7 +143,7 @@ if (!file.exists(f1)) {
     } else {
         #pass same mesh as prior model
         mesh <-  make_mesh(dat, xy_cols = c("X", "Y"), 
-                     mesh = readRDS(file = here("meshes/bs_vast_mesh_250_knots.RDS")))
+                     mesh = fmesher::fm_as_fm(readRDS(file = here("meshes/bs_vast_mesh_250_knots.RDS"))))
         fit <- sdmTMB( 
           cpue ~ 0 + year_f,
           spatial_varying = ~ env,
@@ -173,9 +175,9 @@ summary(fit)
 #TMBhelper::check_estimability(fit$tmb_obj)
 
 # load prediction grids for ebs, nbs, and both combined
-grid_ebs <- read.csv(here("extrapolation_grids", "ebs_coarse_grid.csv"))
-grid_nbs <- read.csv(here("extrapolation_grids", "nbs_coarse_grid.csv"))
-grid <- read.csv(here("extrapolation_grids", "bering_coarse_grid.csv"))
+grid_ebs <- read.csv(here("extrapolation_grids", "ebs_coarse_grid_5nm.csv"))
+grid_nbs <- read.csv(here("extrapolation_grids", "nbs_coarse_grid_5nm.csv"))
+grid <- read.csv(here("extrapolation_grids", "bering_coarse_grid_5nm.csv"))
 
 # replicate prediction grids for each year in data
 pred_grid_ebs <- replicate_df(grid_ebs, "year_f", unique(dat$year_f))
@@ -191,7 +193,7 @@ pred_grid_nbs <- left_join(pred_grid_nbs, env, by = "year")
 pred_grid <- left_join(pred_grid, env, by = "year")
 
 # get predictions
-f2 <- here("species_specific_code", "BS", species, phase, "results", "predictions_250_knots.RData")
+f2 <- here("species_specific_code", "BS", species, phase, "results", "predictions.RData")
 if (!file.exists(f2)) {
   if(species == "kamchatka_flounder"){
     p <- predict(fit, newdata = pred_grid_ebs, return_tmb_object = TRUE)
@@ -209,29 +211,32 @@ if (!file.exists(f2)) {
 # get indices
 gc()
 
-f3 <- here("species_specific_code", "BS", species, phase, "results", "indices_250_knots.RData")
+f3 <- here("species_specific_code", "BS", species, phase, "results", "indices.RDS")
 if (!file.exists(f3)) {
   if(species == "kamchatka_flounder"){
     ind <- get_index(p, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
-    ind$stratum <- "EBS"
+    ind$region <- "EBS"
     
     save(ind, file = f3)
   } else {
     ind <- get_index(p, bias_correct = TRUE, area = pred_grid$area_km2)
-    ind$stratum <- "Both"
+    ind$region <- "Both"
     
     gc()
     ind_ebs <- get_index(p_ebs, bias_correct = TRUE, area = pred_grid_ebs$area_km2)
-    ind_ebs$stratum <- "EBS"
+    ind_ebs$region <- "EBS"
   
     gc()
     ind_nbs <- get_index(p_nbs, bias_correct = TRUE, area = pred_grid_nbs$area_km2)
-    ind_nbs$stratum <- "NBS"
+    ind_nbs$region <- "NBS"
     
-    save(ind, ind_ebs, ind_nbs, file = f3)
+    ind_all <- bind_rows(ind, ind_ebs, ind_nbs)
+    saveRDS(ind_all, file = f3)
+    write.csv(ind_all, here("species_specific_code", "BS", species, phase, 
+                            "results", "indices.csv"), row.names = FALSE)
   }
 } else {
-load(f3)
+ind_all <- readRDS(f3)
 }
 ```
 Make maps and diagnostics:
@@ -239,6 +244,7 @@ Make maps and diagnostics:
 ```{r plots, echo=TRUE}
 ## Plot predicted density maps and fit diagnostics ----
 # q-q plot
+set.seed(30)
 pdf(file = here("species_specific_code", "BS", species, phase, "results", "qq.pdf"),
     width = 5, height = 5)
   sims <- simulate(fit, nsim = 500, type = "mle-mvn") 
@@ -258,28 +264,52 @@ ggplot(subset(fit$data, !is.na(resids) & is.finite(resids)), aes(X, Y, col = res
   facet_wrap(~year) +
   coord_fixed() +
   theme_bw()
+
 ggsave(file = here("species_specific_code", "BS", species, phase, "results",
                    "residuals_map.pdf"),
        height = 9, width = 6.5, units = c("in"))
 
 # predictions on map plot, by year
-if(species == "Gadus_macrocephalus"){
-  title <- "Predicted densities (n / square km)"
+if(species == "pacific_cod"){
+  title <- bquote('Predicted densities'~(log(n / km^2)))
 } else {
-  title <- "Predicted densities (kg / square km)"
+  title <- bquote('Predicted densities'~(log(kg / km^2)))
 }
-ggplot(p$data, aes(X, Y, fill = exp(est1 + est2))) +
-  geom_tile(width = 10, height = 10) +
-  scale_fill_viridis_c(trans = "sqrt", name = "") +
-  scale_x_continuous(breaks = c(250, 750)) +
-  scale_y_continuous(breaks = c(6000, 6500, 7000)) +
+
+sf::sf_use_s2(FALSE)  # turn off spherical geometry
+# Crop land area for quicker plotting
+bs_sf <- sf::st_crop(rnaturalearth::ne_countries(scale = "medium", 
+                                                 returnclass = "sf"), 
+                     xmin = -179, xmax = -150, ymin = 50, ymax = 70)
+
+# Re-project spatial density estimate in latitude/longitude
+dens_est <- bind_cols(year = p$data$year,
+                      est = p$data$est1 + p$data$est2,
+                      X = p$data$X,
+                      Y = p$data$Y) %>%
+  akgfmaps::transform_data_frame_crs(coords = c("X", "Y"), 
+                                     in.crs = "+proj=utm +datum=WGS84 +units=km +zone=2",
+                                     out.crs = "+proj=longlat +datum=WGS84")
+
+ggplot(dens_est, aes(X, Y, fill = est)) +
+  geom_tile(width = 0.456, height = 0.236) +
+  geom_sf(data = bs_sf, inherit.aes = FALSE) +
+  scale_fill_viridis_c(option = "plasma") +
   facet_wrap(~year) +
-  coord_fixed() +
+  # set limits for the plot extent
+  coord_sf(xlim = range(dens_est$X), 
+           ylim = range(dens_est$Y), 
+           expand = TRUE) +  # ggplot adds a buffer
+  scale_x_continuous(breaks = c(-175, -160), labels =c(175, 160)) +
+  scale_y_continuous(breaks = c(56, 64), labels = c(56, 64)) +
+  ylab("Latitude (\u00B0N)") +
+  xlab("Longitude (\u00B0W)") +
+  labs(fill = "") +
   ggtitle(title) +
-  theme_bw()
+  ggsidekick::theme_sleek()
 ggsave(file = here("species_specific_code", "BS", species, phase, "results",
-                   "predictions_map.pdf"),
-       height = 9, width = 6.5, units = c("in"))
+                   "predictions_map_latlon.png"),
+       height = 7.5, width = 6.5, units = c("in"))
 ```
 
 Now, we can compare the index to the prior model.
@@ -290,7 +320,7 @@ Now, we can compare the index to the prior model.
 # 
 # species_code <- c("10210", "21740", "21720", "10112")[sp]
 #
-# if(species == "Gadus_macrocephalus"){
+# if(species == "pacific_cod"){
 #   query <- paste0('
 #     SELECT 
 #     \'db\' AS "index",
@@ -321,7 +351,7 @@ Now, we can compare the index to the prior model.
 # }
 # db_i <- RODBC::sqlQuery(channel = channel, query = query)
 # db_i <- db_i %>% 
-#   mutate(stratum = recode(AREA_ID, 
+#   mutate(region = recode(AREA_ID, 
 #                           `99900` = "EBS", 
 #                           `99902` = "NBS")) %>% 
 #   mutate(index = "db") %>%
@@ -348,62 +378,71 @@ if(species == "kamchatka_flounder"){
                    "index_comparison.pdf"), 
          height = 4, width = 6, units = c("in"))
   } else {
-    new_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_new") %>% 
-      select(index, stratum, year, est, lwr, upr)
-    old_i <- load(here("species_specific_code", "BS", species, "hindcast", "results", "indices_250_knots.RData")) %>%
-      mutate(index = "mb_old")
+    new_i <- ind_all %>% mutate(index = "mb_new") %>% 
+      select(index, region, year, est, lwr, upr)
+    
+    #load(here("species_specific_code", "BS", species, "hindcast", "results", "indices_250_knots.RData"))
+    #old_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_old") %>% select(index, region, year, est, lwr, upr)
+    old_i <- readRDS(here("species_specific_code", "BS", species, "archive", this_year, "production", "results", "indices.RDS")) |>
+     mutate(index = "mb_old") |> select(index, region, year, est, lwr, upr)
+      
     both_i <- bind_rows(new_i, old_i)
     
-    ggplot(filter(both_i, stratum == "Both"), aes(x = year, y = est, ymin = lwr, 
-                                                  ymax = upr, colour = index)) + 
-      geom_ribbon(alpha = 0.1) +
-      geom_line(alpha = 0.8) + 
+    ggplot(filter(both_i, region == "Both"), aes(x = year, y = est)) + 
+      geom_ribbon(aes(ymin = lwr, ymax = upr, fill = index), alpha = 0.3) +
+      geom_point(aes(color = index), size = 1, alpha = 0.8) + 
+      geom_line(aes(color = index), alpha = 0.8) + 
       ylim(0, max(both_i$upr)) +
       ggtitle("EBS + NBS") +
       coord_cartesian(expand = FALSE) + 
       ylab(ylab) +
       theme_bw()
     ggsave(file = here("species_specific_code", "BS", species, phase, "results",
-                       "index_comparison_both.pdf"), 
+                       "index_bridge_both.pdf"), 
            height = 4, width = 6, units = c("in"))
     
-    ggplot(filter(both_i, stratum == "EBS"), aes(x = year, y = est, ymin = lwr, 
-                                                  ymax = upr, colour = index)) + 
-      geom_ribbon(alpha = 0.1) +
-      geom_line(alpha = 0.8) + 
+    ggplot(filter(both_i, region == "EBS"), aes(x = year, y = est)) + 
+      geom_ribbon(aes(ymin = lwr, ymax = upr, fill = index), alpha = 0.3) +
+      geom_point(aes(color = index), size = 1, alpha = 0.8) + 
+      geom_line(aes(color = index), alpha = 0.8) + 
       ylim(0, max(both_i$upr)) +
       ggtitle("EBS") +
       coord_cartesian(expand = FALSE) + 
       ylab(ylab) +
       theme_bw()
     ggsave(file = here("species_specific_code", "BS", species, phase, "results",
-                       "index_comparison_ebs.pdf"), 
+                       "index_bridge_ebs.pdf"), 
            height = 4, width = 6, units = c("in"))
     
-    ggplot(filter(both_i, stratum == "NBS"), aes(x = year, y = est, ymin = lwr, 
-                                                  ymax = upr, colour = index)) + 
-      geom_ribbon(alpha = 0.1) +
-      geom_line(alpha = 0.8) + 
+    ggplot(filter(both_i, region == "NBS"), aes(x = year, y = est)) + 
+      geom_ribbon(aes(ymin = lwr, ymax = upr, fill = index), alpha = 0.3) +
+      geom_point(aes(color = index), size = 1, alpha = 0.8) + 
+      geom_line(aes(color = index), alpha = 0.8) + 
       ylim(0, max(both_i$upr)) +
       ggtitle("NBS") +
       coord_cartesian(expand = FALSE) + 
       ylab(ylab) +
       theme_bw()
     ggsave(file = here("species_specific_code", "BS", species, phase, "results",
-                       "index_comparison_nbs.pdf"), 
+                       "index_bridge_nbs.pdf"), 
            height = 4, width = 6, units = c("in"))
     
     # plot new index only for all regions
-    ggplot(new_i, aes(x = year, y = est, ymin = lwr, ymax = upr, colour = stratum)) + 
-      geom_ribbon(alpha = 0.1) +
-      geom_line(alpha = 0.8) + 
-      ylim(0, max(new_i$upr)) +
-      #ggtitle(species) +
-      coord_cartesian(expand = FALSE) + 
-      ylab(ylab) +
-      theme_bw()
-    ggsave(file = here("species_specific_code", "BS", species, phase, "results", "index.pdf"), 
-           height = 4, width = 6, units = c("in"))
+    new_i |>
+      arrange(desc(region)) |>
+        ggplot(aes(x = year, y = est)) + 
+          geom_ribbon(aes(ymin = lwr, ymax = upr, fill = region), alpha = 0.5) +
+          geom_point(aes(color = region), size = 1, alpha = 0.7) +
+          geom_line(aes(color = region), alpha = 0.7) + 
+          ylim(0, max(new_i$upr)) +
+          #ggtitle(species) +
+          coord_cartesian(expand = FALSE) + 
+          ylab(ylab) +
+          scale_color_brewer(palette = "Dark2") +
+          scale_fill_brewer(palette = "Dark2") +
+          theme_bw()
+        ggsave(file = here("species_specific_code", "BS", species, phase, "results", "index.pdf"), 
+               height = 4, width = 6, units = c("in"))
 }
 
 # create ESP products ----
@@ -411,15 +450,186 @@ f4 <- here("species_specific_code", "BS", species, phase, "results", "cog.csv")
 if (!file.exists(f4)) {
   cog <- get_cog(p, bias_correct = FALSE, 
                  area = p$data$area_km2, format = "wide")
+      cog$region <- "Both"
+  
+  # cog_ebs <- get_cog(p_ebs, bias_correct = FALSE, 
+  #              area = p_ebs$data$area_km2, format = "wide")
+  #   cog_ebs$region <- "EBS"
+  #   
+  # cog_nbs <- get_cog(p_nbs, bias_correct = FALSE, 
+  #              area = p_nbs$data$area_km2, format = "wide")
+  #   cog_nbs$region <- "NBS"
+  #     
+  # cog_all <- bind_rows(cog, cog_ebs, cog_nbs)
+  # write.csv(cog_all, file = f4, row.names = FALSE)
   write.csv(cog, file = f4, row.names = FALSE)
-}
+  } else {
+    cog <- read.csv(file = f4)
+  }
 
+  # plot center of gravity as time series and sparkleplot
+  cog_plots <- function(results = cog, dir = saveDir, save_data = TRUE, save_plots = TRUE) {
+    cog_new <- rbind(cbind.data.frame(year = cog$year, est = cog$est_x, 
+                                      lwr = cog$lwr_x, upr = cog$upr_x, 
+                                      se = cog$se_x, unit = "Eastings (km)"),
+                   cbind.data.frame(year = cog$year, est = cog$est_y, 
+                                    lwr = cog$lwr_y, upr = cog$upr_y, 
+                                    se = cog$se_y, unit = "Northings (km)"))
+  
+  
+    ts <- ggplot(cog_new, aes(x = year, y = est)) +
+      geom_point() +
+      geom_line() +
+      geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2) +
+      xlab("Year") + ylab("") +
+      facet_wrap(~ unit, ncol = 1, scales = "free_y") +
+      theme_bw()
+    
+    # Convert to lat/long using akgfmaps package and plot
+    cog_latlon <- cbind.data.frame(X = cog$est_x, Y = cog$est_y)
+    # CRS information for VAST outputs here: 
+    # https://github.com/James-Thorson-NOAA/FishStatsUtils/blob/main/R/project_coordinates.R
+    cog_latlon <- akgfmaps::transform_data_frame_crs(cog_latlon, 
+                                                     coords = c("X", "Y"), 
+                                                     in.crs = "+proj=utm +datum=WGS84 +units=km +zone=2",
+                                                     out.crs = "+proj=longlat +datum=WGS84")
+    cog_latlon$Year <- cog$year
+    
+    # Include error in COG estimate before transformation to get min & max values
+    cog_min <- cbind.data.frame(X = cog$lwr_x, Y = cog$lwr_y)
+    cog_min <- akgfmaps::transform_data_frame_crs(cog_min, 
+                                                  coords = c("X", "Y"), 
+                                                  in.crs = "+proj=utm +datum=WGS84 +units=km +zone=2",
+                                                  out.crs = "+proj=longlat +datum=WGS84")
+    
+    cog_max <- cbind.data.frame(X = cog$upr_x, Y = cog$upr_y)
+    cog_max <- akgfmaps::transform_data_frame_crs(cog_max, 
+                                                  coords = c("X", "Y"), 
+                                                  in.crs = "+proj=utm +datum=WGS84 +units=km +zone=2",
+                                                  out.crs = "+proj=longlat +datum=WGS84")
+    cog_error <- cbind.data.frame(cog_latlon, 
+                                  xmin = cog_min$X, xmax = cog_max$X,
+                                  ymin = cog_min$Y, ymax = cog_max$Y)
+    
+    # Plot on a map
+    map <- ggplot(data = bs_sf) +
+      geom_sf() +
+      geom_point(data = cog_latlon,
+                 aes(x = X, y = Y, color = Year), size = 1) +
+      # geom_errorbar(data = cog_error,
+      #               aes(x = X, y = Y, ymin = ymin,ymax = ymax, color = Year), alpha = 0.8) +
+      # geom_errorbarh(data = cog_error,
+      #                aes(x = X, y = Y, xmin = xmin,xmax = xmax, color = Year), alpha = 0.8) +
+      coord_sf(xlim = c(-179, -157), ylim = c(54, 65), expand = FALSE) +
+      viridis::scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
+      scale_x_continuous(breaks = c(-178, -158)) +
+      scale_y_continuous(breaks = c(55, 64)) +
+      labs(x = NULL, y = NULL) +
+      ggsidekick::theme_sleek() +
+      theme(plot.background = element_rect(fill = "transparent"))
+    
+    cog_error2 <- cog_error[-1, c(1:2)]
+    cog_error2[nrow(cog_error2) + 1, ] <- NA
+    colnames(cog_error2) <- c("X2", "Y2")
+    cog_error2 <- cbind.data.frame(cog_error, cog_error2) 
+    
+    # Plot as scatter (sparkleplot)
+    sparkle <- ggplot(data = cog_error, aes(x = X, y = Y, color = Year)) +
+      geom_point() +
+      # With arrow
+      # geom_segment(data = cog_error2 %>% filter(Year >= this_year - 10), 
+      #              aes(x = X, y = Y, xend = X2, yend = Y2), 
+      #              alpha = 0.8, arrow = arrow(length = unit(0.03, "npc"))) +
+      # Without arrow
+      geom_segment(data = cog_error2 %>% filter(Year >= this_year - 10), 
+                   aes(x = X, y = Y, xend = X2, yend = Y2), 
+                   alpha = 0.8) +
+      geom_errorbar(aes(ymin = ymin, ymax = ymax, color = Year), alpha = 0.4) +
+      geom_errorbarh(aes(xmin = xmin, xmax = xmax, color = Year), alpha = 0.4) +
+      viridis::scale_color_viridis(option = "plasma", discrete = FALSE, end = 0.9) +
+      xlab("Longitude (\u00B0W)") + ylab("Latitude (\u00B0N)") +
+      ggsidekick::theme_sleek() +
+      theme(plot.background = element_rect(fill = "transparent"))
+    
+    # Inset map into sparkleplot
+    inset <- cowplot::ggdraw() +
+      cowplot::draw_plot(plot = sparkle) +
+      cowplot::draw_plot(plot = map +
+                         theme(legend.position = "none") +
+                         guides(x = "none", y = "none"), 
+                         x = 0.81, y = 0.75, width = 0.21, height = 0.21) 
+    
+    # Combine sparkleplot and time-series plot
+    all <- cowplot::plot_grid(inset, ts)
+    
+    # Another inset for using independently
+    inset2 <- cowplot::ggdraw() +
+      cowplot::draw_plot(plot = sparkle) +
+      cowplot::draw_plot(plot = map +
+                         theme(legend.position = "none") +
+                         guides(x = "none", y = "none"), 
+                         x = 0.60, y = 0.76, width = 0.21, height = 0.21) 
+    
+    dir <- here("species_specific_code", "BS", species, phase, "results")
+    if(save_data == TRUE) {
+      # Save COG as lat/long (without error)
+      cog_latlon <- cog_latlon[, c(3, 2, 1)]
+      colnames(cog_latlon) <- c("Year", "Latitude", "Longitude")
+      write.csv(cog_latlon, file = here(dir, "COG_latlong.csv"), row.names = FALSE)
+    }
+    
+    if(save_plots == TRUE) {
+      ggsave(ts, filename = here(dir, "COG_utm.pdf"),
+             width = 150, height = 180, unit = "mm")
+      ggsave(map, filename = here(dir, "COG_map.pdf"),
+             width = 110, height = 90, unit = "mm")
+      ggsave(sparkle, filename = here(dir, "COG_scatter.pdf"),
+             width = 130, height = 100, unit = "mm")
+      ggsave(all, filename = here(dir, "COG_all.pdf"),
+             width = 250, height = 100, unit = "mm")
+      ggsave(inset2, filename = here(dir, "COG_inset.pdf"),
+             width = 130, height = 100, unit = "mm")
+    }
+    
+    return(list(table = cog_latlon, table_error = cog_error, 
+                ts = ts, map = map, sparkle = sparkle, all = all, inset = inset2))
+  }
+  
+  cog_out <- cog_plots()
+  
 f5 <- here("species_specific_code", "BS", species, phase, "results",
            "area_occupied.csv")
 if (!file.exists(f5)) {
   eao <- get_eao(p, bias_correct = FALSE, area = p$data$area_km2)
-  write.csv(eao, file = f5, row.names = FALSE)
-}
+    eao$region <- "Both"
+  
+  eao_ebs <- get_eao(p_ebs, bias_correct = FALSE, 
+               area = p_ebs$data$area_km2)
+    eao_ebs$region <- "EBS"
+    
+  eao_nbs <- get_eao(p_nbs, bias_correct = FALSE, 
+               area = p_nbs$data$area_km2)
+    eao_nbs$region <- "NBS"
+      
+  eao_all <- bind_rows(eao, eao_ebs, eao_nbs)
+  write.csv(eao_all, file = f5, row.names = FALSE)
+  } else {
+    eao <- read.csv(file = f5)
+  }
+
+  # plot effective area occupied
+  eao_plot <- ggplot(eao_all, aes(x = year, y = est)) +
+    geom_point() +
+    geom_line(alpha = 0.8) +
+    geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.3) +
+    scale_y_continuous(labels = scales::comma, limits = c(0, NA)) +
+    ylab(expression(paste("Effective Area Occupied (", km^2, ")"))) +
+    theme_bw() +
+    facet_wrap(~ region, ncol = 1)
+  
+  ggsave(file = here("species_specific_code", "BS", species, phase, "results",
+                     "area_occupied.pdf"), 
+         height = 6, width = 6, units = c("in"))
 
 # Joint variance-covariance matrix for pollock ----
 if (species == "pollock") {
