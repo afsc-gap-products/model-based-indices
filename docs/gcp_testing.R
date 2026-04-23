@@ -13,18 +13,11 @@ if(file.exists("~/oracle_credentials.R")) {
                                       default = "")
 }
 
-# Two different options for connecting to Oracle
-channel <- RODBC::odbcDriverConnect(
-  connection = paste0("Driver=/opt/oracle/instantclient_12_2/libsqora.so.12.1;DBQ=raja.afsc.noaa.gov:1521/afsc;UID=", 
-                      oracle_user, ";PWD=", oracle_pw),
-  rows_at_time = 1
-)
-
-con <- DBI::dbConnect(
-  odbc::odbc(),
-  .connection_string = paste0("Driver=/opt/oracle/instantclient_12_2/libsqora.so.12.1;DBQ=raja.afsc.noaa.gov:1521/afsc;UID=", 
-                              oracle_user, ";PWD=", oracle_pw)
-)
+# Connect to oracle database using RODBC
+channel <- RODBC::odbcConnect(dsn = "AFSC",
+                              uid = oracle_user,
+                              pwd = oracle_pw,
+                              believeNRows = FALSE)
 
 # Connect to Google Drive -----------------------------------------------------
 # googledrive::drive_auth(path="/etc/sa_key.json")  # to connect to the default google drive account associated with the instance
@@ -75,7 +68,7 @@ library(sf)
 
 # Pull & format data
 data(bering_sea_pollock_ages)
-Data <- subset(bering_sea_pollock_ages, Year >= 2022)
+Data <- subset(bering_sea_pollock_ages)
 Data$Age <- factor(paste0("Age_",Data$Age))
 Data$Year_Age <- interaction(Data$Year, Data$Age)
 
