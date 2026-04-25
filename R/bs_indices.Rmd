@@ -381,8 +381,19 @@ if(species == "kamchatka_flounder"){
     new_i <- ind_all %>% mutate(index = "mb_new") %>% 
       select(index, region, year, est, lwr, upr)
     
-    #load(here("species_specific_code", "BS", species, "hindcast", "results", "indices_250_knots.RData"))
-    #old_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_old") %>% select(index, region, year, est, lwr, upr)
+    # compare to older models
+    # load(here("species_specific_code", "BS", species, "hindcast", "results", "indices_250_knots.RData"))
+    # old_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_old") %>% select(index, region, year, est, lwr, upr)
+    # vast
+    # old_i <- read.csv(here("species_specific_code", "BS", species, "index_comparison", "Index.csv")) %>%
+    #   mutate(index = "VAST", year = as.numeric(Time), est = Estimate, 
+    #          se = Std..Error.for.ln.Estimate.) %>% 
+    #   select(index, year, est, se, region = Stratum) %>% 
+    #   filter(year != 2020) %>%
+    #   mutate(lwr = exp(log(est) + qnorm(0.025) * se)) %>% 
+    #   mutate(upr = exp(log(est) + qnorm(0.975) * se)) %>%
+    #   select(-se)
+    
     old_i <- readRDS(here("species_specific_code", "BS", species, "archive", this_year, "production", "results", "indices.RDS")) |>
      mutate(index = "mb_old") |> select(index, region, year, est, lwr, upr)
       
