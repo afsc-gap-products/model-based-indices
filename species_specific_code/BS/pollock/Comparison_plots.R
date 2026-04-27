@@ -269,7 +269,7 @@ comp_percent_diff <- function(new, old, names, save_results = FALSE) {
     scale_fill_manual(values = c("cornflowerblue", "darkred")) +
     scale_x_discrete(breaks = c(1, 5, 10, 15)) +
     ylab(label) +
-    facet_wrap(~ year, ncol = 6) 
+    facet_wrap(~ year, ncol = 6, dir = "v") 
   
   return(plot)
 }
