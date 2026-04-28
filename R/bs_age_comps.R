@@ -169,10 +169,14 @@ get_abundance <- function(region) {
     if(is.na(N_jz[j, "abundance"])) {
       areas <- newdata <- NULL
       for(j in seq_len(nrow(N_jz))) {
-        tmp <- data.frame(loc_gz, Year = N_jz[j, "Year"], Age = N_jz[j, "Age"])
-          tmp$Year_Age <- paste(tmp$Year, tmp$Age, sep=".")
+        tmp <- data.frame(
+          grid, 
+          year = N_jz[j, "year"], 
+          age_f = N_jz[j, "age_f"]
+        )
+        tmp$year_age <- paste(tmp$year, tmp$age_f, sep=".")
         newdata <- rbind(newdata, cbind(tmp, block = j))
-        areas <- c(areas, area_g)
+        areas <- c(areas, newdata)
       }
       # Area-expansion
       index1 <- integrate_output(
