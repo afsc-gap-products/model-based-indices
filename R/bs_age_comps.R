@@ -19,7 +19,7 @@ theme_set(theme_sleek())
 # Set up ----------------------------------------------------------------------
 phase <- c("hindcast", "production")[1] # specify analysis phase
 
-sp <- 1 # specify species from species vector
+sp <- 2 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 
 # Set year
@@ -147,7 +147,7 @@ saveRDS(fit, here(workDir, "results_age", "tinyVAST_fit.RDS"))
 # Age composition expansion ---------------------------------------------------
 # Load fit object if needed
 if(!exists("fit")) {
-  fit <- readRDS(here(workDir, "results_age", "tinyVAST_fit.RDS"))
+  fit <- readRDS(here(workDir, "updated tinyVAST", "tinyVAST_fit.RDS"))
 }
 
 start <- Sys.time()
@@ -180,7 +180,7 @@ get_abundance <- function(region) {
       }
       # Area-expansion
       index1 <- integrate_output(
-        myfit,
+        fit,
         area = areas,
         block = newdata$block,
         newdata = newdata,
