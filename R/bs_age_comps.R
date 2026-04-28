@@ -161,22 +161,30 @@ get_abundance <- function(region) {
   N_jz$year_age <- interaction(N_jz$year, N_jz$age)
   N_jz <- cbind(N_jz, "abundance" = NA, "SE" = NA)
   
-  for(j in which(!(N_jz$year_age %in% year_age_to_drop))){
+  for(j in which(!(N_jz$year_age %in% year_age_to_drop))) {
     if (N_jz[j, "age_f"] == 1) {
       message("Integrating ", N_jz[j, "year"], " ", N_jz[j, "age_f"], ": ", Sys.time())
     }
+    # Make inputs, including 'block' column
     if(is.na(N_jz[j, "abundance"])) {
-      newdata <- data.frame(grid, 
-                            year = N_jz[j, "year"], 
-                            age_f = N_jz[j, "age_f"])
-      newdata$year_age <- paste(newdata$year, newdata$age_f, sep = ".")
+      areas <- newdata <- NULL
+      for(j in seq_len(nrow(N_jz))) {
+        tmp <- data.frame(loc_gz, Year = N_jz[j, "Year"], Age = N_jz[j, "Age"])
+          tmp$Year_Age <- paste(tmp$Year, tmp$Age, sep=".")
+        newdata <- rbind(newdata, cbind(tmp, block = j))
+        areas <- c(areas, area_g)
+      }
       # Area-expansion
-      index1 <- integrate_output(fit,
-                                 area = grid$area_km2,
-                                 newdata = newdata,
-                                 apply.epsilon = TRUE,
-                                 bias.correct = TRUE,
-                                 intern = TRUE)
+      index1 <- integrate_output(
+        myfit,
+        area = areas,
+        block = newdata$block,
+        newdata = newdata,
+        apply.epsilon = TRUE,
+        bias.correct = FALSE,
+        intern = FALSE,
+        getsd = FALSE
+      )
       N_jz[j, "abundance"] <- index1[3] / 1e9
     }
   }
