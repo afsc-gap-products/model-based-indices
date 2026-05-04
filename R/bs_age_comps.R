@@ -174,8 +174,9 @@ get_abundance <- function(region) {
       index1 <- integrate_output(fit,
                                  area = grid$area_km2,
                                  newdata = newdata,
+                                 getsd = FALSE,
+                                 bias.correct = FALSE,
                                  apply.epsilon = TRUE,
-                                 bias.correct = TRUE,
                                  intern = TRUE)
       N_jz[j, "abundance"] <- index1[3] / 1e9
     }
