@@ -162,26 +162,22 @@ get_abundance <- function(region) {
   N_jz <- cbind(N_jz, "abundance" = NA, "SE" = NA)
   
   for(j in which(!(N_jz$year_age %in% year_age_to_drop))) {
-    if (N_jz[j, "age_f"] == 1) {
-      message("Integrating ", N_jz[j, "year"], " ", N_jz[j, "age_f"], ": ", Sys.time())
-    }
-    # Make inputs, including 'block' column
+    message("Integrating ", N_jz[j, "year"], " ", N_jz[j, "age_f"], ": ", Sys.time())
+    
     if(is.na(N_jz[j, "abundance"])) {
-      areas <- newdata <- NULL
-      for(j in seq_len(nrow(N_jz))) {
-        tmp <- data.frame(
-          grid, 
-          year = N_jz[j, "year"], 
-          age_f = N_jz[j, "age_f"]
-        )
-        tmp$year_age <- paste(tmp$year, tmp$age_f, sep=".")
-        newdata <- rbind(newdata, cbind(tmp, block = j))
-        areas <- c(areas, newdata)
-      }
+      # Create newdata for just this year-age combination
+      newdata <- cbind(
+        grid,
+        year = N_jz[j, "year"],
+        age_f = N_jz[j, "age_f"],
+        block = 1L
+      )
+      newdata$year_age <- paste(newdata$year, newdata$age_f, sep = ".")
+      
       # Area-expansion
       index1 <- integrate_output(
         fit,
-        area = areas,
+        area = newdata$area_km2,
         block = newdata$block,
         newdata = newdata,
         apply.epsilon = TRUE,
@@ -192,14 +188,13 @@ get_abundance <- function(region) {
       N_jz[j, "abundance"] <- index1[3] / 1e9
     }
   }
-  N_jz[is.na(N_jz)] <- 0 # replace NAs for combinations with 0 encounters
+  N_jz[is.na(N_jz)] <- 0
   
   N_ct <- array(N_jz$abundance, 
                 dim = c(length(fit$internal$variables), length(unique(dat$year))),
-                dimnames = list(fit$internal$variables,sort(unique(dat$year))))
+                dimnames = list(fit$internal$variables, sort(unique(dat$year))))
   return(N_ct)
 }
-
 abundance <- get_abundance(region = region)
 end <- Sys.time()
 expand_time <- difftime(end, start, units = "hours")
