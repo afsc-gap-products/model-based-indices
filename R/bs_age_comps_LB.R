@@ -19,7 +19,7 @@ theme_set(theme_sleek())
 # Set up ----------------------------------------------------------------------
 phase <- c("hindcast", "production")[1] # specify analysis phase
 
-sp <- 1 # specify species from species vector
+sp <- 3 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 
 # Set year
@@ -135,9 +135,9 @@ if (!file.exists(f1)) {
     control = tinyVASTcontrol(
       getsd = TRUE,
       silent = FALSE
-      # , profile = c("alpha_j", "alpha2_j") # for experimentation
-      , newton_loops = 3 # add newton loop(s) as needed to improve convergence
-      # , tmb_par = fit$parameter_estimates # restart at prior best parameters
+      #, profile = c("alpha_j", "alpha2_j") # for experimentation
+      #, newton_loops = 1 # add newton loop(s) as needed to improve convergence
+      #, tmb_par = fit$parameter_estimates # restart at prior best parameters
     )
   )
   fit$run_time
@@ -149,11 +149,11 @@ if (!file.exists(f1)) {
   }
   
   saveRDS(fit, here(workDir, "results_age", "tinyVAST_fit.RDS")) 
-  
+
 } else {
-  
+
   fit <- readRDS(f1)
-  
+
 }
 
 # Age composition expansion ---------------------------------------------------
@@ -178,7 +178,7 @@ get_abundance <- function(region) {
         year = N_jz[j, "year"], 
         age_f = N_jz[j, "age_f"]
       )
-      tmp$year_age <- paste(tmp$year, tmp$age_f, sep=".")
+      tmp$year_age <- paste(tmp$year, tmp$age_f, sep = ".")
       newdata <- rbind(newdata, cbind(tmp, block = j))
       areas <- c(areas, grid$area_km2)
   }
@@ -199,6 +199,8 @@ get_abundance <- function(region) {
       intern = TRUE,
       getsd = FALSE
     )
+    message("Completed from ", newdata[chunk[[1]], "year_age"][1], " to ", newdata[chunk[[1]], "year_age"][chunk_size], ": ", Sys.time())
+    
     gc()
     index2 <- integrate_output(
       fit,
@@ -210,6 +212,8 @@ get_abundance <- function(region) {
       intern = TRUE,
       getsd = FALSE
     )
+    message("Completed from ", newdata[chunk[[2]], "year_age"][1], " to ", newdata[chunk[[2]], "year_age"][chunk_size], ": ", Sys.time())
+    
     gc()
     index3 <- integrate_output(
       fit,
@@ -221,6 +225,8 @@ get_abundance <- function(region) {
       intern = TRUE,
       getsd = FALSE
     )
+    message("Completed from ", newdata[chunk[[3]], "year_age"][1], " to ", newdata[chunk[[3]], "year_age"][chunk_size], ": ", Sys.time())
+    
     gc()
     index4 <- integrate_output(
       fit,
