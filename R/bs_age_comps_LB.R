@@ -110,49 +110,48 @@ old_mesh <- sdmTMB::make_mesh(dat,
                               fmesher_func = fm_mesh_2d()) 
 
 # Fit model -------------------------------------------------------------------
-fit <- tinyVAST(
-  formula = cpue ~ 0 + year_age,
-  data = dat,
-  space_term = sem,
-  spacetime_term = dsem,
-  family = setNames(
-    lapply(ages, function(x) delta_gamma(type = "poisson-link")), 
-    paste0("age_", ages)
-    ),
-  space_columns = c("X", "Y"),
-  spatial_domain = old_mesh$mesh,
-  time_column = "year",
-  variable_column = "age_f",
-  distribution_column = "age_f",
-  delta_options = list(
-    formula = ~ 0 + year_age,
-    space_term = sem,
-    spacetime_term = dsem
-    ),
-  control = tinyVASTcontrol(
-    getsd = TRUE,
-    silent = FALSE
-    # , profile = c("alpha_j", "alpha2_j"), # for experimentation
-    # , newton_loops = 1, # add newton loop(s) as needed to improve convergence
-    # , tmb_par = fit$parameter_estimates # restart at prior best parameters
-  )
-)
-fit$run_time
-sanity(fit)
-
-# Save fit object (create directory for results first, if it doesn't exist)
-if (!dir.exists(here(workDir, "results_age"))) {
-  dir.create(here(workDir, "results_age"))
-}
-
-saveRDS(fit, here(workDir, "results_age", "tinyVAST_fit.RDS"))
-
-# Age composition expansion ---------------------------------------------------
-# Load fit object if needed
 if(!exists("fit")) {
   fit <- readRDS(here(workDir, "updated tinyVAST", "tinyVAST_fit.RDS"))
+} else {
+  fit <- tinyVAST(
+    formula = cpue ~ 0 + year_age,
+    data = dat,
+    space_term = sem,
+    spacetime_term = dsem,
+    family = setNames(
+      lapply(ages, function(x) delta_gamma(type = "poisson-link")), 
+      paste0("age_", ages)
+    ),
+    space_columns = c("X", "Y"),
+    spatial_domain = old_mesh$mesh,
+    time_column = "year",
+    variable_column = "age_f",
+    distribution_column = "age_f",
+    delta_options = list(
+      formula = ~ 0 + year_age,
+      space_term = sem,
+      spacetime_term = dsem
+    ),
+    control = tinyVASTcontrol(
+      getsd = TRUE,
+      silent = FALSE
+      # , profile = c("alpha_j", "alpha2_j") # for experimentation
+      , newton_loops = 3 # add newton loop(s) as needed to improve convergence
+      # , tmb_par = fit$parameter_estimates # restart at prior best parameters
+    )
+  )
+  fit$run_time
+  sanity(fit)
+  
+  # Save fit object (create directory for results first, if it doesn't exist)
+  if (!dir.exists(here(workDir, "results_age"))) {
+    dir.create(here(workDir, "results_age"))
+  }
+  
+  saveRDS(fit, here(workDir, "results_age", "tinyVAST_fit.RDS")) 
 }
 
+# Age composition expansion ---------------------------------------------------
 start <- Sys.time()
 get_abundance <- function(region) {
   # Read in coarsened extrapolation grid
@@ -162,8 +161,8 @@ get_abundance <- function(region) {
   
   N_jz <- expand.grid(age_f = fit$internal$variables, year = sort(unique(dat$year)))
   N_jz$year_age <- interaction(N_jz$year, N_jz$age)
-  N_jz <- cbind(N_jz, "abundance" = NA, "SE" = NA)
-  
+  N_jz$block <- 1:nrow(N_jz)
+    
   areas <- newdata <- NULL
   
   for(j in which(!(N_jz$year_age %in% year_age_to_drop))) {
@@ -228,10 +227,13 @@ get_abundance <- function(region) {
       intern = TRUE,
       getsd = FALSE
     )
-  index <- rbind(index1, index2, index3, index4)
+  index <- cbind(rbind(index1, index2, index3, index4)[3], 
+                 block = unique(newdata$block)) |>
+    rename(abundance = Est...bias.correct.)
     
-  N_jz[, "abundance"] <- index[3] / 1e9 # scale to billions of individuals
+  N_jz <- left_join(N_jz, index)
   N_jz[is.na(N_jz)] <- 0 # replace NAs for combinations with 0 encounters
+  N_jz$abundance <- N_jz$abundance / 1e9 # scale to billions of individuals
   
   N_ct <- array(N_jz$abundance, 
                 dim = c(length(fit$internal$variables), length(unique(dat$year))),
