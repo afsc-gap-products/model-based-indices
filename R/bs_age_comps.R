@@ -19,7 +19,7 @@ theme_set(theme_sleek())
 # Set up ----------------------------------------------------------------------
 phase <- c("hindcast", "production")[1] # specify analysis phase
 
-sp <- 1 # specify species from species vector
+sp <- 3 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 
 # Set year
@@ -130,12 +130,15 @@ fit <- tinyVAST(
     spacetime_term = dsem
     ),
   control = tinyVASTcontrol(
-    getsd = FALSE,
-    profile = c("alpha_j", "alpha2_j"),
-    trace = 0
+    getsd = TRUE,
+    # profile = c("alpha_j", "alpha2_j"), # experimentation only
+    silent = FALSE
+    # newton_loops = 1, # add newton loop(s) as needed to improve convergence
+    # tmb_par = fit$parameter_estimates # restart at prior best parameters
   )
 )
 fit$run_time
+sanity(fit)
 
 # Save fit object (create directory for results first, if it doesn't exist)
 if (!dir.exists(here(workDir, "results_age"))) {
@@ -185,7 +188,7 @@ get_abundance <- function(region) {
   
   N_ct <- array(N_jz$abundance, 
                 dim = c(length(fit$internal$variables), length(unique(dat$year))),
-                dimnames = list(fit$internal$variables,sort(unique(dat$year))))
+                dimnames = list(fit$internal$variables, sort(unique(dat$year))))
   return(N_ct)
 }
 
