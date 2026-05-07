@@ -131,10 +131,10 @@ fit <- tinyVAST(
     ),
   control = tinyVASTcontrol(
     getsd = TRUE,
-    profile = c("alpha_j", "alpha2_j"),
-    silent = FALSE,
-    newton_loops = 1 # add newton loop(s) as needed to improve convergence
-    #, tmb_par = fit$parameter_estimates # restart at prior best parameters
+    silent = FALSE
+    # , profile = c("alpha_j", "alpha2_j"), # for experimentation
+    # , newton_loops = 1, # add newton loop(s) as needed to improve convergence
+    # , tmb_par = fit$parameter_estimates # restart at prior best parameters
   )
 )
 fit$run_time
@@ -179,23 +179,63 @@ get_abundance <- function(region) {
       areas <- c(areas, grid$area_km2)
   }
   
-  # Area-expansion
-  index1 <- integrate_output(
-    fit,
-    area = areas,
-    block = newdata$block,
-    newdata = newdata,
-    apply.epsilon = TRUE,
-    bias.correct = FALSE,
-    intern = TRUE,
-    getsd = FALSE
-  )
-  N_jz[, "abundance"] <- index1[3] / 1e9
+  # Area-expansion (split into chunks to avoid memory limitation)
+  x <- 1:nrow(newdata)
+  chunk_size <- max(x) / 4
+  chunk <- split(x, ceiling(seq_along(x) / chunk_size))
+  
+    gc()
+    index1 <- integrate_output(
+      fit,
+      area = areas[chunk[[1]]],
+      block = newdata$block[chunk[[1]]],
+      newdata = newdata[chunk[[1]],],
+      apply.epsilon = TRUE,
+      bias.correct = FALSE,
+      intern = TRUE,
+      getsd = FALSE
+    )
+    gc()
+    index2 <- integrate_output(
+      fit,
+      area = areas[chunk[[2]]],
+      block = newdata$block[chunk[[2]]],
+      newdata = newdata[chunk[[2]],],
+      apply.epsilon = TRUE,
+      bias.correct = FALSE,
+      intern = TRUE,
+      getsd = FALSE
+    )
+    gc()
+    index3 <- integrate_output(
+      fit,
+      area = areas[chunk[[3]]],
+      block = newdata$block[chunk[[3]]],
+      newdata = newdata[chunk[[3]],],
+      apply.epsilon = TRUE,
+      bias.correct = FALSE,
+      intern = TRUE,
+      getsd = FALSE
+    )
+    gc()
+    index4 <- integrate_output(
+      fit,
+      area = areas[chunk[[4]]],
+      block = newdata$block[chunk[[4]]],
+      newdata = newdata[chunk[[4]],],
+      apply.epsilon = TRUE,
+      bias.correct = FALSE,
+      intern = TRUE,
+      getsd = FALSE
+    )
+  index <- rbind(index1, index2, index3, index4)
+    
+  N_jz[, "abundance"] <- index[3] / 1e9 # scale to billions of individuals
   N_jz[is.na(N_jz)] <- 0 # replace NAs for combinations with 0 encounters
   
   N_ct <- array(N_jz$abundance, 
                 dim = c(length(fit$internal$variables), length(unique(dat$year))),
-                dimnames = list(fit$internal$variables,sort(unique(dat$year))))
+                dimnames = list(fit$internal$variables, sort(unique(dat$year))))
   return(N_ct)
 }
 
