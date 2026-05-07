@@ -111,7 +111,7 @@ old_mesh <- sdmTMB::make_mesh(dat,
 
 # Fit model -------------------------------------------------------------------
 if(!exists("fit")) {
-  fit <- readRDS(here(workDir, "updated tinyVAST", "tinyVAST_fit.RDS"))
+  fit <- readRDS(here(workDir, "tinyVAST_fit.RDS"))
 } else {
   fit <- tinyVAST(
     formula = cpue ~ 0 + year_age,
