@@ -110,9 +110,9 @@ old_mesh <- sdmTMB::make_mesh(dat,
                               fmesher_func = fm_mesh_2d()) 
 
 # Fit model -------------------------------------------------------------------
-if(!exists("fit")) {
-  fit <- readRDS(here(workDir, "results_age", "tinyVAST_fit.RDS"))
-} else {
+f1 <- here(workDir, "results_age", "tinyVAST_fit.RDS")
+
+if (!file.exists(f1)) {
   fit <- tinyVAST(
     formula = cpue ~ 0 + year_age,
     data = dat,
@@ -149,6 +149,11 @@ if(!exists("fit")) {
   }
   
   saveRDS(fit, here(workDir, "results_age", "tinyVAST_fit.RDS")) 
+  
+} else {
+  
+  fit <- readRDS(f1)
+  
 }
 
 # Age composition expansion ---------------------------------------------------
