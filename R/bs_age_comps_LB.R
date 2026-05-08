@@ -19,7 +19,7 @@ theme_set(theme_sleek())
 # Set up ----------------------------------------------------------------------
 phase <- c("hindcast", "production")[1] # specify analysis phase
 
-sp <- 3 # specify species from species vector
+sp <- 1 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 
 # Set year
@@ -175,64 +175,76 @@ get_abundance <- function(region) {
       tmp <- data.frame(
         X = grid$X,
         Y = grid$Y,
+        area_km2 = grid$area_km2,
         year = N_jz[j, "year"], 
         age_f = N_jz[j, "age_f"]
       )
       tmp$year_age <- paste(tmp$year, tmp$age_f, sep = ".")
       newdata <- rbind(newdata, cbind(tmp, block = j))
-      areas <- c(areas, grid$area_km2)
   }
   
-  # Area-expansion (split into chunks to avoid memory limitation)
-  x <- 1:nrow(newdata)
-  chunk_size <- max(x) / 4
-  chunk <- split(x, ceiling(seq_along(x) / chunk_size))
+  # split newdata into chunks to avoid memory limitations in integrate_output
+  newdata$chunk <- cut(newdata$block, 
+                       breaks = c(min(N_jz$block), max(N_jz$block)/4, 
+                                  max(N_jz$block)/2, max(N_jz$block)*3/4, 
+                                  max(N_jz$block)), 
+                       include.lowest = TRUE, labels = FALSE)
+  newdata_ls <- split(newdata, newdata$chunk)
+  
+  # check if any blocks have rows in multiple chunks
+  message(
+    anyDuplicated(unique(newdata_ls[[1]]$block), 
+                  unique(newdata_ls[[2]]$block), 
+                  unique(newdata_ls[[3]]$block), 
+                  unique(newdata_ls[[4]]$block)), 
+    " blocks spanning across chunks (should be 0)"
+  )
   
     gc()
     index1 <- integrate_output(
       fit,
-      area = areas[chunk[[1]]],
-      block = newdata$block[chunk[[1]]],
-      newdata = newdata[chunk[[1]],],
+      area = newdata_ls[[1]]$area_km2,
+      block = newdata_ls[[1]]$block,
+      newdata = newdata_ls[[1]],
       apply.epsilon = TRUE,
       bias.correct = FALSE,
       intern = TRUE,
       getsd = FALSE
     )
-    message("Completed from ", newdata[chunk[[1]], "year_age"][1], " to ", newdata[chunk[[1]], "year_age"][chunk_size], ": ", Sys.time())
+    message("Completed from ", newdata_ls[[1]]$year_age[1], " to ", newdata_ls[[1]]$year_age[nrow(newdata_ls[[1]])], ": ", Sys.time())
     
     gc()
     index2 <- integrate_output(
       fit,
-      area = areas[chunk[[2]]],
-      block = newdata$block[chunk[[2]]],
-      newdata = newdata[chunk[[2]],],
+      area = newdata_ls[[2]]$area_km2,
+      block = newdata_ls[[2]]$block,
+      newdata = newdata_ls[[2]],
       apply.epsilon = TRUE,
       bias.correct = FALSE,
       intern = TRUE,
       getsd = FALSE
     )
-    message("Completed from ", newdata[chunk[[2]], "year_age"][1], " to ", newdata[chunk[[2]], "year_age"][chunk_size], ": ", Sys.time())
+    message("Completed from ", newdata_ls[[2]]$year_age[1], " to ", newdata_ls[[2]]$year_age[nrow(newdata_ls[[2]])], ": ", Sys.time())
     
     gc()
     index3 <- integrate_output(
       fit,
-      area = areas[chunk[[3]]],
-      block = newdata$block[chunk[[3]]],
-      newdata = newdata[chunk[[3]],],
+      area = newdata_ls[[3]]$area_km2,
+      block = newdata_ls[[3]]$block,
+      newdata = newdata_ls[[3]],
       apply.epsilon = TRUE,
       bias.correct = FALSE,
       intern = TRUE,
       getsd = FALSE
     )
-    message("Completed from ", newdata[chunk[[3]], "year_age"][1], " to ", newdata[chunk[[3]], "year_age"][chunk_size], ": ", Sys.time())
+    message("Completed from ", newdata_ls[[3]]$year_age[1], " to ", newdata_ls[[3]]$year_age[nrow(newdata_ls[[3]])], ": ", Sys.time())
     
     gc()
     index4 <- integrate_output(
       fit,
-      area = areas[chunk[[4]]],
-      block = newdata$block[chunk[[4]]],
-      newdata = newdata[chunk[[4]],],
+      area = newdata_ls[[4]]$area_km2,
+      block = newdata_ls[[4]]$block,
+      newdata = newdata_ls[[4]],
       apply.epsilon = TRUE,
       bias.correct = FALSE,
       intern = TRUE,
