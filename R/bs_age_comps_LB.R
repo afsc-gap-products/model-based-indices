@@ -250,9 +250,13 @@ get_abundance <- function(region) {
       intern = TRUE,
       getsd = FALSE
     )
-  index <- cbind(rbind(index1, index2, index3, index4)[3], 
-                 block = unique(newdata$block)) |>
-    rename(abundance = Est...bias.correct.)
+    message("Completed from ", newdata_ls[[4]]$year_age[1], " to ", newdata_ls[[4]]$year_age[nrow(newdata_ls[[4]])], ": ", Sys.time())
+    
+    index <- data.frame(abundance = c(index1[unique(newdata_ls[[1]]$block),3], 
+                                      index2[unique(newdata_ls[[2]]$block),3], 
+                                      index3[unique(newdata_ls[[3]]$block),3], 
+                                      index4[unique(newdata_ls[[4]]$block),3]), 
+                        block = unique(newdata$block))
     
   N_jz <- left_join(N_jz, index)
   N_jz[is.na(N_jz)] <- 0 # replace NAs for combinations with 0 encounters
