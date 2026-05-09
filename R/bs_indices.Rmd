@@ -380,7 +380,7 @@ if(species == "kamchatka_flounder"){
     new_i <- ind_all %>% mutate(index = "mb_new") %>% 
       select(index, region, year, est, lwr, upr)
     
-    # compare to older models
+    ## compare to older models
     # load(here("species_specific_code", "BS", species, "hindcast", "results", "indices_250_knots.RData"))
     # old_i <- bind_rows(ind, ind_ebs, ind_nbs) %>% mutate(index = "mb_old") %>% select(index, region, year, est, lwr, upr)
     # vast
@@ -393,8 +393,16 @@ if(species == "kamchatka_flounder"){
     #   mutate(upr = exp(log(est) + qnorm(0.975) * se)) %>%
     #   select(-se)
     
-    old_i <- readRDS(here("species_specific_code", "BS", species, "archive", this_year, "production", "results", "indices.RDS")) |>
-     mutate(index = "mb_old") |> select(index, region, year, est, lwr, upr)
+    if(phase == "hindcast") {    
+      old <- readRDS(here("species_specific_code", "BS", species, "archive", 
+                          this_year, "production", "results", "indices.RDS"))
+    } else {
+      old <- readRDS(here("species_specific_code", "BS", species, 
+                          "hindcast", "results", "indices.RDS"))
+    }
+     
+    old_i <- old |> mutate(index = "mb_old") |> select(index, region, 
+                                                       year, est, lwr, upr)
       
     both_i <- bind_rows(new_i, old_i)
     
