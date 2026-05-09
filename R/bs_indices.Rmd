@@ -97,7 +97,7 @@ Now we fit the model in sdmTMB:
 # detect if any years have occurrences at every haul and fix params as needed
 mins <- dat %>% group_by(year) %>% summarize(min = min(cpue))
 if(sum(mins$min) == 0){
-  control = sdmTMBcontrol(profile = TRUE)
+  control = sdmTMBcontrol()
 } else {
   no_zero_yr <- as.integer(mins %>% filter(min > 0) %>% select(year))
 			# set up map and fix value of p(occurrence) to slightly less than 1:
@@ -110,8 +110,7 @@ if(sum(mins$min) == 0){
 
 			control =  sdmTMBcontrol(
             map = list(b_j = .map),
-            start = list(b_j = .start),
-            profile = TRUE
+            start = list(b_j = .start)
 			    )
 }
 
