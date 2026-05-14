@@ -326,7 +326,7 @@ ggsave(sum_props$boxplot, filename = here(save_dir, "results_age", "comps_summar
        width=200, height=120, units="mm", dpi=300)
 ggsave(comp_diff, filename = here(save_dir, "results_age", "comp_diff.png"),
        width=200, height=200, units="mm", dpi=300)
-ggsave(per_diff, filename = here(save_dir, "resuults_age", "comp_per_diff.png"),
+ggsave(per_diff, filename = here(save_dir, "results_age", "comp_per_diff.png"),
        width=200, height=200, units="mm", dpi=300)
 ggsave(comp_trends, filename = here(save_dir, "results_age", "comp_trends.png"),
        width=260, height=120, units="mm", dpi=300)

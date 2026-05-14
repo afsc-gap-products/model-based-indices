@@ -39,29 +39,29 @@ Resources:
 -   Here are some helpful [slides](https://docs.google.com/presentation/d/1zFZtpu5bvlDldryqZ71AcgBuDGbT61Pn9y2YhF9nqF0/edit#slide=id.g34cfb14b403_0_3)
 -   [R Script for testing GCP (also included below)](https://github.com/afsc-gap-products/model-based-indices/blob/main/docs/gcp_testing.R)
 
-# Initial Setup
+# Set-up and Access
 
-<!-- ## Setting up Google Cloud Provider (GCP) -->
+## Setting up Google Cloud Provider (GCP)
 
-<!-- GCP is accessed through the command line on your local machine. First, you will need to install Google Cloud CLI: "language-specific Cloud Client Libraries" that make it "easier for you to interact with Google Cloud APIs in your language of choice". Full instructions are [here](https://cloud.google.com/sdk/docs/install-sdk#installing_the_latest_version). The installation instructions are specific to your operating system (OS), with options for each OS under 'Installing the latest gcloud CLI version'. -->
+GCP is accessed through the command line on your local machine. First, you will need to install Google Cloud CLI: "language-specific Cloud Client Libraries" that make it "easier for you to interact with Google Cloud APIs in your language of choice". Full instructions are [here](https://cloud.google.com/sdk/docs/install-sdk#installing_the_latest_version). The installation instructions are specific to your operating system (OS), with options for each OS under 'Installing the latest gcloud CLI version'.
 
-<!-- Proceed with default settings until: -->
+Proceed with default settings until:
 
-<!-- -   In Windows, on the final step of running the GoogleCloudInstaller, you can un-check the boxes for creating a Start Menu & Desktop shortcut. -->
+In Windows, on the final step of running the GoogleCloudInstaller, you can un-check the boxes for creating a Start Menu & Desktop shortcut. 
 
-<!-- -   When prompted, specify `ggn-nmfs-afscdsm-dev-1` as the default project to use. -->
+When prompted, specify `ggn-nmfs-afscdsm-dev-1` as the default project to use.
 
-<!-- -   There is no need to configure compute region and zone. -->
+There is no need to configure compute region and zone.
 
 ## Connecting to your node
 
 Because usage of GCP is metered, you will need to start and, importantly **stop**, your node every time you want to use it.
 
-1.  Navigate to the [AFSC dev server on GCP](https://console.cloud.google.com/compute/instances?project=ggn-nmfs-afscuservm-infra-1&cloudshell=true).
+1.  Navigate to the [AFSC server on GCP](https://console.cloud.google.com/compute/instances?project=ggn-nmfs-afscuservm-infra-1&cloudshell=true).
 
 ![](`r here::here("docs/img/gcp_node_page.png")`)
 
-2.  The first time you navigate to Google Cloud and connect to your node, there will be many authorization windows. Please accept them. Make sure you are connecting via your NOAA account.
+2.  The first time you navigate to Google Cloud and connect to your node, there will be many authorization windows. Please accept them. Make sure you are connecting via your NOAA account. 
 
 3.  You should be in the 'Instances' pane, with a list of nodes associated with people's names. Click on the check box in the line associated with your username.
 
@@ -73,13 +73,13 @@ Because usage of GCP is metered, you will need to start and, importantly **stop*
 
 5.  In a text editor, copy in the following connection code, substituting `[SERVER NAME]` with the one that has been configured for you. Do not include the brackets around your name (it should be the same as the name of your node in GCP). `gcloud compute ssh --ssh-flag="-4 -L 8787:localhost:8787" [YOUR-NAME]-sdm-node --project=ggn-nmfs-afscuservm-infra-1 --zone=us-east4-c --tunnel-through-iap`
 
-    e.g., `gcloud compute ssh --ssh-flag="-4 -L 8787:localhost:8787" sophia-wassermann-sdm-node --project=ggn-nmfs-afscuservm-infra-1 --zone=us-east4-c --tunnel-through-iap`
+    e.g., `gcloud compute ssh --ssh-flag="-4 -L 8787:localhost:8787" [SERVER NAME] --project=ggn-nmfs-afscuservm-infra-1 --zone=us-east4-c --tunnel-through-iap`
 
     We recommend saving this connection string to a text file on your local computer. You will need to use it every time you connect to your instance.
 
 ![](`r here::here("docs/img/gcp_instances_page_5.png")`)
 
-6.  You will use the 'google cloud shell' for the following steps. This may load automatically as a black box across the bottom of the window (as similarly seen in the above screenshots), or you may need to click on the 'Activate Cloud Shell' button in the menu bar at the top right. It is the square with symbols inside. You may also need to authorize the cloud shell by pressing 'Authorize'.
+<!-- 6.  You will use the 'google cloud shell' for the following steps. This may load automatically as a black box across the bottom of the window (as similarly seen in the above screenshots), or you may need to click on the 'Activate Cloud Shell' button in the menu bar at the top right. It is the square with symbols inside. You may also need to authorize the cloud shell by pressing 'Authorize'.
 
 ![Google Cloud Shell terminal button](`r here::here("docs/img/gcp_instances_page_terminalbutton.png")`)
 
@@ -89,13 +89,15 @@ Because usage of GCP is metered, you will need to start and, importantly **stop*
 
 8.  The first time you connect, you will need to create an ssh key pair. Follow the prompts. You do not need to create a passphrase (can press 'enter/return' without entering anything).
 
-![](`r here::here("docs/img/gcp_instances_page_7.png")`)
+![](`r here::here("docs/img/gcp_instances_page_7.png")`)  -->
 
-<!-- 6.  On your local machine, open command prompt (Windows) or terminal (Mac/Linux). -->
+6.  On your local machine, open command prompt (Windows) or terminal (Mac/Linux). 
 
-<!-- 7.  Copy the connection string into command prompt & hit enter. -->
+7.  Copy the connection string into command prompt & hit enter. 
 
-<!-- 8.  A 'PuTTY' window will open. When you connect for the first time, a 'PuTTY Security Alert' window will follow because you need to set up an ssh key pair. Click 'Accept' in this window. -->
+![](`r here::here("docs/img/gcp_putty_page_6.png")`)
+
+8.  A 'PuTTY' window will open. When you connect for the first time, a 'PuTTY Security Alert' window will follow because you need to set up an ssh key pair. Click 'Accept' in this window. Keep the PuTTY window open to maintain your connection.
 
 9.  When you are done with your session, make sure to turn off the instance by pressing 'STOP' in the blue menu bar. The connection to the command line and Rstudio will be terminated and the status icon will return to the gray square. This is **very** important for keeping operating costs reasonable.
 
@@ -105,7 +107,7 @@ These instances have been built with a container image on top of rocker:rstudio 
 
 To connect:
 
-1.  Once you have connected to your instance through step 8 above, open a new tab in your browser and navigate to `https://ssh.cloud.google.com/devshell/proxy?authuser=0&port=8787`. You can bookmark this page for future reference.
+1.  Once you have connected to your instance through step 8 above, open a new tab in your browser and navigate to `localhost:8787`. 
 
 2.  Log in using the username and password 'rstudio'
 
@@ -201,11 +203,8 @@ drive_auth(token = credentials_user_oauth2(
 drive_user()  # check user account
 ```
 
-# Testing
 
-Below are some code snippets for testing the basic function of the instance and its installed packages.
-
-## Oracle connection
+# Oracle connection
 
 You will need an oracle account that has access to the AFSC schemas to use the following code as-written. To streamline the process, you can save a file to your instance that contains your username and password. I created an R script in my home directory on the instance with the content:
 
@@ -216,7 +215,7 @@ oracle_pw <- "password"
 
 ```
 
-If you prefer to type your username and password in when accessing Oracle, the following code will prompt you for the information when needed. OFIS has configured two methods for connecting to Oracle. Both are presented below, but only one is necessary to connect.
+If you prefer to type your username and password in when accessing Oracle, the following code will prompt you for the information when needed. Use the following code to establish the connection.
 
 ```{r, eval = FALSE}
 if(file.exists("~/oracle_credentials.R")) { 
@@ -230,21 +229,14 @@ if(file.exists("~/oracle_credentials.R")) {
                                       default = "")
 }
 
-# Two different options for connecting to Oracle
-channel <- RODBC::odbcDriverConnect(
-  connection = paste0("Driver=/opt/oracle/instantclient_12_2/libsqora.so.12.1;DBQ=raja.afsc.noaa.gov:1521/afsc;UID=", 
-                      oracle_user, ";PWD=", oracle_pw),
-  rows_at_time = 1
-  )
+channel <- RODBC::odbcConnect(dsn = "AFSC",
+                              uid = oracle_user,
+                              pwd = oracle_pw,
+                              believeNRows = FALSE)
 
-con <- DBI::dbConnect(
-  odbc::odbc(),
-  .connection_string = paste0("Driver=/opt/oracle/instantclient_12_2/libsqora.so.12.1;DBQ=raja.afsc.noaa.gov:1521/afsc;UID=", 
-                              oracle_user, ";PWD=", oracle_pw)
-  )
 ```
 
-## sdmTMB
+<!-- ## sdmTMB
 
 If you will be working with sdmTMB, run the following test [from their website](https://pbs-assess.github.io/sdmTMB/index.html#basic-use).
 
@@ -343,17 +335,18 @@ family <- list(
 myfit <- tinyVAST(
   data = Data,
   formula = Abundance_per_hectare ~ 0 + Year_Age,
-  sem = sem,
-  dsem = dsem,
-  family = family,
+  space_term = sem,
+  spacetime_term = dsem,
+  family = fam,
   space_column = c("X", "Y"), 
   variable_column = "Age",
   time_column = "Year",
   distribution_column = "Age",
-  spatial_graph = mesh,
+  spatial_domain = mesh,
   control = control
-)
+
 
 myfit  # if this prints, everything is groovy!
 
 ```
+-->

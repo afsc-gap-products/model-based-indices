@@ -290,7 +290,7 @@ dens_est <- bind_cols(year = p$data$year,
                                      in.crs = "+proj=utm +datum=WGS84 +units=km +zone=2",
                                      out.crs = "+proj=longlat +datum=WGS84")
 
-ggplot(dens_est, aes(X, Y, fill = est)) +
+ggplot(dens_est %>% filter(year >= 2021), aes(X, Y, fill = est)) +
   geom_tile(width = 0.456, height = 0.236) +
   geom_sf(data = bs_sf, inherit.aes = FALSE) +
   scale_fill_viridis_c(option = "plasma") +
@@ -306,6 +306,7 @@ ggplot(dens_est, aes(X, Y, fill = est)) +
   labs(fill = "") +
   ggtitle(title) +
   ggsidekick::theme_sleek()
+ggsave(file = here("pred_recent.png"), height = 5, width = 6, units = "in", dpi = 300)
 ggsave(file = here("species_specific_code", "BS", species, phase, "results",
                    "predictions_map_latlon.png"),
        height = 7.5, width = 6.5, units = c("in"))

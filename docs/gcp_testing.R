@@ -13,18 +13,10 @@ if(file.exists("~/oracle_credentials.R")) {
                                       default = "")
 }
 
-# Two different options for connecting to Oracle
-channel <- RODBC::odbcDriverConnect(
-  connection = paste0("Driver=/opt/oracle/instantclient_12_2/libsqora.so.12.1;DBQ=raja.afsc.noaa.gov:1521/afsc;UID=", 
-                      oracle_user, ";PWD=", oracle_pw),
-  rows_at_time = 1
-)
-
-con <- DBI::dbConnect(
-  odbc::odbc(),
-  .connection_string = paste0("Driver=/opt/oracle/instantclient_12_2/libsqora.so.12.1;DBQ=raja.afsc.noaa.gov:1521/afsc;UID=", 
-                              oracle_user, ";PWD=", oracle_pw)
-)
+channel <- RODBC::odbcConnect(dsn = "AFSC",
+                              uid = oracle_user,
+                              pwd = oracle_pw,
+                              believeNRows = FALSE)
 
 # Connect to Google Drive -----------------------------------------------------
 # googledrive::drive_auth(path="/etc/sa_key.json")  # to connect to the default google drive account associated with the instance
