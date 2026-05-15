@@ -13,12 +13,26 @@ if (!requireNamespace("gapindex", quietly = TRUE)) {
 }
 library(gapindex)
 
-# Read existing Oracle credentials file, or connect using gapindex
-if (file.exists("Z:/Projects/ConnectToOracle.R")) {
-  source("Z:/Projects/ConnectToOracle.R")
+# Read existing Oracle credentials file, or enter credentials manually
+cred_files <- c("~/oracle_credentials.R", "Z:/Projects/ConnectToOracle.R")
+  
+if(any(file.exists(cred_files))) { 
+  source(cred_files[which(file.exists("~/oracle_credentials.R", 
+                                      "Z:/Projects/ConnectToOracle.R"))])
 } else {
-  channel <- gapindex::get_connected(check_access = FALSE)
+  oracle_user <- rstudioapi::showPrompt(title = "Username",
+                                        message = "Oracle Username",
+                                        default = "")
+  oracle_pw <- rstudioapi::showPrompt(title = "Password",
+                                      message = "Oracle Password",
+                                      default = "")
 }
+
+channel <- RODBC::odbcConnect(dsn = "AFSC",
+                              uid = oracle_user,
+                              pwd = oracle_pw,
+                              believeNRows = FALSE)
+rm(oracle_pw, oracle_user)
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##   Species-Specific Constants. Toggle species row
@@ -26,7 +40,7 @@ if (file.exists("Z:/Projects/ConnectToOracle.R")) {
 ## specify whether hindcast or production phase
 phase <- c("hindcast", "production")[1]
 
-species_info <- data.frame(species_name = c("yellowfin_sole", "Pacific_cod"),
+species_info <- data.frame(species_name = c("yellowfin_sole", "pacific_cod"),
                            species_code = c(10210, 21720),
                            start_year = 1982,
                            current_year = 2025,
