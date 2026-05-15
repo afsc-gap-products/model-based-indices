@@ -24,6 +24,7 @@ species_specific_code/GOA/Atheresthes_stomias/VAST-atf_2021.R
 /species_specific_code/**/*.RData
 /species_specific_code/**/*.csv
 /species_specific_code/**/*.pdf
+/species_specific_code/**/*.PDF
 output/
 VAST_results/
 .DS_Store
@@ -34,3 +35,4 @@ VAST_results/
 !extrapolation_grids/*
 !docs/img/*.png
 *.png
+.positai
