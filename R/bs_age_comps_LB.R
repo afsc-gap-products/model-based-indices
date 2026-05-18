@@ -134,9 +134,9 @@ if (!file.exists(f1)) {
     ),
     control = tinyVASTcontrol(
       getsd = TRUE,
-      silent = FALSE
+      silent = FALSE,
       #, profile = c("alpha_j", "alpha2_j") # for experimentation
-      #, newton_loops = 1 # add newton loop(s) as needed to improve convergence
+      newton_loops = 1 # add newton loop(s) as needed to improve convergence
       #, tmb_par = fit$parameter_estimates # restart at prior best parameters
     )
   )
