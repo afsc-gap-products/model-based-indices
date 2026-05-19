@@ -1,6 +1,6 @@
 # Run all Bering Sea age compositions in tinyVAST
-# Author: Sophia Wassermann
-# Date: 26-3-2025
+# Author: Sophia Wassermann and Lewis Barnett
+# Date: last modified 18-05-2025
 
 library(tinyVAST)
 library(fmesher)
@@ -110,49 +110,53 @@ old_mesh <- sdmTMB::make_mesh(dat,
                               fmesher_func = fm_mesh_2d()) 
 
 # Fit model -------------------------------------------------------------------
-fit <- tinyVAST(
-  formula = cpue ~ 0 + year_age,
-  data = dat,
-  space_term = sem,
-  spacetime_term = dsem,
-  family = setNames(
-    lapply(ages, function(x) delta_gamma(type = "poisson-link")), 
-    paste0("age_", ages)
-    ),
-  space_columns = c("X", "Y"),
-  spatial_domain = old_mesh$mesh,
-  time_column = "year",
-  variable_column = "age_f",
-  distribution_column = "age_f",
-  delta_options = list(
-    formula = ~ 0 + year_age,
+f1 <- here(workDir, "results_age", "tinyVAST_fit.RDS")
+
+if (!file.exists(f1)) {
+  fit <- tinyVAST(
+    formula = cpue ~ 0 + year_age,
+    data = dat,
     space_term = sem,
-    spacetime_term = dsem
+    spacetime_term = dsem,
+    family = setNames(
+      lapply(ages, function(x) delta_gamma(type = "poisson-link")), 
+      paste0("age_", ages)
     ),
-  control = tinyVASTcontrol(
-    getsd = TRUE,
-    # profile = c("alpha_j", "alpha2_j"), # experimentation only
-    silent = FALSE
-    # newton_loops = 1, # add newton loop(s) as needed to improve convergence
-    # tmb_par = fit$parameter_estimates # restart at prior best parameters
+    space_columns = c("X", "Y"),
+    spatial_domain = old_mesh$mesh,
+    time_column = "year",
+    variable_column = "age_f",
+    distribution_column = "age_f",
+    delta_options = list(
+      formula = ~ 0 + year_age,
+      space_term = sem,
+      spacetime_term = dsem
+    ),
+    control = tinyVASTcontrol(
+      getsd = TRUE,
+      silent = FALSE,
+      #, profile = c("alpha_j", "alpha2_j") # for experimentation
+      newton_loops = 1 # add newton loop(s) as needed to improve convergence
+      #, tmb_par = fit$parameter_estimates # restart at prior best parameters
+    )
   )
-)
-fit$run_time
-sanity(fit)
+  fit$run_time
+  sanity(fit)
+  
+  # Save fit object (create directory for results first, if it doesn't exist)
+  if (!dir.exists(here(workDir, "results_age"))) {
+    dir.create(here(workDir, "results_age"))
+  }
+  
+  saveRDS(fit, here(workDir, "results_age", "tinyVAST_fit.RDS")) 
 
-# Save fit object (create directory for results first, if it doesn't exist)
-if (!dir.exists(here(workDir, "results_age"))) {
-  dir.create(here(workDir, "results_age"))
+} else {
+
+  fit <- readRDS(f1)
+
 }
-
-saveRDS(fit, here(workDir, "results_age", "tinyVAST_fit.RDS"))
 
 # Age composition expansion ---------------------------------------------------
-# Load fit object if needed
-if(!exists("fit")) {
-  fit <- readRDS(here(workDir, "results_age", "tinyVAST_fit.RDS"))
-}
-
 start <- Sys.time()
 get_abundance <- function(region) {
   # Read in coarsened extrapolation grid
@@ -162,29 +166,101 @@ get_abundance <- function(region) {
   
   N_jz <- expand.grid(age_f = fit$internal$variables, year = sort(unique(dat$year)))
   N_jz$year_age <- interaction(N_jz$year, N_jz$age)
-  N_jz <- cbind(N_jz, "abundance" = NA, "SE" = NA)
+  N_jz$block <- 1:nrow(N_jz)
+    
+  areas <- newdata <- NULL
   
-  for(j in which(!(N_jz$year_age %in% year_age_to_drop))){
-    if (N_jz[j, "age_f"] == 1) {
-      message("Integrating ", N_jz[j, "year"], " ", N_jz[j, "age_f"], ": ", Sys.time())
-    }
-    if(is.na(N_jz[j, "abundance"])) {
-      newdata <- data.frame(grid, 
-                            year = N_jz[j, "year"], 
-                            age_f = N_jz[j, "age_f"])
-      newdata$year_age <- paste(newdata$year, newdata$age_f, sep = ".")
-      # Area-expansion
-      index1 <- integrate_output(fit,
-                                 area = grid$area_km2,
-                                 newdata = newdata,
-                                 getsd = FALSE,
-                                 bias.correct = FALSE,
-                                 apply.epsilon = TRUE,
-                                 intern = TRUE)
-      N_jz[j, "abundance"] <- index1[3] / 1e9
-    }
+  for(j in which(!(N_jz$year_age %in% year_age_to_drop))) {
+    # Make inputs, including 'block' column
+      tmp <- data.frame(
+        X = grid$X,
+        Y = grid$Y,
+        area_km2 = grid$area_km2,
+        year = N_jz[j, "year"], 
+        age_f = N_jz[j, "age_f"]
+      )
+      tmp$year_age <- paste(tmp$year, tmp$age_f, sep = ".")
+      newdata <- rbind(newdata, cbind(tmp, block = j))
   }
+  
+  # split newdata into chunks to avoid memory limitations in integrate_output
+  newdata$chunk <- cut(newdata$block, 
+                       breaks = c(min(N_jz$block), max(N_jz$block)/4, 
+                                  max(N_jz$block)/2, max(N_jz$block)*3/4, 
+                                  max(N_jz$block)), 
+                       include.lowest = TRUE, labels = FALSE)
+  newdata_ls <- split(newdata, newdata$chunk)
+  
+  # check if any blocks have rows in multiple chunks
+  message(
+    anyDuplicated(unique(newdata_ls[[1]]$block), 
+                  unique(newdata_ls[[2]]$block), 
+                  unique(newdata_ls[[3]]$block), 
+                  unique(newdata_ls[[4]]$block)), 
+    " blocks spanning across chunks (should be 0)"
+  )
+  
+    gc()
+    index1 <- integrate_output(
+      fit,
+      area = newdata_ls[[1]]$area_km2,
+      block = newdata_ls[[1]]$block,
+      newdata = newdata_ls[[1]],
+      apply.epsilon = TRUE,
+      bias.correct = FALSE,
+      intern = TRUE,
+      getsd = FALSE
+    )
+    message("Completed from ", newdata_ls[[1]]$year_age[1], " to ", newdata_ls[[1]]$year_age[nrow(newdata_ls[[1]])], ": ", Sys.time())
+    
+    gc()
+    index2 <- integrate_output(
+      fit,
+      area = newdata_ls[[2]]$area_km2,
+      block = newdata_ls[[2]]$block,
+      newdata = newdata_ls[[2]],
+      apply.epsilon = TRUE,
+      bias.correct = FALSE,
+      intern = TRUE,
+      getsd = FALSE
+    )
+    message("Completed from ", newdata_ls[[2]]$year_age[1], " to ", newdata_ls[[2]]$year_age[nrow(newdata_ls[[2]])], ": ", Sys.time())
+    
+    gc()
+    index3 <- integrate_output(
+      fit,
+      area = newdata_ls[[3]]$area_km2,
+      block = newdata_ls[[3]]$block,
+      newdata = newdata_ls[[3]],
+      apply.epsilon = TRUE,
+      bias.correct = FALSE,
+      intern = TRUE,
+      getsd = FALSE
+    )
+    message("Completed from ", newdata_ls[[3]]$year_age[1], " to ", newdata_ls[[3]]$year_age[nrow(newdata_ls[[3]])], ": ", Sys.time())
+    
+    gc()
+    index4 <- integrate_output(
+      fit,
+      area = newdata_ls[[4]]$area_km2,
+      block = newdata_ls[[4]]$block,
+      newdata = newdata_ls[[4]],
+      apply.epsilon = TRUE,
+      bias.correct = FALSE,
+      intern = TRUE,
+      getsd = FALSE
+    )
+    message("Completed from ", newdata_ls[[4]]$year_age[1], " to ", newdata_ls[[4]]$year_age[nrow(newdata_ls[[4]])], ": ", Sys.time())
+    
+    index <- data.frame(abundance = c(index1[unique(newdata_ls[[1]]$block),3], 
+                                      index2[unique(newdata_ls[[2]]$block),3], 
+                                      index3[unique(newdata_ls[[3]]$block),3], 
+                                      index4[unique(newdata_ls[[4]]$block),3]), 
+                        block = unique(newdata$block))
+    
+  N_jz <- left_join(N_jz, index)
   N_jz[is.na(N_jz)] <- 0 # replace NAs for combinations with 0 encounters
+  N_jz$abundance <- N_jz$abundance / 1e9 # scale to billions of individuals
   
   N_ct <- array(N_jz$abundance, 
                 dim = c(length(fit$internal$variables), length(unique(dat$year))),
