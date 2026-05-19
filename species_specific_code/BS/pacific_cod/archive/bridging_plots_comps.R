@@ -20,13 +20,13 @@ workDir <- here("species_specific_code", "BS", "pacific_cod")
 this_year <- 2024
 
 # save_dir <- paste0(this_year, " Production")
-save_dir <- here(workDir, "archive", "2025", "hindcast", "results_age")
+save_dir <- here(workDir, "hindcast", "results_age")
 
 # Compare Age Compositions ----------------------------------------------------
-new_props <- read.csv(here(workDir, "archive", "2025", "hindcast", "results_age", "tinyVAST_props.csv"))
+new_props <- read.csv(here(workDir, "hindcast", "results_age", "tinyVAST_props.csv"))
 new_props <- cbind(new_props, year = new_props$year, version = "tinyVAST")[,-1]
-new_props <- select(new_props, -region)
-old_props <- cbind(read.csv(here(workDir, "archive", "2024", "production", "results_age", "proportions", "clean_proportions.csv"))[c(1:26,28:31),-1], year = new_props$year, version = "VAST")
+new_props <- select(new_props, -region) |> filter(year < 2024)
+old_props <- cbind(read.csv(here(workDir, "archive", "2024", "production", "results_age", "proportions", "clean_proportions.csv"))[c(1:26,28:30),-1], year = new_props$year, version = "VAST")
 names(old_props) <- names(new_props)
 
 ## Combine age comp models into one plot --------------------------------------
@@ -186,13 +186,13 @@ comp_trends <- comp_trends(new = new_props, old = old_props,
 comp_trends
 
 # tinyVAST plots save ---------------------------------------------------------
-ggsave(comp_diff, filename = here(save_dir, "comp_diff.png"),
+ggsave(comp_diff, filename = here(save_dir, "comp_diff_VAST2024.png"),
        width=200, height=200, units="mm", dpi=300)
-ggsave(per_diff, filename = here(save_dir, "comp_per_diff.png"),
+ggsave(per_diff, filename = here(save_dir, "comp_per_diff_VAST2024.png"),
        width=200, height=200, units="mm", dpi=300)
-ggsave(comp_trends, filename = here(save_dir, "comp_trends.png"),
+ggsave(comp_trends, filename = here(save_dir, "comp_trends_VAST2024.png"),
        width=260, height=120, units="mm", dpi=300)
-ggsave(sum_props_sub$boxplot, filename = here(save_dir, "tinyVAST_summary.png"),
+ggsave(sum_props_sub$boxplot, filename = here(save_dir, "tinyVAST_summary_VAST2024.png"),
        width=200, height=120, units="mm", dpi=300)
-ggsave(sum_props_sub$barplot, filename = here(save_dir, "tinyVAST_by_year.png"),
+ggsave(sum_props_sub$barplot, filename = here(save_dir, "tinyVAST_by_year_VAST2024.png"),
        width=200, height=120, units="mm", dpi=300)
