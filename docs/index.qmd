@@ -75,7 +75,7 @@ Because usage of GCP is metered, you will need to start and, importantly **stop*
 
     e.g., `gcloud compute ssh --ssh-flag="-4 -L 8787:localhost:8787" [SERVER NAME] --project=ggn-nmfs-afscuservm-infra-1 --zone=us-east4-c --tunnel-through-iap`
 
-    We recommend saving this connection string to a text file on your local computer. You will need to use it every time you connect to your instance.
+    We recommend saving this connection string to a text file on your local computer. You will need to use it every time you connect to your instance. If it has been a while since you have connected, you may be prompted to enter your Google account password (same as your email).
 
 ![](`r here::here("docs/img/gcp_instances_page_5.png")`)
 
