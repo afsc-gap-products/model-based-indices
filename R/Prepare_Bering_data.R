@@ -38,12 +38,12 @@ rm(oracle_pw, oracle_user)
 ##   Species-Specific Constants. Toggle species row
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## specify whether hindcast or production phase
-phase <- c("hindcast", "production")[1]
+phase <- c("hindcast", "production")[2]
 
 species_info <- data.frame(species_name = c("yellowfin_sole", "pacific_cod"),
                            species_code = c(10210, 21720),
                            start_year = 1982,
-                           current_year = 2025,
+                           current_year = 2026,
                            plus_group = c(20, 12), 
                            start_year_age = c(1982, 1994))[1, ]
 
