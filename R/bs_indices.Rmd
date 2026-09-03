@@ -30,8 +30,8 @@ if (!requireNamespace("coldpool", quietly = TRUE)) {
   remotes::install_github("afsc-gap-products/coldpool")
 }
 
-phase <- c("hindcast", "production")[1] # specify analysis phase
-sp <- 1 # specify species from species vector
+phase <- c("hindcast", "production")[2] # specify analysis phase
+sp <- 2 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod", "kamchatka_flounder")[sp]
 
 # Set year
@@ -72,6 +72,7 @@ We also need to pull in the appropriate environmental covariate as this is used 
 ```{r covariate, echo = TRUE}
 
 env_df <- coldpool::cold_pool_index
+this_year %in% env_df$YEAR  # Check if this year is included! If FALSE, reinstall coldpool package.
   
 if(species == "yellowfin_sole"){
   env <- cbind(env_df, env = scale(coldpool::cold_pool_index$MEAN_BT_LT100M)) |>
