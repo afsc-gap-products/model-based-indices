@@ -26,14 +26,15 @@ drive_user()  # check user account
 # Download file from google drive ---------------------------------------------
 # Use the string to avoid problems with duplicate file names
 # Tip: copy in the share link and then remove everything but the long string
-target_file <- drive_get(as_id("1NI3OVgFgT932LUnZHVgMusYt8yn-V3d-"))  
+target_file <- drive_get(as_id("1NGKLq1__ZpnUD7qZpqqEUS5uxp5KCKle"))  
 
 # Set path for where to download the file. Create folder if it doesn't exist
 folder_path <- here(
   "species_specific_code",
   "BS",
   "pollock",
-  "data"
+  "hindcast",
+  "results"
 )
 if(!dir.exists(folder_path)) {
   dir.create(folder_path)
@@ -51,11 +52,19 @@ drive_download(
 
 # Upload contents of a folder to google drive ---------------------------------
 # Access drive folder via the string at the end of the URL (click into it in google drive)
-drive_folder <- as_id("1U_RpXBnILwWoEWVDmi1ctSScZZ6sXqX5")  
+drive_folder <- as_id("1NtUfZilNZH0homjvbEDO8YK2YajsMNGg")  
 
 # List local files in the results directory
-# results_dir <-   # DEFINE DIRECTORY HERE
-results_files <- list.files(results_dir, full.names = TRUE)
+# DEFINE DIRECTORY HERE
+folder_path <- here(
+  "species_specific_code",
+  "BS",
+  "pollock",
+  "production",
+  "results"
+)
+
+results_files <- list.files(folder_path, full.names = TRUE)
 
 # Upload all files to google drive
 walk(results_files, ~ drive_upload(
