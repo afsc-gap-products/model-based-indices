@@ -3,7 +3,7 @@
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##   Import gapindex v3.0.2 and connect to Oracle. Make sure you are connected
+##   Import gapindex v3.0.3 and connect to Oracle. Make sure you are connected
 ##   to the internal network or VPN. 
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Install gapindex if not already installed
@@ -45,7 +45,7 @@ species_info <- data.frame(species_name = c("yellowfin_sole", "pacific_cod"),
                            start_year = 1982,
                            current_year = 2026,
                            plus_group = c(20, 12), 
-                           start_year_age = c(1982, 1994))[1, ]
+                           start_year_age = c(1982, 1994))[2, ]
 
 ## Set constants
 start_year <- species_info$start_year
