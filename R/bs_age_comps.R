@@ -17,7 +17,7 @@ library(ggsidekick)
 theme_set(theme_sleek())
 
 # Set up ----------------------------------------------------------------------
-phase <- c("hindcast", "production")[1] # specify analysis phase
+phase <- c("hindcast", "production")[2] # specify analysis phase
 
 sp <- 3 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
@@ -387,12 +387,10 @@ if(species == "pacific_cod"){
 # Compare proportions to previous model ---------------------------------------
 # TODO: change this path to the previous run
 previous_props <- read.csv(here("species_specific_code", "BS", species, 
-                                "archive",
-                                "2025",
                                 "hindcast", 
                                 "results_age", 
                                 "tinyVAST_props.csv"))
-previous_name <- "2025 hindcast tinyVAST"  # TODO: name the previous run
+previous_name <- "2026 hindcast tinyVAST"  # TODO: name the previous run
 
 # # Reshape VAST output to match tinyVAST output
 # tiny_years <- c(1980:2019, 2021:this_year)
