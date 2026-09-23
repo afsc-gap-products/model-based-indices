@@ -19,7 +19,6 @@ channel <- RODBC::odbcConnect(dsn = "AFSC",
                               believeNRows = FALSE)
 
 # Connect to Google Drive -----------------------------------------------------
-# googledrive::drive_auth(path="/etc/sa_key.json")  # to connect to the default google drive account associated with the instance
 library(gargle)
 library(googledrive)
 
@@ -33,6 +32,11 @@ drive_auth(token = credentials_user_oauth2(
   email = gdrive_email))
 
 drive_user()  # check user account
+
+#' If you If you run into `Client error: (403) Forbidden; Request had insufficient authentication scopes`, 
+#' try clearing your gargle cache by running the following in the Terminal: 
+#' `rm -rf ~/.cache/gargle/*`
+
 
 # # download test
 # googledrive::drive_download(

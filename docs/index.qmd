@@ -32,7 +32,7 @@ library(here)
 
 # Introduction
 
-Before beginning this process, please check with Sophia Wassermann, Emily Markowitz, or OFIS to confirm that a computing instance and an Rstudio server have been set up for your username.
+Before beginning this process, please check with OFIS to confirm that a computing instance and an Rstudio server have been set up for your username.
 
 Resources:
 
@@ -48,8 +48,6 @@ GCP is accessed through the command line on your local machine. First, you will 
 Proceed with default settings until:
 
 In Windows, on the final step of running the GoogleCloudInstaller, you can un-check the boxes for creating a Start Menu & Desktop shortcut. 
-
-When prompted, specify `ggn-nmfs-afscdsm-dev-1` as the default project to use.
 
 There is no need to configure compute region and zone.
 
@@ -189,8 +187,6 @@ Each instance is set up with a connection to a Google Drive associated with a un
 library(gargle)
 library(googledrive)
 
-# googledrive::drive_auth(path="/etc/sa_key.json")  # connect to default account
-
 # Connect to google drive using your (probably NOAA) email
 gdrive_email <- rstudioapi::showPrompt(title = "Email",
                                        message = "Email for Google Drive",
@@ -203,6 +199,7 @@ drive_auth(token = credentials_user_oauth2(
 drive_user()  # check user account
 ```
 
+If you run into a `Client error: (403) Forbidden; Request had insufficient authentication scopes`, try clearing your gargle cache by running the following in the Terminal: `rm -rf ~/.cache/gargle/*`
 
 # Oracle connection
 
