@@ -19,7 +19,7 @@ theme_set(theme_sleek())
 # Set up ----------------------------------------------------------------------
 phase <- c("hindcast", "production")[2] # specify analysis phase
 
-sp <- 3 # specify species from species vector
+sp <- 1 # specify species from species vector
 species <- c("yellowfin_sole", "pollock", "pacific_cod")[sp]
 
 # Set year
@@ -135,7 +135,7 @@ if (!file.exists(f1)) {
     control = tinyVASTcontrol(
       getsd = TRUE,
       silent = FALSE,
-      #, profile = c("alpha_j", "alpha2_j") # for experimentation
+      profile = c("alpha_j", "alpha2_j"), # for experimentation
       newton_loops = 1 # add newton loop(s) as needed to improve convergence
       #, tmb_par = fit$parameter_estimates # restart at prior best parameters
     )
