@@ -136,8 +136,8 @@ if (!file.exists(f1)) {
       getsd = TRUE,
       silent = FALSE,
       profile = c("alpha_j", "alpha2_j"), # necessary for yfs 
-      opt_loops = 2, # add optimizer loops as needed to improve convergence
-      newton_loops = 0, # add newton loop(s) as needed to improve convergence
+      #opt_loops = 2, # add optimizer loops as needed to improve convergence
+      newton_loops = 4, # add newton loop(s) as needed to improve convergence
       tmb_par = fit$parameter_estimates # restart at prior best parameters
     )
   )
