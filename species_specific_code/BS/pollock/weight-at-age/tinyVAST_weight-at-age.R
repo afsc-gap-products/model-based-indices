@@ -22,12 +22,13 @@ theme_set(theme_sleek())
 
 # Create a new directory for results
 Date <- Sys.Date()
+this_year <- format(Date, "%Y")
 dir <- here("species_specific_code", "BS", "pollock", "weight-at-age")
 date_dir <- here(dir, paste0("results_", Date))
   dir.create(date_dir)
 
 # Read in data generated in the watage_data.R script
-Data <- readRDS(here(dir, "data", "processed", "data_combined.rds"))
+Data <- readRDS(here(dir, "data", paste0("processed_", this_year), "data_combined.rds"))
 
 Data$data_type <- ifelse(!is.na(Data$age_cpue_sum), "D", "W")
 # table(Data$age_bin, Data$data_type)
@@ -107,7 +108,7 @@ dsem <- "
 
 mesh <- fm_mesh_2d(loc = Data[,c('start_longitude','start_latitude')], cutoff = 1.5)
 control <- tinyVASTcontrol(getsd = FALSE,
-                           nlminb_loops = 1,
+                          #  nlminb_loops = 1,  # SNW 10/14/26: Error: unused argument
                            newton_loops = 0,
                            profile = c("alpha_j"),
                            trace = 1)

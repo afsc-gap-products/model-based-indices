@@ -14,6 +14,20 @@ library(gargle)
 library(googledrive)
 library(purrr)
 
+# Set up data save directory --------------------------------------------------
+this_year <- format(Sys.Date(), "%Y")
+
+out_dir <- here(
+  "species_specific_code",
+  "BS",
+  "pollock",
+  "weight-at-age",
+  "data",
+  paste0("processed_", this_year)
+)
+
+if(!dir.exists(out_dir)) {dir.create(out_dir)}
+
 # Authorize and connect to google drive using NOAA email ----------------------
 gdrive_email <- rstudioapi::showPrompt(title = "Email",
                                        message = "Email for Google Drive",
@@ -194,8 +208,7 @@ glimpse(Data_long)
 Data_long <- subset(Data_long, Data_long$age_bin != 0)
 
 # Save final cpue data
-write.csv(Data_long, here(wd, "data", "processed", "cpue_final.csv"), row.names = FALSE)
-# saveRDS(Data_long, here(wd, "data", "processed", "cpue_final.rds"))
+write.csv(Data_long, here(out_dir, "cpue_final.csv"), row.names = FALSE)
 
 
 #### SPECIMEN DATA (IE WEIGHT) ------------------------------------------------
@@ -251,7 +264,7 @@ abline(a = 0,b = 1)
 abline(lm(weight_calculated ~ weight, data = data2), col = "blue")
 
 # Save intermediate step as csv, if wanted
-# write.csv(data2, file = here(wd, "data", "processed", "specimen_data_edited_complete.csv"), 
+# write.csv(data2, file = here(out_dir, "specimen_data_edited_complete.csv"), 
 #           row.names = FALSE)
 
 # Create streamlined dataframe for individual weight data
@@ -261,9 +274,8 @@ specimen_data <- data2[, c('year', 'start_latitude', 'start_longitude',
                            'weight_calculated','length', 'data_available')]
 
 # Save as csv and rds
-write.csv(specimen_data, file = here(wd, "data", "processed", "specimen_data_edited_streamlined.csv"),
+write.csv(specimen_data, file = here(out_dir, "specimen_data_edited_streamlined.csv"),
           row.names = FALSE)
-# saveRDS(specimen_data, file = here(wd, "data", "processed", "specimen_data_edited_streamlined.rds"))
 
 
 ##### Handling extrapolation grid ---------------------------------------------
@@ -289,8 +301,8 @@ user_region <- readRDS(here(wd, "data", "bs_grid.rds"))
 
 #### Combine CPUE and specimen (weight) data for model fitting
 # Upload CPUE and specimen data, if needed
-cpue_final <- read.csv(here(wd, "data", "processed", "cpue_final.csv"))
-specimen_data <- read.csv(here(wd, "data", "processed", "specimen_data_edited_streamlined.csv"))
+cpue_final <- read.csv(here(out_dir, "cpue_final.csv"))
+specimen_data <- read.csv(here(out_dir, "specimen_data_edited_streamlined.csv"))
 
 # Combine datasets
 cpue_final$start_latitude <- as.numeric(cpue_final$start_latitude)
@@ -326,5 +338,6 @@ check4 <- aggregate(age_cpue_sum ~ year + age_bin, check, FUN = length)
 check4 <- check4 %>% spread(key = "age_bin", value = "age_cpue_sum")
 
 # Save combined data
-write.csv(example, here(wd, "data", "processed", "data_combined.csv"))
-saveRDS(example, here(wd, "data", "processed", "data_combined.rds"))
+write.csv(example, here(out_dir, "data_combined.csv"))
+saveRDS(example, here(out_dir, "data_combined.rds"))
+
