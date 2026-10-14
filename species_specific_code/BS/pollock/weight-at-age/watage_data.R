@@ -10,23 +10,59 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(here)
+library(gargle)
+library(googledrive)
+library(purrr)
+
+# Authorize and connect to google drive using NOAA email ----------------------
+gdrive_email <- rstudioapi::showPrompt(title = "Email",
+                                       message = "Email for Google Drive",
+                                       default = "")
+
+drive_auth(token = credentials_user_oauth2(
+  scopes = "https://www.googleapis.com/auth/drive", 
+  email = gdrive_email))
+
+drive_user()  # check user account
 
 ### CPUE ----------------------------------------------------------------------
-## Load data files
 wd <- here("species_specific_code", "BS", "pollock", "weight-at-age")
 cruise <- read.csv(here(wd, "data", "cruise_data.csv"))
 
-#' Before running the following, move data and output from most recent design-
-#' based run of the density-dependent correction code (in pollock-ddc repo) into
-#' a single folder in weight-at-age/data.
-date_dir <- "2025-11-25_db"  # Update to correct data folder
-data_year <- "2025"  # Update to correct year (of the data)
-alk <- read.csv(here(wd, "data", date_dir, 
-                     paste0("age_length_key_full_densdep_corrected_", data_year, ".csv")))
-specimen <- read.csv(here(wd, "data", date_dir, "raw_pollock_specimen.csv"))
-haul <- read.csv(here(wd, "data", date_dir, "raw_hauls_survey.csv"))
-catch <- read.csv(here(wd, "data", date_dir, "raw_pollock_catch.csv"))
+# Download data files from google drive, then read in as .csv
+google_download <- function(id) {
+  # Use the string to avoid problems with duplicate file names
+  target_file <- drive_get(as_id(id))  
 
+  # Set path for where to download the file.
+  folder_path <- here(
+    "species_specific_code",
+    "BS",
+    "pollock",
+    "weight-at-age",
+    "data"
+  )
+
+  # Download file
+  drive_download(
+    file = target_file,
+    path = here(folder_path, target_file$name),
+    overwrite = TRUE
+  )
+
+  # Read file in as .csv
+  df <- read.csv(here(folder_path, target_file$name))
+  return(df)
+}
+
+# TODO: make sure these ID strings point to the correct files!
+# Tip: copy in the share link and then remove everything but the long string
+alk <- google_download("1FMntIpLGYIIeqfWSXKudIT0OaGf_bfJZ")
+specimen <- google_download("1ndS42Af1I8qTv1vXdsWTvbfw37Ep9zG2")
+haul <- google_download("15b8LrWPBzvm6hEBY2r_jPNTFx3mLLWyp")
+catch <- google_download("1uiE18c_zxCUtyBjM5E3f3AY-Un-_fBBK")
+
+# Clean up column names
 names(alk) <- tolower(names(alk))
 names(specimen) <- tolower(names(specimen))
 names(haul) <- tolower(names(haul))
