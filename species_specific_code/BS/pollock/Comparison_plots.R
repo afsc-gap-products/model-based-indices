@@ -17,16 +17,16 @@ theme_set(theme_sleek())
 
 # Directories
 wd <- here("species_specific_code", "BS", "pollock")
-this_year <- 2025
+this_year <- 2026
 phases <- c("production", "hindcast")
 
-save_dir <- here(wd, phases[2])
+save_dir <- here(wd, phases[1])
 
 # Compare Indices of Abundance ------------------------------------------------
 # Read in indices & make sure columns for year = Time, Estimate, Error are named correctly
-index1 <- readRDS(here(wd, phases[2], "results", "indices.RDS"))
-index2 <- readRDS(here(wd, phases[1], "results", "indices.RDS"))
-colnames(index2)[8] <- "region"
+index1 <- readRDS(here(wd, phases[1], "results", "indices.RDS"))
+index2 <- readRDS(here(wd, phases[1], "results_noddc", "indices.RDS"))
+# colnames(index2)[8] <- "region"
  
 # index3 <- read.csv(here(workDir, "results", "2023 Production", "VAST Index", "Index.csv"))
 # colnames(index3)[6] <- "error"
@@ -51,7 +51,7 @@ colnames(index2)[8] <- "region"
 # Combine and plot indices ----------------------------------------------------
 # Set names for old and new index
 index_set <- list(index1, index2)
-names_index <- c("2025 Hindcast", "2025 Production")
+names_index <- c("DDC", "gap_products")
 
 compare_index <- function(indices = index_set, 
                           names = c(names_index[1], names_index[2]), 
@@ -82,7 +82,7 @@ compare_index <- function(indices = index_set,
     ylim(0, NA) +
     xlab("") + ylab("Index of Abundance (Mt)") +
     theme(legend.title = element_blank()) +
-    scale_color_viridis(discrete = TRUE, option = "plasma", end = 0.9) 
+    scale_color_manual(values = c("olivedrab4", "slateblue1"))
   
   if(ebs_only == FALSE) {
     plot <- plot + facet_wrap(~ region, scales = "free_y", ncol = 1)
@@ -93,8 +93,8 @@ compare_index <- function(indices = index_set,
 
 index_comp <- compare_index()
 index_comp
-ggsave(index_comp, filename = here(save_dir, "index_comparison.png"),
-       width=170, height=120, units="mm", dpi=300)
+ggsave(index_comp, filename = here(save_dir, "ddc_comparison", "index_comparison.png"),
+       width=170, height=170, units="mm", dpi=300)
 
 # Difference between two indices
 index_difference <- function(new, old, names, save_results = FALSE) {
@@ -105,7 +105,7 @@ index_difference <- function(new, old, names, save_results = FALSE) {
   new <- new %>% filter(year %in% min(old$year):max(old$year)) 
   df <- cbind.data.frame(Year = new$year,
                          Region = new$region,
-                         Difference = ((new$est - old$est) / old$est) * 100)
+                         Difference = (new$est - old$est) / 1000000000)
 
   if(save_results == TRUE) {  # save to drive, if you want. Check file paths.
     write.csv(df, here(results_dir, save_dir, "index_difference.csv"))
@@ -114,11 +114,14 @@ index_difference <- function(new, old, names, save_results = FALSE) {
   df <- df %>% mutate(sign = case_when(Difference >= 0 ~ "Positive",
                                        Difference < 0 ~ "Negative"))
   
-  label <- paste0("Percent difference between ", names[1], " and ", names[2])
-  plot <- ggplot(df, aes(x = Year, y = Difference, fill = sign)) +
-    geom_bar(stat = "identity", show.legend = FALSE) +
-    scale_fill_manual(values = c("cornflowerblue", "darkred")) +
-    ylab(label)
+  label <- paste0("Difference between ", names[1], " and ", names[2])
+  plot <- ggplot(df, aes(x = Year, y = Difference)) +
+    # geom_bar(stat = "identity", show.legend = FALSE) +
+    geom_point() +
+    geom_line(alpha = 0.3) +
+    # scale_color_manual(values = c("cornflowerblue", "darkred")) +
+    ylab(label) +
+    labs(guides = NULL)
   
   return(plot)
 }
@@ -126,14 +129,14 @@ index_difference <- function(new, old, names, save_results = FALSE) {
 index_diff <- index_difference(new = index1, old = index2,
                                names = c(names_index[1], names_index[2]))
 index_diff
-ggsave(index_diff, filename = here(save_dir, "index_difference.png"),
-       width=170, height=120, units="mm", dpi=300)
+ggsave(index_diff, filename = here(save_dir, "ddc_comparison", "index_difference.png"),
+       width=170, height=100, units="mm", dpi=300)
 
 # Compare Age Compositions ----------------------------------------------------
 # Read in age comp model results (and remove rownames column)
-# old_props <- read.csv(here(wd, "results", "2023 Production", "Comps", "proportions.csv"))
-new_props <- read.csv(here(wd,  "hindcast", "results_age", "updated tinyVAST", "tinyVAST_props_new.csv"))
 old_props <- read.csv(here(wd, "archive", "2023-2024", "production", "proportions.csv"))
+# old_props <- read.csv(here(wd,  "hindcast", "updated tinyVAST", "tinyVAST_props.csv"))
+new_props <- read.csv(here(wd, "production", "results_age", "tinyVAST_props.csv"))
 # sdm_props <- dcast(cbind(read.csv(here(wd, "results", "sdmTMB_age_prop.csv"))[, 2:4]), formula = year ~ Age)
 # gapindex_comps_raw <- read.csv(here(wd, "results", "Comps", "gapindex_comps_2024.csv"))
 
@@ -161,7 +164,7 @@ colnames(old_props)[c(1, 16, 17)] <- c("year", "age_15", "region")
 # names_comps <- c("original", "original", "original", "VAST mesh", "VAST mesh", "original", "bias correction", "bias correction")
 
 ## Combine age comp models into one plot --------------------------------------
-names <- c("tinyVAST", "2024 VAST")
+names <- c("2026 Production", "2024 Production")
 compare_props <- function(props, names, last_year) {
   df <- data.frame()
   for(i in 1:length(props)) {
@@ -200,7 +203,7 @@ sum_props$barplot
 sum_props$boxplot
 
 # Plot difference between two models ------------------------------------------
-# TODO: Fix the issue here now that both the old & new comps are from tinyVAST
+this_year <- 2025
 comp_difference <- function(new, old, names, save_results = FALSE) {
   new <- subset(new, new$year < this_year)  # make sure new dataset is the same length as the old
   # Get difference between new and old props
