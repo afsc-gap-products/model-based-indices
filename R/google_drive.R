@@ -60,8 +60,8 @@ folder_path <- here(
   "species_specific_code",
   "BS",
   "pollock",
-  "production",
-  "results"
+  "weight-at-age",
+  "results_2026-10-14"
 )
 
 results_files <- list.files(folder_path, full.names = TRUE)

@@ -24,8 +24,10 @@ theme_set(theme_sleek())
 Date <- Sys.Date()
 this_year <- format(Date, "%Y")
 dir <- here("species_specific_code", "BS", "pollock", "weight-at-age")
-date_dir <- here(dir, paste0("results_", Date))
+date_dir <- here(dir, paste0("results_", Date)) 
+if(!dir.exists(date_dir)) {
   dir.create(date_dir)
+}
 
 # Read in data generated in the watage_data.R script
 Data <- readRDS(here(dir, "data", paste0("processed_", this_year), "data_combined.rds"))
@@ -186,7 +188,7 @@ colnames(loc_gz) <- c("start_longitude", "start_latitude")
 areas <- set_units(st_area(grid), "hectares") #  / 100^2 # Hectares
 
 # Get abundance
-W_jz <- expand.grid(Age = sort(unique(Data$age_bin)), year = 1982:2025)  ########## TODO: code in the year range
+W_jz <- expand.grid(Age = sort(unique(Data$age_bin)), year = 1982:this_year)  
 W_jz <- cbind(W_jz, "Weight" = NA, "SE" = NA)
 for(j in seq_len(nrow(W_jz))) {
   gc()
@@ -226,8 +228,8 @@ W_ct <- array(W_jz$Weight, dim = c("Age" = length(unique(Data$age_bin)),
               dimnames = list(sort(unique(Data$age_bin)), 
                               myfit$internal$times))
 #image( z=t(W_ct), x=myfit$internal$times, y=seq_along(myfit$internal$variables) )
-write.csv(W_ct, file = here(date_dir, "W_ct.csv"))
-write.csv(W_jz, file = here(date_dir, "W_jz.csv"))
+write.csv(W_ct, file = here(date_dir, "W_ct.csv"), row.names = FALSE)
+write.csv(W_jz, file = here(date_dir, "W_jz.csv"), row.names = FALSE)
 
 #
 Wmean_ct <- tapply(Data$weight_combined, 
@@ -235,7 +237,7 @@ Wmean_ct <- tapply(Data$weight_combined,
                    FUN = mean, na.rm = TRUE)
 Wmean_jz <- data.frame(expand.grid(dimnames(Wmean_ct)), 
                        "Weight" = as.vector(Wmean_ct))
-write.csv(Wmean_jz, file = "Wmean_jz.csv")
+write.csv(Wmean_jz, file = here(date_dir, "Wmean_jz.csv"), row.names = FALSE)
 
 # Plot mean weight-at-age by year ---------------------------------------------
 mean_wtatage <- Wmean_jz %>%
@@ -245,15 +247,15 @@ mean_wtatage <- Wmean_jz %>%
   bind_rows(data.frame(Age = factor(1:15), Year = 2020, Weight = NA)) 
 
 # Plot w/ size and color representing weight
-wtatage_bubble <- mean_wtatage %>% 
+wtatage_tile <- mean_wtatage %>% 
   mutate(Year = factor(Year)) %>%
-  ggplot(., aes(x = Year, y = Age)) +
-  geom_point(aes(size = Weight, color = Weight)) +
-  scale_color_viridis(option = "turbo") +
+  ggplot(., aes(x = Year, y = Age, fill = Weight)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "turbo", na.value = "grey85") +
   scale_x_discrete(breaks = scales::pretty_breaks()) +
   xlab("") + ylab("Age") +
-  labs(size = "Weight (kg)", color = "Weight (kg)") 
-wtatage_bubble
+  labs(fill = "Weight (kg)") 
+wtatage_tile
 
 wtatage_line <- ggplot(mean_wtatage, aes(x = Year, y = Weight)) +
   geom_line(aes(color = Age)) +
@@ -263,7 +265,7 @@ wtatage_line <- ggplot(mean_wtatage, aes(x = Year, y = Weight)) +
   labs(color = "Age") 
 wtatage_line
   
-ggsave(filename = here(date_dir, "wtatage_bubble.png"), wtatage_bubble, 
+ggsave(filename = here(date_dir, "wtatage_tile.png"), wtatage_tile, 
        width=250, height=120, units="mm", dpi=300)
 ggsave(filename = here(date_dir, "wtatage_line.png"), wtatage_line, 
        width=200, height=120, units="mm", dpi=300)
